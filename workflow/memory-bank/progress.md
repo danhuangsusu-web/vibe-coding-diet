@@ -1,7 +1,7 @@
 # 食刻 AI 进度记录
 
-> 当前阶段：步骤 1–6 已完成并经用户确认；步骤 7 未开始
-> 下一步：开始步骤 7（实现演示资料读取与更新接口）；D5 仍待确认，但不阻塞
+> 当前阶段：步骤 1–7 已完成并经用户确认；步骤 8 未开始
+> 下一步：开始步骤 8（实现餐食记录创建和查询接口）；D5 仍待确认，但不阻塞
 > 最后更新：2026-09-15
 
 ## 2026-09-14 工作流整理基线
@@ -296,8 +296,43 @@
 
 ### 当前停点
 
-- 步骤 6 已由用户验收确认，未开始步骤 7；
+- 步骤 6 已由用户验收确认，步骤 7 已在其后完成并验收；
 - 用户已确认数据库变更与默认演示资料（名称“小苏”、默认目标方向减脂）。
+
+## 2026-09-15 步骤 7 实现演示资料读取与更新接口（已验收）
+
+### 已完成
+
+- 新增 `apps/server/lib/prisma.ts`：全局唯一 PrismaClient 实例，非生产环境挂到 `globalThis` 以避免热重载重复建连；
+- 新增 `apps/server/lib/profile-service.ts`：按固定 `DEMO_PROFILE_ID` 读取与更新资料，用共享 `demoProfileSchema` 序列化，资料缺失时抛 `DemoProfileNotFoundError`；
+- 新增 `apps/server/lib/profile-handlers.ts`：`createProfileHandlers(database)` 返回 GET 与 PATCH，负责状态码与统一错误映射；
+- 新增 `apps/server/app/api/profile/route.ts`：薄封装，注入 `prisma` 后导出 GET 与 PATCH，并标记 `dynamic = 'force-dynamic'`；
+- 新增 `apps/server/lib/profile-handlers.test.ts`：以假数据库测试 handlers，不引入 Next.js 运行时或真实数据库；
+- 更新请求直接复用共享 `updateDemoProfileRequestSchema`，`strict()` 拒绝未知字段；更新只允许目标方向与每日上下限。
+
+### 验证结果
+
+2026-09-15 实际执行：
+
+- `pnpm test`：99 个测试全部通过（nutrition 66、shared 17、server 16），退出码 0；
+- `pnpm typecheck`：四个工作区全部通过；`pnpm db:check`：PostgreSQL 连接正常；
+- 实际启动服务端做 HTTP 验证：`GET /api/profile` 返回默认资料；合法 `PATCH` 后再次读取结果一致；
+- 非法输入全部被拒绝且不写库：下限大于上限、下限等于上限、非正整数、未知字段、非法枚举值与无法解析的 JSON；
+- 上述请求分别返回 400 `PROFILE_INVALID_RANGE` 或 400 `VALIDATION_FAILED`，均符合共享 `apiErrorResponseSchema`；
+- 资料不存在时返回 503 `DB_UNAVAILABLE`，不回退到数据库第一条记录；数据库故障返回同一错误结构且不暴露内部细节；
+- 验证结束后已将演示资料恢复为默认值（减脂、1400–1600），数据库仅一行资料。
+
+### 已知影响与后续衔接
+
+- 步骤 6 验证项中“`GET /api/profile` 能按 `DEMO_PROFILE_ID` 读取同一资料”在本步骤补齐并通过；
+- 接口层已建立可复用的分层（Route Handler → handlers → service）与统一错误映射，后续记录接口沿用同一模式；
+- 错误码集合中的解析、图片与记录相关错误尚未被任何接口使用；
+- 小程序端尚未调用该接口。
+
+### 当前停点
+
+- 步骤 7 已由用户验收确认，未开始步骤 8；
+- 用户已确认接口行为与错误处理策略（资料缺失返回明确错误而非虚假默认值）。
 
 ## 决策状态
 

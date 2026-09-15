@@ -1,6 +1,6 @@
 # 食刻 AI 当前架构
 
-> 基线日期：2026-09-15（已同步步骤 1、步骤 2、步骤 3、步骤 4、步骤 5、步骤 6）
+> 基线日期：2026-09-15（已同步步骤 1、步骤 2、步骤 3、步骤 4、步骤 5、步骤 6、步骤 7）
 > 记录原则：本文件描述当前仓库事实。尚未实现的目标只在“计划边界”中标注，不与现状混写。
 
 ## 1. 总览
@@ -12,7 +12,7 @@
 - `packages/shared`：跨端 Zod Schema 与共享类型；
 - `packages/nutrition`：确定性营养评级与热量区间规则。
 
-当前代码已完成工程骨架、静态首页、健康接口、模型供应商工厂、最小评级函数、shared、nutrition、server 的 Vitest 自动化测试基线、完整的共享业务契约（资料、餐食、评估、记录、统一 API 错误）、按受控词表计算热量区间的最小规则（含 D1c 的两阶段未知处理）、动态餐次额度与红黄绿灯评级（含高油高糖最低黄灯）、由规则生成的原因与建议白名单，以及与共享契约对齐的数据库结构和已初始化的固定演示资料。小程序到服务端、AI 和业务 API 的完整链路尚不存在。
+当前代码已完成工程骨架、静态首页、健康接口、模型供应商工厂、最小评级函数、shared、nutrition、server 的 Vitest 自动化测试基线、完整的共享业务契约（资料、餐食、评估、记录、统一 API 错误）、按受控词表计算热量区间的最小规则（含 D1c 的两阶段未知处理）、动态餐次额度与红黄绿灯评级（含高油高糖最低黄灯）、由规则生成的原因与建议白名单、与共享契约对齐的数据库结构和已初始化的固定演示资料，以及演示资料的读取与更新接口。小程序端、AI 解析和餐食记录接口尚不存在。
 
 ## 2. 根目录职责
 
@@ -79,6 +79,8 @@
 | `apps/server/app/page.tsx` | 简单服务启动说明页 |
 | `apps/server/app/api/health/route.ts` | 已实现 GET 健康检查，返回服务名与 ok 状态 |
 
+演示资料接口位于 `apps/server/app/api/profile/route.ts`，职责见 4.4 节。
+
 ### 4.2 AI
 
 | 路径 | 当前职责 |
@@ -121,7 +123,28 @@ MealRecord 当前字段：
 
 默认演示资料为固定 ID `demo-profile`、名称“小苏”、目标方向减脂、每日 1400–1600 千卡；按 D3b 不包含 `mealType`，也不包含身高、体重、BMI 或疾病字段。
 
-当前没有 Prisma 访问封装、资料 API、记录 CRUD 或迁移文件。Schema 已可校验，数据库结构已与之同步（`prisma db push`，P0 不创建 migrations），演示资料已初始化。下一步需要按 `DEMO_PROFILE_ID` 提供读取与更新接口。
+当前 Schema 已可校验，数据库结构已与之同步（`prisma db push`，P0 不创建 migrations），演示资料已初始化。仍没有记录 CRUD 或迁移文件。
+
+### 4.4 演示资料接口
+
+| 路径 | 当前职责 |
+| --- | --- |
+| `apps/server/lib/prisma.ts` | 导出全局唯一的 `PrismaClient` 实例；非生产环境下挂到 `globalThis` 避免热重载重复建连 |
+| `apps/server/lib/profile-service.ts` | 按固定 `DEMO_PROFILE_ID` 读取或更新资料，用共享 `demoProfileSchema` 序列化输出；资料不存在时抛 `DemoProfileNotFoundError` |
+| `apps/server/lib/profile-handlers.ts` | `createProfileHandlers(database)` 返回 GET 与 PATCH，负责 HTTP 状态码与统一错误映射 |
+| `apps/server/app/api/profile/route.ts` | 薄封装：注入 `prisma` 后导出 GET 与 PATCH，并标记 `dynamic = 'force-dynamic'` |
+| `apps/server/lib/profile-handlers.test.ts` | 用假数据库测试 handlers，不接触 Next.js 运行时或真实数据库 |
+
+分层：Route Handler 只做依赖注入和导出；handlers 承担 HTTP 语义；service 承担数据访问。handlers 的入参类型是 `Pick<PrismaClient, 'demoProfile'>`，因此可以脱离 Next.js 与真实数据库单元测试。
+
+接口行为：
+
+- `GET /api/profile` 返回符合共享 `demoProfileSchema` 的资料对象；资料不存在返回 503 `DB_UNAVAILABLE`，**不回退到数据库第一条记录**；
+- `PATCH /api/profile` 只接受共享 `updateDemoProfileRequestSchema` 允许的字段（目标方向与每日上下限），`strict()` 会拒绝未知字段；
+- 每日范围非法（下限不小于上限、非正整数）返回 400 `PROFILE_INVALID_RANGE`；未知字段、非法枚举或无法解析的 JSON 返回 400 `VALIDATION_FAILED`；
+- 所有被拒绝的请求都不会写库，原值保持不变；
+- 数据库故障统一返回 503 `DB_UNAVAILABLE`，不向调用方暴露内部错误细节；
+- 所有错误响应符合共享 `apiErrorResponseSchema`。
 
 ## 5. 共享包
 
@@ -237,12 +260,14 @@ MealRecord 当前字段：
 
 ## 8. 当前数据流
 
-当前可运行的数据流只有两条：
+当前可运行的数据流有四条：
 
 1. 小程序直接渲染静态首页，不发起业务请求。
 2. 客户端或浏览器请求 `GET /api/health`，Next.js 返回固定 JSON。
+3. 客户端请求 `GET /api/profile`，服务端按固定 `DEMO_PROFILE_ID` 读取数据库并返回演示资料。
+4. 客户端请求 `PATCH /api/profile`，服务端用共享契约校验后更新资料并返回最新结果。
 
-AI 工厂可以独立创建模型对象，Prisma Schema 和数据库连接可以独立验证，但它们尚未被业务 Route Handler 串联。根 Vitest 入口当前可运行 shared、nutrition 和 server 的 86 个测试（shared 17、nutrition 66、server 3），并能解析工作区 TypeScript 源码包。nutrition 已能在纯函数层面把确认后的菜品换算为热量区间，输出带原因和建议的动态红黄绿灯评估，但这些能力尚未被任何 Route Handler 调用；数据库结构与演示资料已就绪，但尚无读取或写入它们的接口。
+AI 工厂可以独立创建模型对象，但尚未被任何 Route Handler 调用。根 Vitest 入口当前可运行 shared、nutrition 和 server 的 99 个测试（shared 17、nutrition 66、server 16），并能解析工作区 TypeScript 源码包。nutrition 已能在纯函数层面把确认后的菜品换算为热量区间，输出带原因和建议的动态红黄绿灯评估，但这些能力尚未被任何 Route Handler 调用；餐食记录的创建、查询与删除接口也尚不存在。
 
 ## 9. 目标数据流边界
 
@@ -264,11 +289,11 @@ AI 工厂可以独立创建模型对象，Prisma Schema 和数据库连接可以
 - 自动化测试目前是 84 个契约与规则测试，尚未覆盖数据库或业务 API；
 - 热量区间规则只覆盖 9 个已知食材标签、10 个已知做法和两个演示样例，扩展评测集前需同步递增规则版本并补测试；
 - 规则层已能返回“需要补充信息”，但界面上的“跳过补充”入口在步骤 15 才实现；
-- Prisma Schema 已包含目标方向、建议 ID、`isDemo` 与唯一 `clientRequestId`，但尚无可用的 Prisma 访问封装，也没有按 `DEMO_PROFILE_ID` 读取或更新资料的接口；
-- 没有数据库 CRUD 或统一错误响应；
+- Prisma Schema 已包含目标方向、建议 ID、`isDemo` 与唯一 `clientRequestId`，已有全局 Prisma 单例与按 `DEMO_PROFILE_ID` 的资料读写，但餐食记录的 CRUD 接口尚未实现；
+- 接口层已有统一的错误响应与错误码映射，但错误码集合中的解析、图片与记录相关错误尚未被任何接口使用；
 - 没有图片上传、压缩、请求体大小和超时处理；
 - 没有 AI 输出校验后的错误分型；
 - 没有评测集；
 - 高保真 HTML 原型与 Taro 代码尚未对齐；
 - `.workbuddy_html/` 未被 `.gitignore` 排除，且当前已纳入版本控制；后续原型变更会进入 Git 差异；
-- 当前 Git `main` 已包含步骤 1 提交 `01afa66`、步骤 2 提交 `dcd640f`、步骤 3 提交 `4f087d5`、步骤 4 提交 `1d56406` 与步骤 5 提交 `2174d63`；步骤 6 的数据模型变更与本文档更新在同一提交中。
+- 当前 Git `main` 已包含步骤 1 提交 `01afa66`、步骤 2 提交 `dcd640f`、步骤 3 提交 `4f087d5`、步骤 4 提交 `1d56406`、步骤 5 提交 `2174d63` 与步骤 6 提交 `d043690`；步骤 7 的接口变更与本文档更新在同一提交中。
