@@ -11,10 +11,15 @@
     "build:miniprogram": "pnpm --filter @food-sense/miniprogram build:weapp",
     "dev:server": "pnpm --filter @food-sense/server dev",
     "build:server": "pnpm --filter @food-sense/server build",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "typecheck": "pnpm -r typecheck",
     "db:generate": "pnpm --filter @food-sense/server db:generate",
     "db:validate": "pnpm --filter @food-sense/server db:validate",
     "db:push": "pnpm --filter @food-sense/server db:push",
     "db:check": "pnpm --filter @food-sense/server db:check"
+  },
+  "devDependencies": {
+    "vitest": "^3.2.7"
   }
 }
