@@ -1,6 +1,6 @@
 # 食刻 AI 当前架构
 
-> 基线日期：2026-09-15（已同步步骤 1、步骤 2、步骤 3、步骤 4）
+> 基线日期：2026-09-15（已同步步骤 1、步骤 2、步骤 3、步骤 4、步骤 5）
 > 记录原则：本文件描述当前仓库事实。尚未实现的目标只在“计划边界”中标注，不与现状混写。
 
 ## 1. 总览
@@ -12,7 +12,7 @@
 - `packages/shared`：跨端 Zod Schema 与共享类型；
 - `packages/nutrition`：确定性营养评级与热量区间规则。
 
-当前代码已完成工程骨架、静态首页、健康接口、模型供应商工厂、最小评级函数、Prisma 数据模型、shared、nutrition、server 的 Vitest 自动化测试基线、完整的共享业务契约（资料、餐食、评估、记录、统一 API 错误）、按受控词表计算热量区间的最小规则（含 D1c 的两阶段未知处理），以及动态餐次额度与红黄绿灯评级（含高油高糖最低黄灯）。评级原因、建议逻辑，以及小程序到服务端、AI、规则和数据库的完整链路尚不存在。
+当前代码已完成工程骨架、静态首页、健康接口、模型供应商工厂、最小评级函数、Prisma 数据模型、shared、nutrition、server 的 Vitest 自动化测试基线、完整的共享业务契约（资料、餐食、评估、记录、统一 API 错误）、按受控词表计算热量区间的最小规则（含 D1c 的两阶段未知处理）、动态餐次额度与红黄绿灯评级（含高油高糖最低黄灯），以及由规则生成的原因与建议白名单。小程序到服务端、AI、规则和数据库的完整链路尚不存在。
 
 ## 2. 根目录职责
 
@@ -147,11 +147,13 @@ MealRecord 当前字段：
 
 ### 5.2 packages/nutrition
 
-`packages/nutrition/src/index.ts` 只做 re-export，真实能力拆成三个模块：
+`packages/nutrition/src/index.ts` 只做 re-export，真实能力拆成五个模块：
 
 - `calorie-estimator.ts`：`estimateMealCalories(items, options)` 根据确认后的菜品计算整餐热量区间；
 - `calorie-rules.ts`：规则数据（食材基础区间、做法附加区间、份量系数、未知兜底区间）、中文别名映射 `INGREDIENT_ALIASES`、`resolveIngredientAlias` 和规则版本常量 `CALORIE_RANGE_RULE_VERSION`（当前值 `calorie-range-v1`）；
-- `dynamic-rating.ts`：`rateMeal`、`getRemainingMealCount`、`calculateDynamicMealRating`，以及规则版本常量 `DYNAMIC_RATING_RULE_VERSION`（当前值 `dynamic-rating-v1`）。
+- `dynamic-rating.ts`：`rateMeal`、`getRemainingMealCount`、`calculateDynamicMealRating`、`mealHasHighOil`、`mealHasHighOilOrSugar`，以及规则版本常量 `DYNAMIC_RATING_RULE_VERSION`（当前值 `dynamic-rating-v1`）；
+- `advice-rules.ts`：`ADVICE_TEXT`（7 条建议 ID 与展示文案）与 `selectMealAdvice(items, rating)`；
+- `meal-assessment.ts`：`assessMeal(input)` 编排函数，规则版本常量 `NUTRITION_ASSESSMENT_RULE_VERSION`（当前值 `nutrition-assessment-v1`）。
 
 `estimateMealCalories` 的计算顺序：
 
@@ -175,11 +177,19 @@ MealRecord 当前字段：
 5. `rateMeal(calorieMax, mealBudget)` 按 0.8 / 1.2 阈值出 GREEN/YELLOW/RED；`mealBudget` 为零、负数或非有限时直接返回 RED，不做除法；
 6. 若本餐含高油（干煸、油炸、煎）或高糖（糖醋）做法且原评级为 GREEN，则强制抬升为 YELLOW；RED 不降级。
 
-该函数显式接收 `now`，领域逻辑内部不读系统时钟，相同输入与固定 `now` 结果可复现。评级结果当前只返回数值与枚举，“原因”和“建议”字段由步骤 5 生成。
+该函数显式接收 `now`，领域逻辑内部不读系统时钟，相同输入与固定 `now` 结果可复现。
 
-当前仍未实现：评级原因、建议白名单、动态额度结果与热量区间估算的编排——这些属于步骤 5 及之后的范围。
+`assessMeal(input)` 编排热量估算、未知处理、动态评级与原因建议：
 
-`packages/nutrition/src/` 现有 `index.test.ts`（18 个测试，覆盖热量区间与未知处理）与 `dynamic-rating.test.ts`（31 个测试，覆盖时段边界、评级边界、除零防护、高油高糖最低黄灯、时间中性、确定性）。
+1. 先调用 `estimateMealCalories`（未知按 D1c），若返回 `NEEDS_MORE_INFO` 则原样透传；
+2. 用估算区间调用 `calculateDynamicMealRating` 得到评级、参考额度和高油高糖标记；
+3. 按评级生成 `ratingLabel`（绿=“这餐比较合适”、黄=“这餐可以适量吃”、红=“这餐建议调整”）和 `reason`（按额度用完 → 剩余不足成参考额度 → 普通红灯 → 高油高糖抬黄灯 → 普通黄灯 → 绿灯 的优先级）；
+4. 调用 `selectMealAdvice` 生成 1 至 2 条白名单建议，无建议时回退到 `KEEP_CURRENT`；
+5. 组装成符合 shared `mealAssessmentSchema` 的 `MealAssessment`，带 `ruleVersion`，仅在调用方传入时写 `modelVersion`。
+
+建议优先级固定为：去皮 > 换蔬菜 > 减米饭 > 分酱汁 > 少吃高油菜 > 沥油；多条命中时去重取前两条。所有用户可见文案通过禁止词扫描（绝食 / 催吐 / 药物 / 跳过下一餐 / 补偿性运动 / 保证减重 / 你不自律 / 你没有意志）。
+
+`packages/nutrition/src/` 现有四个测试文件：`index.test.ts`（18 个，热量区间与未知处理）、`dynamic-rating.test.ts`（31 个，时段边界、评级边界、除零防护、高油高糖最低黄灯、时间中性、确定性）、`meal-assessment.test.ts`（17 个，建议规则、原因优先级、schema 校验、禁止词扫描、确定性）。
 
 ## 6. 设计原型资产
 
@@ -224,7 +234,7 @@ MealRecord 当前字段：
 1. 小程序直接渲染静态首页，不发起业务请求。
 2. 客户端或浏览器请求 `GET /api/health`，Next.js 返回固定 JSON。
 
-AI 工厂可以独立创建模型对象，Prisma Schema 和数据库连接可以独立验证，但它们尚未被业务 Route Handler 串联。根 Vitest 入口当前可运行 shared、nutrition 和 server 的 67 个测试（shared 17、nutrition 49、server 1），并能解析工作区 TypeScript 源码包。nutrition 已能在纯函数层面把确认后的菜品换算为热量区间，并根据资料、当天记录和时间点输出动态红黄绿灯，但这些能力尚未被任何 Route Handler 调用。
+AI 工厂可以独立创建模型对象，Prisma Schema 和数据库连接可以独立验证，但它们尚未被业务 Route Handler 串联。根 Vitest 入口当前可运行 shared、nutrition 和 server 的 84 个测试（shared 17、nutrition 66、server 1），并能解析工作区 TypeScript 源码包。nutrition 已能在纯函数层面把确认后的菜品换算为热量区间，输出带原因和建议的动态红黄绿灯评估，但这些能力尚未被任何 Route Handler 调用。
 
 ## 9. 目标数据流边界
 
@@ -243,8 +253,7 @@ AI 工厂可以独立创建模型对象，Prisma Schema 和数据库连接可以
 
 ## 10. 已知技术债与风险
 
-- 自动化测试目前是 67 个契约与规则测试，尚未覆盖建议白名单、数据库或业务 API；
-- 评级结果尚未生成“原因”和“建议”字段，动态额度结果与热量区间估算也尚未编排到一起（步骤 5）；
+- 自动化测试目前是 84 个契约与规则测试，尚未覆盖数据库或业务 API；
 - 热量区间规则只覆盖 9 个已知食材标签、10 个已知做法和两个演示样例，扩展评测集前需同步递增规则版本并补测试；
 - 规则层已能返回“需要补充信息”，但界面上的“跳过补充”入口在步骤 15 才实现；
 - Prisma Schema 与已批准产品之间缺少目标方向、建议 ID 字段，也尚未同步共享契约中的 `isDemo` 与唯一 `clientRequestId`（计划在步骤 6 对齐）；
@@ -255,4 +264,4 @@ AI 工厂可以独立创建模型对象，Prisma Schema 和数据库连接可以
 - 没有评测集；
 - 高保真 HTML 原型与 Taro 代码尚未对齐；
 - `.workbuddy_html/` 未被 `.gitignore` 排除，且当前已纳入版本控制；后续原型变更会进入 Git 差异；
-- 当前 Git `main` 已包含步骤 1 提交 `01afa66`、步骤 2 提交 `dcd640f` 与步骤 3 提交 `4f087d5`；步骤 4 的规则变更与本文档更新在同一提交中。
+- 当前 Git `main` 已包含步骤 1 提交 `01afa66`、步骤 2 提交 `dcd640f`、步骤 3 提交 `4f087d5` 与步骤 4 提交 `1d56406`；步骤 5 的规则变更与本文档更新在同一提交中。

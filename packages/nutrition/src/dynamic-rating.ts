@@ -98,7 +98,17 @@ export function rateMeal(
   return 'RED'
 }
 
-function hasHighOilOrSugar(items: readonly ConfirmedMealItem[]): boolean {
+export function mealHasHighOil(
+  items: readonly ConfirmedMealItem[]
+): boolean {
+  return items.some((item) =>
+    item.cookingMethods.some((method) => HIGH_OIL_METHODS.has(method))
+  )
+}
+
+export function mealHasHighOilOrSugar(
+  items: readonly ConfirmedMealItem[]
+): boolean {
   return items.some((item) =>
     item.cookingMethods.some(
       (method) =>
@@ -146,7 +156,7 @@ export function calculateDynamicMealRating(
     input.currentMealCalorieRange.max,
     mealBudget
   )
-  const highOilOrSugar = hasHighOilOrSugar(input.currentMealItems)
+  const highOilOrSugar = mealHasHighOilOrSugar(input.currentMealItems)
   const ratingFloorApplied = highOilOrSugar && initialRating === 'GREEN'
 
   return {
