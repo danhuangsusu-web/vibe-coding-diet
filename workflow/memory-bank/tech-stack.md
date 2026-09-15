@@ -1,6 +1,6 @@
 # 食刻 AI 技术栈
 
-> 基线日期：2026-09-14
+> 基线日期：2026-09-15（已同步步骤 1）
 > 原则：优先记录仓库真实依赖；计划新增项必须明确标记，不能写成已安装。
 
 ## 1. 仓库与运行环境
@@ -11,7 +11,7 @@
 | Node.js | Node.js | >= 20.9.0 | 根 package 已约束 |
 | 语言 | TypeScript | ^5.9.2 | 四个工作区均启用 strict |
 | 仓库结构 | pnpm monorepo | `apps/*`、`packages/*` | 已建立 |
-| 版本控制 | 无可识别 Git 工作树 | 不适用 | 当前目录运行 Git 状态检查失败 |
+| 版本控制 | Git | `main` | 已建立；步骤 1 提交为 `01afa66` |
 
 不引入 Turborepo、Nx 或额外构建编排器。当前只有四个实际工作区，pnpm 递归脚本足够。
 
@@ -79,31 +79,36 @@
 
 ### 6.1 当前真实状态
 
-- 仓库没有项目级测试文件；
-- 各 package 没有 `test` 脚本；
-- 锁文件里的 Jest、Playwright 名称来自传递依赖，不能视为测试框架已配置；
-- 当前可执行质量门槛只有 TypeScript、构建、Prisma 校验和数据库连通性脚本。
+- 根目录已安装 Vitest `^3.2.7`，锁文件当前解析版本为 3.2.7；
+- 根 `test` 脚本运行一次全仓测试，`test:watch` 用于本地监听；
+- `vitest.config.ts` 使用 Node 环境，收集 shared、nutrition 和 server 的 `*.test.ts`，并通过 `passWithNoTests: false` 禁止零测试成功退出；
+- shared、nutrition 和 server 各有一个最小冒烟测试，共 3 个测试文件、3 个测试；
+- server 冒烟测试已验证 Vitest 可直接解析 exports 指向 `src/index.ts` 的 workspace TypeScript 包；
+- Jest、Playwright 和 Cypress 未作为项目测试框架引入；锁文件中同名传递依赖不代表已配置；
+- 小程序流程仍由微信开发者工具人工验收，当前不在 Vitest 范围内。
 
-### 6.2 计划新增
+### 6.2 当前选择与后续扩展
 
 | 能力 | 推荐选择 | 理由 |
 | --- | --- | --- |
-| 单元与接口测试 | Vitest | 与 TypeScript/ESM 兼容，配置轻，适合共享包纯函数和 Route Handler |
+| 单元与领域服务测试 | Vitest 3.2.7 | 已建立全仓入口；后续步骤在现有配置上增加领域边界与服务函数测试 |
 | 小程序流程验收 | 微信开发者工具人工清单 | P0 以微信运行时为准，不为五页 MVP 引入脆弱的端到端框架 |
 | AI 评测 | 仓库内结构化样本与可重复运行脚本 | 需要记录输入、期望、实际、模型版本和失败原因 |
 
-Vitest 是计划新增依赖，当前尚未安装。P0 不新增 Jest、Playwright 或 Cypress。若以后形成 Web 管理端或稳定的小程序自动化环境，再单独评估端到端工具。
+Vitest 已在步骤 1 安装并通过基线验证。Route Handler 保持薄封装；P0 的服务端自动化测试优先覆盖领域服务函数，HTTP 行为使用人工步骤或 curl 验证，避免把 Next.js 运行时引入单元测试。P0 不新增 Jest、Playwright 或 Cypress；若以后形成 Web 管理端或稳定的小程序自动化环境，再单独评估端到端工具。
 
 持续使用的命令门槛：
 
 - `pnpm typecheck`
+- `pnpm test`
 - `pnpm build:miniprogram`
 - `pnpm build:server`
 - `pnpm db:generate`
 - `pnpm db:validate`
 - `pnpm db:push`
 - `pnpm db:check`
-- 后续新增的全仓测试命令
+
+步骤 1 验证结果：`pnpm test` 运行 3 个测试文件、3 个测试并全部通过；`pnpm typecheck` 覆盖四个工作区并通过。
 
 修改 Prisma Schema 后的固定顺序是：先执行 `pnpm db:validate`，再执行 `pnpm db:generate` 更新 Prisma Client 类型，然后以 P0 的 `pnpm db:push` 同步结构，最后执行 `pnpm db:check`。P0 不建立 migrations；执行 `db:push` 前必须先确认当前数据库没有需要保留的数据，或先完成导出。
 
