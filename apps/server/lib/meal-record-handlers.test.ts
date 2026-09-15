@@ -6,6 +6,10 @@ import {
 } from '@food-sense/shared'
 import { describe, expect, it, vi } from 'vitest'
 
+import {
+  buildDemoMealRecordRequest,
+  DEMO_MEAL_SAMPLES
+} from './demo-meals'
 import { DEMO_PROFILE_ID } from './demo-profile.mjs'
 import { createMealRecordDeleteHandler } from './meal-record-delete-handler'
 import { createMealRecordHandlers } from './meal-record-handlers'
@@ -158,6 +162,23 @@ function validRequest(overrides: Record<string, unknown> = {}) {
 }
 
 describe('meal record POST handler', () => {
+  it('persists an offline sample as demo data', async () => {
+    const sample = DEMO_MEAL_SAMPLES[0]
+
+    if (!sample) throw new Error('Expected the first demo sample')
+
+    const { create, database } = createDatabase()
+    const { POST } = createMealRecordHandlers(database, () => NOW)
+    const response = await POST(
+      postRequest(buildDemoMealRecordRequest(sample, REQUEST_ID))
+    )
+    const body = await response.json()
+
+    expect(response.status).toBe(201)
+    expect(body.isDemo).toBe(true)
+    expect(create.mock.calls[0]?.[0].data.isDemo).toBe(true)
+  })
+
   it('recalculates on the server and ignores a tampered client snapshot', async () => {
     const { create, database } = createDatabase()
     const { POST } = createMealRecordHandlers(database, () => NOW)

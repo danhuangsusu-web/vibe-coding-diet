@@ -1,6 +1,6 @@
 # 食刻 AI 当前架构
 
-> 基线日期：2026-09-15（已同步步骤 1 至步骤 9）
+> 基线日期：2026-09-15（已同步步骤 1 至步骤 10）
 > 记录原则：本文件描述当前仓库事实。尚未实现的目标只在“计划边界”中标注，不与现状混写。
 
 ## 1. 总览
@@ -12,7 +12,7 @@
 - `packages/shared`：跨端 Zod Schema 与共享类型；
 - `packages/nutrition`：确定性营养评级与热量区间规则。
 
-当前代码已完成工程骨架、静态首页、健康接口、模型供应商工厂、最小评级函数、shared、nutrition、server 的 Vitest 自动化测试基线、完整的共享业务契约（资料、餐食、评估、记录、统一 API 错误）、按受控词表计算热量区间的最小规则（含 D1c 的两阶段未知处理）、动态餐次额度与红黄绿灯评级（含高油高糖最低黄灯）、由规则生成的原因与建议白名单、与共享契约对齐的数据库结构和已初始化的固定演示资料、演示资料的读取与更新接口，以及餐食记录的创建、查询与删除接口。小程序端与 AI 解析尚不存在；服务端接口层至此完整。
+当前代码已完成工程骨架、静态首页、健康接口、模型供应商工厂、最小评级函数、shared、nutrition、server 的 Vitest 自动化测试基线、完整的共享业务契约（资料、餐食、评估、记录、统一 API 错误）、按受控词表计算热量区间的最小规则（含 D1c 的两阶段未知处理）、动态餐次额度与红黄绿灯评级（含高油高糖最低黄灯）、由规则生成的原因与建议白名单、与共享契约对齐的数据库结构和已初始化的固定演示资料、演示资料的读取与更新接口、餐食记录的创建查询与删除接口，以及两个离线演示样例与统一的 `parseMeal` 解析契约。小程序端与 AI 解析实现尚不存在；服务端侧已可支撑完整离线闭环。
 
 ## 2. 根目录职责
 
@@ -88,7 +88,7 @@
 | `apps/server/lib/ai-provider.ts` | 读取 `AI_BASE_URL`、`AI_API_KEY`、`AI_MODEL`，创建 OpenAI 兼容模型实例；配置缺失时抛出错误 |
 | `apps/server/lib/workspace-imports.test.ts` | 冒烟验证服务端测试可直接导入 exports 指向 TypeScript 源码的 shared 与 nutrition 工作区包；使用受控大写枚举构造样例 |
 
-当前没有 Prompt、结构化生成调用、超时控制、重试策略或 `/api/parse-meal`。
+当前没有 Prompt、结构化生成调用、超时控制、重试策略或 `/api/parse-meal`。餐食解析的**模式开关与 offline 实现**已在 4.6 节落地，ai 实现留到步骤 20。
 
 ### 4.3 数据库
 
@@ -100,7 +100,7 @@
 | `apps/server/lib/demo-profile.test.ts` | 断言固定标识、默认资料取值与无敏感字段 |
 | `apps/server/scripts/check-db.mjs` | 建立 PrismaClient，执行 `SELECT 1` 后断开连接 |
 | `apps/server/scripts/seed-profile.mjs` | 按固定 ID upsert 默认演示资料，重复执行不产生第二条 |
-| `apps/server/.env.example` | 数据库与 AI 配置模板 |
+| `apps/server/.env.example` | 数据库、AI 与 `MEAL_PARSER` 配置模板（`MEAL_PARSER` 默认 `offline`） |
 
 DemoProfile 当前字段：
 
@@ -192,6 +192,39 @@ MealRecord 当前字段：
 - 成功返回 204，未找到（含空编号）返回 404 `MEAL_NOT_FOUND`，异常返回 503 `DB_UNAVAILABLE`；
 - 使用物理删除，不提供恢复、软删除或审计；界面上的确认弹层属于步骤 18；
 - 查询接口按 `profileId` 过滤，因此其他资料的记录不会出现在历史列表中。
+
+### 4.6 离线演示样例与餐食解析契约
+
+| 路径 | 当前职责 |
+| --- | --- |
+| `apps/server/lib/demo-meals.ts` | 两个离线演示样例（解析结果、确认结果、评估上下文、预期评估），以及 `buildDemoMealRecordRequest` |
+| `apps/server/lib/meal-parser.ts` | `parseMeal(input, options)` 统一解析契约、offline 实现、模式解析与配置错误 |
+| `apps/server/lib/demo-meals.test.ts` | 断言两个样例与共享契约、nutrition 规则、语义标签和原型冲突值的关系 |
+| `apps/server/lib/meal-parser.test.ts` | 覆盖模式解析、offline 匹配、ai 委派与结果校验 |
+
+两个样例的固定条件都是每日 1400–1600 千卡、当天无记录、时间为 `2026-09-15T12:00:00+08:00`（上海时间白天，剩余 2 餐，因此参考额度为 800）：
+
+| 样例 ID | 组成 | 预期结果 |
+| --- | --- | --- |
+| `northeast-combo` | 干煸芸豆、溜肉段和米饭 | 550–950 千卡、YELLOW、原因为接近或略高于参考额度、建议为换蔬菜与减米饭、不确定性为用油量无法确认 |
+| `light-chicken-set` | 白灼时蔬、水煮鸡胸和小份米饭 | 290–500 千卡、GREEN、原因为处于合理范围、建议为保持当前、不确定性为鸡胸份量无法确认 |
+
+约定：
+
+- 每个样例的 `expectedAssessment` 由 nutrition 规则真实复算验证，不是手写常量；测试会调用 `assessMeal` 并断言结果与预期完全一致；
+- 样例只使用共享契约（`parsedMealSchema`、`confirmedMealSchema`、`mealAssessmentSchema`、`createMealRecordRequestSchema`）；
+- 做法标签按语义映射：白灼为 `BLANCHED`、水煮为 `BOILED`、蒸为 `STEAMED`，并有测试锁定；
+- 不使用高保真原型中的 1290 kcal 单点值或 650–850 kcal 黄灯结论；
+- 样例时间位于白天，避开 00:00–04:59；
+- `buildDemoMealRecordRequest` 固定写入 `isDemo: true` 与 `modelVersion: offline-demo-v1`。
+
+`parseMeal` 的模式由服务端环境变量 `MEAL_PARSER` 决定，默认 `offline`：
+
+- `offline`：按归一化文本（去除空白、顿号、逗号、加号与“和”）匹配两个样例；图片输入通过 `demoSampleId` 选择样例，缺省为 `northeast-combo`；匹配不到时抛 `OfflineMealSampleNotFoundError`；
+- `ai`：必须注入 `aiParser`，否则抛出明确的配置错误；返回结果一律用 `parsedMealSchema` 复验；
+- 非法取值抛 `MealParserConfigurationError`。
+
+页面只需调用 `parseMeal`，无需感知数据来源，因此步骤 20 切换到 AI 时不用分叉页面逻辑，offline 仍可作为降级与演示入口。
 
 ## 5. 共享包
 
@@ -315,7 +348,7 @@ MealRecord 当前字段：
 4. 客户端请求 `PATCH /api/profile`，服务端用共享契约校验后更新资料并返回最新结果。
 5. 客户端 `POST /api/meal-records` 提交确认后的菜品，服务端重新评估后落库；`GET /api/meal-records` 返回最近 30 天按上海日期分组的记录与汇总；`DELETE /api/meal-records/{id}` 物理删除属于演示资料的记录。
 
-AI 工厂可以独立创建模型对象，但尚未被任何 Route Handler 调用。根 Vitest 入口当前可运行 shared、nutrition 和 server 的 117 个测试（shared 17、nutrition 66、server 34），并能解析工作区 TypeScript 源码包。nutrition 已通过记录接口被真实调用；AI 解析与小程序端仍不存在。
+AI 工厂可以独立创建模型对象，但 ai 模式的解析器尚未实现，`MEAL_PARSER=ai` 会得到明确的配置错误。`parseMeal` 已可在服务端代码内调用并返回两个离线样例之一，但尚未被任何 Route Handler 暴露成 HTTP 接口（`/api/parse-meal` 属于步骤 15、20）。根 Vitest 入口当前可运行 shared、nutrition 和 server 的 141 个测试（shared 17、nutrition 66、server 58），并能解析工作区 TypeScript 源码包。nutrition 已通过记录接口被真实调用；小程序端仍不存在。
 
 ## 9. 目标数据流边界
 
@@ -330,14 +363,15 @@ AI 工厂可以独立创建模型对象，但尚未被任何 Route Handler 调�
 7. Prisma 保存用户确认后的 MealRecord；
 8. 小程序刷新首页和历史。
 
-目标链路已实现第 6 与第 7 步的服务端部分：nutrition 规则会读取资料与当天记录执行计算，服务端随后保存 MealRecord。第 8 步的读取侧（查询记录与汇总）也已就绪。第 1 至 5 步（Taro 页面、输入解析、AI 模型调用、用户确认）以及第 8 步的小程序刷新仍未实现。
+目标链路已实现第 6 与第 7 步的服务端部分：nutrition 规则会读取资料与当天记录执行计算，服务端随后保存 MealRecord。第 8 步的读取侧（查询记录与汇总）也已就绪。第 1 至 5 步中，第 2 步的输入校验已实现、第 3 步的模型调用已就绪但 ai 解析器未实现、第 4 步的结构化输出校验已就绪；Taro 页面与用户确认（第 1、5 步）以及第 8 步的小程序刷新仍未实现。
 
 每完成一个计划步骤，必须更新本文件，把对应职责从“目标”改为“当前”。
 
 ## 10. 已知技术债与风险
 
-- 自动化测试目前是 113 个契约、规则与接口测试（用假数据库与假时钟），尚无针对真实数据库的集成测试；
+- 自动化测试目前是 141 个契约、规则与接口测试（用假数据库与假时钟），尚无针对真实数据库的集成测试；
 - 热量区间规则只覆盖 9 个已知食材标签、10 个已知做法和两个演示样例，扩展评测集前需同步递增规则版本并补测试；
+- offline 解析器只能识别两个演示样例的原文，任何其他输入都会抛出“未匹配到样例”，这是步骤 20 之前的有意限制；
 - 规则层已能返回“需要补充信息”，但界面上的“跳过补充”入口在步骤 15 才实现；
 - 记录接口已实现创建、查询与物理删除；客户端提交的 `clientAssessmentSnapshot` 当前被完全忽略，未用于结果一致性提示；
 - 30 天窗口与 50 条上限只由单测覆盖，尚未在真实数据量下验证；
@@ -347,4 +381,4 @@ AI 工厂可以独立创建模型对象，但尚未被任何 Route Handler 调�
 - 没有评测集；
 - 高保真 HTML 原型与 Taro 代码尚未对齐；
 - `.workbuddy_html/` 未被 `.gitignore` 排除，且当前已纳入版本控制；后续原型变更会进入 Git 差异；
-- 当前 Git `main` 已包含步骤 1 至步骤 8 的提交（`01afa66`、`dcd640f`、`4f087d5`、`1d56406`、`2174d63`、`d043690`、`c7205ac`、`cde21b7`）；步骤 9 的删除接口与本文档更新在同一提交中。
+- 当前 Git `main` 已包含步骤 1 至步骤 9 的提交（`01afa66`、`dcd640f`、`4f087d5`、`1d56406`、`2174d63`、`d043690`、`c7205ac`、`cde21b7`、`b7b6487`）；步骤 10 的演示样例与解析契约和本文档更新在同一提交中。

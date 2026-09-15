@@ -1,0 +1,99 @@
+import { parsedMealSchema, type ParsedMeal } from '@food-sense/shared'
+
+import {
+  DEMO_MEAL_SAMPLES,
+  getDemoMealSample,
+  type DemoMealSampleId
+} from './demo-meals'
+
+export type MealParserMode = 'offline' | 'ai'
+
+export type MealParseInput =
+  | {
+      sourceType: 'TEXT'
+      sourceText: string
+    }
+  | {
+      sourceType: 'IMAGE'
+      image: Uint8Array
+      mediaType: 'image/jpeg' | 'image/png'
+      demoSampleId?: DemoMealSampleId
+    }
+
+export type MealParser = (input: MealParseInput) => Promise<ParsedMeal>
+
+export interface ParseMealOptions {
+  mode?: MealParserMode
+  aiParser?: MealParser
+}
+
+export class MealParserConfigurationError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'MealParserConfigurationError'
+  }
+}
+
+export class OfflineMealSampleNotFoundError extends Error {
+  constructor() {
+    super('No offline meal sample matches the provided input')
+    this.name = 'OfflineMealSampleNotFoundError'
+  }
+}
+
+function normalizeSampleText(value: string): string {
+  return value.trim().replace(/[\s，,、+和]/g, '')
+}
+
+function findTextSample(sourceText: string) {
+  const normalizedInput = normalizeSampleText(sourceText)
+
+  return DEMO_MEAL_SAMPLES.find(
+    (sample) => normalizeSampleText(sample.input.sourceText) === normalizedInput
+  )
+}
+
+export function resolveMealParserMode(
+  configuredMode: string | undefined = process.env.MEAL_PARSER
+): MealParserMode {
+  if (configuredMode === undefined || configuredMode === '' || configuredMode === 'offline') {
+    return 'offline'
+  }
+
+  if (configuredMode === 'ai') {
+    return 'ai'
+  }
+
+  throw new MealParserConfigurationError(
+    'MEAL_PARSER must be either "offline" or "ai"'
+  )
+}
+
+export const offlineMealParser: MealParser = async (input) => {
+  const sample =
+    input.sourceType === 'TEXT'
+      ? findTextSample(input.sourceText)
+      : getDemoMealSample(input.demoSampleId ?? 'northeast-combo')
+
+  if (!sample) {
+    throw new OfflineMealSampleNotFoundError()
+  }
+
+  return parsedMealSchema.parse(sample.parsedMeal)
+}
+
+export async function parseMeal(
+  input: MealParseInput,
+  options: ParseMealOptions = {}
+): Promise<ParsedMeal> {
+  const mode = options.mode ?? resolveMealParserMode()
+  const parser = mode === 'offline' ? offlineMealParser : options.aiParser
+
+  if (!parser) {
+    throw new MealParserConfigurationError(
+      'The AI meal parser is not available yet; use MEAL_PARSER=offline'
+    )
+  }
+
+  return parsedMealSchema.parse(await parser(input))
+}
