@@ -1,6 +1,6 @@
 # 食刻 AI 当前架构
 
-> 基线日期：2026-09-15（已同步步骤 1、步骤 2、步骤 3、步骤 4、步骤 5、步骤 6、步骤 7）
+> 基线日期：2026-09-15（已同步步骤 1 至步骤 8）
 > 记录原则：本文件描述当前仓库事实。尚未实现的目标只在“计划边界”中标注，不与现状混写。
 
 ## 1. 总览
@@ -12,7 +12,7 @@
 - `packages/shared`：跨端 Zod Schema 与共享类型；
 - `packages/nutrition`：确定性营养评级与热量区间规则。
 
-当前代码已完成工程骨架、静态首页、健康接口、模型供应商工厂、最小评级函数、shared、nutrition、server 的 Vitest 自动化测试基线、完整的共享业务契约（资料、餐食、评估、记录、统一 API 错误）、按受控词表计算热量区间的最小规则（含 D1c 的两阶段未知处理）、动态餐次额度与红黄绿灯评级（含高油高糖最低黄灯）、由规则生成的原因与建议白名单、与共享契约对齐的数据库结构和已初始化的固定演示资料，以及演示资料的读取与更新接口。小程序端、AI 解析和餐食记录接口尚不存在。
+当前代码已完成工程骨架、静态首页、健康接口、模型供应商工厂、最小评级函数、shared、nutrition、server 的 Vitest 自动化测试基线、完整的共享业务契约（资料、餐食、评估、记录、统一 API 错误）、按受控词表计算热量区间的最小规则（含 D1c 的两阶段未知处理）、动态餐次额度与红黄绿灯评级（含高油高糖最低黄灯）、由规则生成的原因与建议白名单、与共享契约对齐的数据库结构和已初始化的固定演示资料、演示资料的读取与更新接口，以及餐食记录的创建与查询接口（服务端重算 + 幂等保存）。小程序端、AI 解析和记录删除接口尚不存在。
 
 ## 2. 根目录职责
 
@@ -79,7 +79,7 @@
 | `apps/server/app/page.tsx` | 简单服务启动说明页 |
 | `apps/server/app/api/health/route.ts` | 已实现 GET 健康检查，返回服务名与 ok 状态 |
 
-演示资料接口位于 `apps/server/app/api/profile/route.ts`，职责见 4.4 节。
+演示资料接口位于 `apps/server/app/api/profile/route.ts`（见 4.4 节），餐食记录接口位于 `apps/server/app/api/meal-records/route.ts`（见 4.5 节）。
 
 ### 4.2 AI
 
@@ -113,17 +113,20 @@ MealRecord 当前字段：
 
 - id、profileId、必填唯一 clientRequestId；
 - sourceType、可选 sourceText；
-- items JSON；
-- calorieMin、calorieMax、rating；
-- reason、结构化 adviceIds（AdviceId 数组）、advice 展示文案；
+- items JSON（确认后的菜品数组）；
+- calorieMin、calorieMax、mealBudget；
+- rating、ratingLabel、reason；
+- 结构化 adviceIds（AdviceId 数组）、advice JSON（完整 {id, text} 数组）、uncertainties JSON；
 - isDemo（默认 false）；
 - 可选 modelVersion；必填 ruleVersion；
 - createdAt；
 - profile 关系（级联删除）及 profileId/createdAt 索引。
 
+记录表不保存任何图片、图片路径或 base64 内容。
+
 默认演示资料为固定 ID `demo-profile`、名称“小苏”、目标方向减脂、每日 1400–1600 千卡；按 D3b 不包含 `mealType`，也不包含身高、体重、BMI 或疾病字段。
 
-当前 Schema 已可校验，数据库结构已与之同步（`prisma db push`，P0 不创建 migrations），演示资料已初始化。仍没有记录 CRUD 或迁移文件。
+当前 Schema 已可校验，数据库结构已与之同步（`prisma db push`，P0 不创建 migrations），演示资料已初始化。仍没有迁移文件。
 
 ### 4.4 演示资料接口
 
@@ -145,6 +148,36 @@ MealRecord 当前字段：
 - 所有被拒绝的请求都不会写库，原值保持不变；
 - 数据库故障统一返回 503 `DB_UNAVAILABLE`，不向调用方暴露内部错误细节；
 - 所有错误响应符合共享 `apiErrorResponseSchema`。
+
+### 4.5 餐食记录接口
+
+| 路径 | 当前职责 |
+| --- | --- |
+| `apps/server/lib/shanghai-time.ts` | 用 `Intl.DateTimeFormat` 按 Asia/Shanghai 计算日期键、当天起止与最近 N 天窗口起点 |
+| `apps/server/lib/meal-record-service.ts` | `createMealRecord` 与 `getRecentMealRecords`：服务端重新评估后落库、按日分组汇总 |
+| `apps/server/lib/meal-record-handlers.ts` | `createMealRecordHandlers(database, nowProvider)` 返回 GET 与 POST，负责状态码与统一错误映射 |
+| `apps/server/app/api/meal-records/route.ts` | 薄封装：注入 `prisma` 后导出 GET 与 POST，并标记 `dynamic = 'force-dynamic'` |
+| `apps/server/lib/meal-record-handlers.test.ts` | 用假数据库与假时钟测试 handlers，覆盖重算、篡改、幂等、并发冲突与分组汇总 |
+| `apps/server/lib/shanghai-time.test.ts` | 覆盖上海时间键、当天起止与跨月窗口计算 |
+
+`POST /api/meal-records` 的处理顺序：
+
+1. 用共享 `createMealRecordRequestSchema` 校验请求体，`strict()` 拒绝未知字段；快照字段缺失 `ruleVersion` 时直接 400；
+2. 先按 `clientRequestId` 查已有记录，命中则直接返回且状态码为 200（幂等，不新建、不覆盖）；
+3. 读取固定演示资料，并查询该资料在**当前上海日期**内的已有记录区间；
+4. 调用 nutrition 的 `assessMeal` 重新计算热量区间、参考额度、评级、评级文案、原因、建议与不确定性——**完全忽略客户端提交的 `clientAssessmentSnapshot`**；
+5. 以服务端结果落库，`adviceIds` 取结构化 ID、`advice` 存完整文案数组；新建时返回 201；
+6. 并发写入撞上 `clientRequestId` 唯一约束（P2002）时重新查询并返回已存在的记录。
+
+`GET /api/meal-records` 的处理方式：
+
+- 取最近 30 个上海日期、最多 50 条，按创建时间倒序；
+- 服务端按上海日期分组，并为每天累加记录的热量下限与上限作为汇总区间；
+- 前端不再二次计算分组与汇总。
+
+错误映射：未知菜品（仍含 `OTHER` 食材或做法）返回 422 `UNKNOWN_DISH`；请求体不合法返回 400 `VALIDATION_FAILED`；资料缺失或数据库故障返回 503 `DB_UNAVAILABLE`。
+
+`nowProvider` 可注入，默认 `() => new Date()`，因此单元测试可以用固定时钟验证跨日期与时段行为。
 
 ## 5. 共享包
 
@@ -260,14 +293,15 @@ MealRecord 当前字段：
 
 ## 8. 当前数据流
 
-当前可运行的数据流有四条：
+当前可运行的数据流有五条：
 
 1. 小程序直接渲染静态首页，不发起业务请求。
 2. 客户端或浏览器请求 `GET /api/health`，Next.js 返回固定 JSON。
 3. 客户端请求 `GET /api/profile`，服务端按固定 `DEMO_PROFILE_ID` 读取数据库并返回演示资料。
 4. 客户端请求 `PATCH /api/profile`，服务端用共享契约校验后更新资料并返回最新结果。
+5. 客户端 `POST /api/meal-records` 提交确认后的菜品，服务端重新评估后落库；`GET /api/meal-records` 返回最近 30 天按上海日期分组的记录与汇总。
 
-AI 工厂可以独立创建模型对象，但尚未被任何 Route Handler 调用。根 Vitest 入口当前可运行 shared、nutrition 和 server 的 99 个测试（shared 17、nutrition 66、server 16），并能解析工作区 TypeScript 源码包。nutrition 已能在纯函数层面把确认后的菜品换算为热量区间，输出带原因和建议的动态红黄绿灯评估，但这些能力尚未被任何 Route Handler 调用；餐食记录的创建、查询与删除接口也尚不存在。
+AI 工厂可以独立创建模型对象，但尚未被任何 Route Handler 调用。根 Vitest 入口当前可运行 shared、nutrition 和 server 的 113 个测试（shared 17、nutrition 66、server 30），并能解析工作区 TypeScript 源码包。nutrition 已通过记录接口被真实调用；餐食记录删除、AI 解析与小程序端仍不存在。
 
 ## 9. 目标数据流边界
 
@@ -282,18 +316,21 @@ AI 工厂可以独立创建模型对象，但尚未被任何 Route Handler 调�
 7. Prisma 保存用户确认后的 MealRecord；
 8. 小程序刷新首页和历史。
 
-目标链路是设计和计划，尚未实现。每完成一个计划步骤，必须更新本文件，将对应职责从“目标”改为“当前”。
+目标链路已实现第 6 与第 7 步的服务端部分：nutrition 规则会读取资料与当天记录执行计算，服务端随后保存 MealRecord。第 8 步的读取侧（查询记录与汇总）也已就绪。第 1 至 5 步（Taro 页面、输入解析、AI 模型调用、用户确认）以及第 8 步的小程序刷新仍未实现。
+
+每完成一个计划步骤，必须更新本文件，把对应职责从“目标”改为“当前”。
 
 ## 10. 已知技术债与风险
 
-- 自动化测试目前是 84 个契约与规则测试，尚未覆盖数据库或业务 API；
+- 自动化测试目前是 113 个契约、规则与接口测试（用假数据库与假时钟），尚无针对真实数据库的集成测试；
 - 热量区间规则只覆盖 9 个已知食材标签、10 个已知做法和两个演示样例，扩展评测集前需同步递增规则版本并补测试；
 - 规则层已能返回“需要补充信息”，但界面上的“跳过补充”入口在步骤 15 才实现；
-- Prisma Schema 已包含目标方向、建议 ID、`isDemo` 与唯一 `clientRequestId`，已有全局 Prisma 单例与按 `DEMO_PROFILE_ID` 的资料读写，但餐食记录的 CRUD 接口尚未实现；
-- 接口层已有统一的错误响应与错误码映射，但错误码集合中的解析、图片与记录相关错误尚未被任何接口使用；
+- 记录接口已实现创建与查询，删除接口尚未实现；客户端提交的 `clientAssessmentSnapshot` 当前被完全忽略，未用于结果一致性提示；
+- 30 天窗口与 50 条上限只由单测覆盖，尚未在真实数据量下验证；
+- 接口层已有统一的错误响应与错误码映射，但解析与图片相关错误码尚未被任何接口使用；
 - 没有图片上传、压缩、请求体大小和超时处理；
 - 没有 AI 输出校验后的错误分型；
 - 没有评测集；
 - 高保真 HTML 原型与 Taro 代码尚未对齐；
 - `.workbuddy_html/` 未被 `.gitignore` 排除，且当前已纳入版本控制；后续原型变更会进入 Git 差异；
-- 当前 Git `main` 已包含步骤 1 提交 `01afa66`、步骤 2 提交 `dcd640f`、步骤 3 提交 `4f087d5`、步骤 4 提交 `1d56406`、步骤 5 提交 `2174d63` 与步骤 6 提交 `d043690`；步骤 7 的接口变更与本文档更新在同一提交中。
+- 当前 Git `main` 已包含步骤 1 至步骤 7 的提交（`01afa66`、`dcd640f`、`4f087d5`、`1d56406`、`2174d63`、`d043690`、`c7205ac`）；步骤 8 的记录接口与数据模型变更和本文档更新在同一提交中。

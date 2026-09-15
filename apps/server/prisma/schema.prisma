@@ -27,10 +27,13 @@ model MealRecord {
   items           Json
   calorieMin      Int
   calorieMax      Int
+  mealBudget      Int
   rating          MealRating
+  ratingLabel     String
   reason          String
   adviceIds       AdviceId[]
-  advice          String
+  advice          Json
+  uncertainties   Json
   isDemo          Boolean      @default(false)
   modelVersion    String?
   ruleVersion     String
