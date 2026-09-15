@@ -1,6 +1,6 @@
 # 食刻 AI 当前架构
 
-> 基线日期：2026-09-15（已同步步骤 1、步骤 2）
+> 基线日期：2026-09-15（已同步步骤 1、步骤 2、步骤 3）
 > 记录原则：本文件描述当前仓库事实。尚未实现的目标只在“计划边界”中标注，不与现状混写。
 
 ## 1. 总览
@@ -10,9 +10,9 @@
 - `apps/miniprogram`：Taro React 微信小程序；
 - `apps/server`：Next.js 服务端和 API；
 - `packages/shared`：跨端 Zod Schema 与共享类型；
-- `packages/nutrition`：确定性营养评级规则。
+- `packages/nutrition`：确定性营养评级与热量区间规则。
 
-当前代码已完成工程骨架、静态首页、健康接口、模型供应商工厂、最小评级函数、Prisma 数据模型、shared、nutrition、server 的 Vitest 自动化测试基线，以及完整的共享业务契约（资料、餐食、评估、记录、统一 API 错误）。小程序到服务端、AI、规则和数据库的完整链路尚不存在。
+当前代码已完成工程骨架、静态首页、健康接口、模型供应商工厂、最小评级函数、Prisma 数据模型、shared、nutrition、server 的 Vitest 自动化测试基线、完整的共享业务契约（资料、餐食、评估、记录、统一 API 错误），以及按受控词表计算热量区间的最小规则（含 D1c 的两阶段未知处理）。动态餐次额度、评级原因、建议逻辑，以及小程序到服务端、AI、规则和数据库的完整链路尚不存在。
 
 ## 2. 根目录职责
 
@@ -147,20 +147,29 @@ MealRecord 当前字段：
 
 ### 5.2 packages/nutrition
 
-`packages/nutrition/src/index.ts` 当前定义：
+`packages/nutrition/src/index.ts` 保留 `MealRating` 联合类型与 `rateMeal(calorieMax, mealBudget)`，并转出步骤 3 新增的热量区间能力：
 
-- `MealRating` 联合类型；
-- `rateMeal(calorieMax, mealBudget)`。
+- `calorie-estimator.ts`：`estimateMealCalories(items, options)` 根据确认后的菜品计算整餐热量区间；
+- `calorie-rules.ts`：规则数据（食材基础区间、做法附加区间、份量系数、未知兜底区间）、中文别名映射 `INGREDIENT_ALIASES`、`resolveIngredientAlias` 和规则版本常量 `CALORIE_RANGE_RULE_VERSION`（当前值 `calorie-range-v1`）。
 
-现有函数按比例输出：
+`rateMeal` 仍按比例输出：不超过 0.8 为 GREEN，不超过 1.2 为 YELLOW，超过 1.2 为 RED。
 
-- 不超过 0.8：GREEN；
-- 不超过 1.2：YELLOW；
-- 超过 1.2：RED。
+`estimateMealCalories` 的计算顺序：
 
-当前没有除零或非法预算保护、热量区间、食材规则、做法附加值、动态剩余额度、高油高糖最低评级、原因或建议逻辑；除步骤 1 冒烟测试外，尚无规则边界测试。
+1. 对每个菜品，先累加去重后的食材基础区间，再累加去重后的做法附加区间；
+2. 乘以份量系数（小份 0.75、正常份 1、大份 1.35）；
+3. 累加所有菜品，最后把区间下限向下、上限向上取整到十位——取整只会放宽区间，不会收窄；
+4. 返回区间、不确定性说明、是否使用兜底和规则版本。
 
-`packages/nutrition/src/index.test.ts` 已为现有 `rateMeal` 添加最小冒烟测试；完整边界与领域规则测试仍随后续步骤补充。
+未知处理按 D1c 分两阶段：
+
+- 默认 `unknownHandling: 'PROMPT'`：只要菜品含 `OTHER` 食材或做法，就返回 `NEEDS_MORE_INFO` 并列出需补充的菜品，不给出区间；
+- `unknownHandling: 'CONSERVATIVE_FALLBACK'`：使用未知食材 100–450、未知做法 +0–150 的兜底区间继续估算，并在结果中标记 `usedFallback` 和不确定性说明；
+- 两个路径都**不读取** `otherIngredients` / `otherCookingMethods` 的自由文本来猜测类别，自由文本只用于回显待补充内容。
+
+当前仍未实现：除零或非法预算保护、动态剩余额度、高油高糖最低评级、评级原因和建议逻辑——这些属于步骤 4 及之后的范围。
+
+`packages/nutrition/src/index.test.ts` 现有 18 个测试，覆盖 `rateMeal`、`resolveIngredientAlias`、重复计算一致性、份量三档、干煸/油炸/糖醋的参数化区间验证、重复受控标签不重复计数、未知菜品两阶段行为，以及两个代表性演示样例的具体区间。
 
 ## 6. 设计原型资产
 
@@ -205,7 +214,7 @@ MealRecord 当前字段：
 1. 小程序直接渲染静态首页，不发起业务请求。
 2. 客户端或浏览器请求 `GET /api/health`，Next.js 返回固定 JSON。
 
-AI 工厂可以独立创建模型对象，Prisma Schema 和数据库连接可以独立验证，但它们尚未被业务 Route Handler 串联。根 Vitest 入口当前可运行 shared、nutrition 和 server 的 19 个测试（shared 17、nutrition 1、server 1），并能解析工作区 TypeScript 源码包。
+AI 工厂可以独立创建模型对象，Prisma Schema 和数据库连接可以独立验证，但它们尚未被业务 Route Handler 串联。根 Vitest 入口当前可运行 shared、nutrition 和 server 的 36 个测试（shared 17、nutrition 18、server 1），并能解析工作区 TypeScript 源码包。nutrition 已能在纯函数层面把确认后的菜品换算为热量区间，但该能力尚未被任何 Route Handler 调用。
 
 ## 9. 目标数据流边界
 
@@ -224,14 +233,16 @@ AI 工厂可以独立创建模型对象，Prisma Schema 和数据库连接可以
 
 ## 10. 已知技术债与风险
 
-- 自动化测试目前是 19 个契约与冒烟测试，尚未覆盖领域边界、数据库或业务 API；
-- `rateMeal` 未处理 mealBudget 为 0 或负数；
+- 自动化测试目前是 36 个契约与规则测试，尚未覆盖动态额度、数据库或业务 API；
+- `rateMeal` 未处理 mealBudget 为 0 或负数，动态剩余额度也尚未实现（步骤 4）；
+- 热量区间规则只覆盖 9 个已知食材标签、10 个已知做法和两个演示样例，扩展评测集前需同步递增规则版本并补测试；
+- 规则层已能返回“需要补充信息”，但界面上的“跳过补充”入口在步骤 15 才实现；
 - Prisma Schema 与已批准产品之间缺少目标方向、建议 ID 字段，也尚未同步共享契约中的 `isDemo` 与唯一 `clientRequestId`（计划在步骤 6 对齐）；
 - 没有默认 DemoProfile 初始化方式；
 - 没有数据库 CRUD 或统一错误响应；
 - 没有图片上传、压缩、请求体大小和超时处理；
 - 没有 AI 输出校验后的错误分型；
-- 没有规则数据来源、规则版本和评测集；
+- 没有评测集；
 - 高保真 HTML 原型与 Taro 代码尚未对齐；
 - `.workbuddy_html/` 未被 `.gitignore` 排除，且当前已纳入版本控制；后续原型变更会进入 Git 差异；
-- 当前 Git `main` 已包含步骤 1 提交 `01afa66`；步骤 2 的契约变更与本文档更新在同一提交中。
+- 当前 Git `main` 已包含步骤 1 提交 `01afa66` 与步骤 2 提交 `dcd640f`；步骤 3 的规则变更与本文档更新在同一提交中。
