@@ -7,6 +7,7 @@ import {
 import { describe, expect, it, vi } from 'vitest'
 
 import { DEMO_PROFILE_ID } from './demo-profile.mjs'
+import { createMealRecordDeleteHandler } from './meal-record-delete-handler'
 import { createMealRecordHandlers } from './meal-record-handlers'
 import type {
   MealRecordDatabase,
@@ -108,12 +109,32 @@ function createDatabase(options: {
     rows.push(row)
     return row
   })
+  const deleteMany = vi.fn(async ({ where }) => {
+    const index = rows.findIndex(
+      (row) => row.id === where.id && row.profileId === where.profileId
+    )
+
+    if (index === -1) {
+      return { count: 0 }
+    }
+
+    rows.splice(index, 1)
+    return { count: 1 }
+  })
   const database = {
     demoProfile: { findUnique: findProfile },
-    mealRecord: { findUnique, findMany, create }
+    mealRecord: { findUnique, findMany, create, deleteMany }
   } as unknown as MealRecordDatabase
 
-  return { create, database, findMany, findProfile, findUnique, rows }
+  return {
+    create,
+    database,
+    deleteMany,
+    findMany,
+    findProfile,
+    findUnique,
+    rows
+  }
 }
 
 function postRequest(body: unknown): Request {
@@ -422,5 +443,108 @@ describe('meal record GET handler', () => {
       retryable: true
     })
     expect(missing.findMany).not.toHaveBeenCalled()
+  })
+})
+
+describe('meal record DELETE handler', () => {
+  it('physically deletes an owned record and refreshes the next summary', async () => {
+    const first = recordRow({
+      id: 'first',
+      clientRequestId: '00000000-0000-4000-8000-000000000021',
+      calorieMin: 100,
+      calorieMax: 200
+    })
+    const second = recordRow({
+      id: 'second',
+      clientRequestId: '00000000-0000-4000-8000-000000000022',
+      calorieMin: 300,
+      calorieMax: 500
+    })
+    const { database, deleteMany, rows } = createDatabase({
+      initialRecords: [first, second]
+    })
+    const DELETE = createMealRecordDeleteHandler(database)
+    const { GET } = createMealRecordHandlers(database, () => NOW)
+
+    const deleteResponse = await DELETE(new Request('http://localhost'), {
+      params: Promise.resolve({ id: first.id })
+    })
+    const getResponse = await GET()
+    const body = await getResponse.json()
+
+    expect(deleteResponse.status).toBe(204)
+    expect(await deleteResponse.text()).toBe('')
+    expect(deleteMany).toHaveBeenCalledWith({
+      where: { id: first.id, profileId: DEMO_PROFILE_ID }
+    })
+    expect(rows.map(({ id }) => id)).toEqual([second.id])
+    expect(body.days[0].summary).toEqual({ calorieMin: 300, calorieMax: 500 })
+    expect(JSON.stringify(body)).not.toContain(first.id)
+  })
+
+  it('returns MEAL_NOT_FOUND for a missing or foreign record', async () => {
+    const foreign = recordRow({
+      id: 'foreign',
+      profileId: 'other-profile',
+      clientRequestId: '00000000-0000-4000-8000-000000000023'
+    })
+    const { database, rows } = createDatabase({ initialRecords: [foreign] })
+    const DELETE = createMealRecordDeleteHandler(database)
+
+    for (const id of ['missing', foreign.id]) {
+      const response = await DELETE(new Request('http://localhost'), {
+        params: Promise.resolve({ id })
+      })
+      const body = await response.json()
+
+      expect(response.status).toBe(404)
+      expect(body.error).toEqual({
+        code: 'MEAL_NOT_FOUND',
+        message: '记录不存在或已删除，请刷新记录列表。',
+        retryable: false
+      })
+      expect(apiErrorResponseSchema.safeParse(body).success).toBe(true)
+    }
+
+    expect(rows).toEqual([foreign])
+  })
+
+  it('makes a repeated delete harmless to other records', async () => {
+    const target = recordRow({ id: 'target' })
+    const other = recordRow({
+      id: 'other',
+      clientRequestId: '00000000-0000-4000-8000-000000000024'
+    })
+    const { database, rows } = createDatabase({
+      initialRecords: [target, other]
+    })
+    const DELETE = createMealRecordDeleteHandler(database)
+    const context = { params: Promise.resolve({ id: target.id }) }
+
+    const firstResponse = await DELETE(new Request('http://localhost'), context)
+    const secondResponse = await DELETE(
+      new Request('http://localhost'),
+      context
+    )
+
+    expect(firstResponse.status).toBe(204)
+    expect(secondResponse.status).toBe(404)
+    expect(rows.map(({ id }) => id)).toEqual([other.id])
+  })
+
+  it('maps database failures without exposing their details', async () => {
+    const { database, deleteMany } = createDatabase()
+    deleteMany.mockRejectedValueOnce(new Error('secret database url'))
+    const DELETE = createMealRecordDeleteHandler(database)
+
+    const response = await DELETE(new Request('http://localhost'), {
+      params: Promise.resolve({ id: 'record-1' })
+    })
+    const body = await response.json()
+
+    expect(response.status).toBe(503)
+    expect(body.error.code).toBe('DB_UNAVAILABLE')
+    expect(JSON.stringify(body)).not.toContain('secret')
+    expect(apiErrorResponseSchema.safeParse(body).success).toBe(true)
   })
 })

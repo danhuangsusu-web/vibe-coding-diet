@@ -243,3 +243,14 @@ export async function getRecentMealRecords(
 
   return mealRecordsResponseSchema.parse({ days: [...days.values()] })
 }
+
+export async function deleteMealRecord(
+  database: MealRecordDatabase,
+  id: string
+): Promise<boolean> {
+  const result = await database.mealRecord.deleteMany({
+    where: { id, profileId: DEMO_PROFILE_ID }
+  })
+
+  return result.count === 1
+}

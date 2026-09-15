@@ -1,6 +1,6 @@
 # 食刻 AI 当前架构
 
-> 基线日期：2026-09-15（已同步步骤 1 至步骤 8）
+> 基线日期：2026-09-15（已同步步骤 1 至步骤 9）
 > 记录原则：本文件描述当前仓库事实。尚未实现的目标只在“计划边界”中标注，不与现状混写。
 
 ## 1. 总览
@@ -12,7 +12,7 @@
 - `packages/shared`：跨端 Zod Schema 与共享类型；
 - `packages/nutrition`：确定性营养评级与热量区间规则。
 
-当前代码已完成工程骨架、静态首页、健康接口、模型供应商工厂、最小评级函数、shared、nutrition、server 的 Vitest 自动化测试基线、完整的共享业务契约（资料、餐食、评估、记录、统一 API 错误）、按受控词表计算热量区间的最小规则（含 D1c 的两阶段未知处理）、动态餐次额度与红黄绿灯评级（含高油高糖最低黄灯）、由规则生成的原因与建议白名单、与共享契约对齐的数据库结构和已初始化的固定演示资料、演示资料的读取与更新接口，以及餐食记录的创建与查询接口（服务端重算 + 幂等保存）。小程序端、AI 解析和记录删除接口尚不存在。
+当前代码已完成工程骨架、静态首页、健康接口、模型供应商工厂、最小评级函数、shared、nutrition、server 的 Vitest 自动化测试基线、完整的共享业务契约（资料、餐食、评估、记录、统一 API 错误）、按受控词表计算热量区间的最小规则（含 D1c 的两阶段未知处理）、动态餐次额度与红黄绿灯评级（含高油高糖最低黄灯）、由规则生成的原因与建议白名单、与共享契约对齐的数据库结构和已初始化的固定演示资料、演示资料的读取与更新接口，以及餐食记录的创建、查询与删除接口。小程序端与 AI 解析尚不存在；服务端接口层至此完整。
 
 ## 2. 根目录职责
 
@@ -79,7 +79,7 @@
 | `apps/server/app/page.tsx` | 简单服务启动说明页 |
 | `apps/server/app/api/health/route.ts` | 已实现 GET 健康检查，返回服务名与 ok 状态 |
 
-演示资料接口位于 `apps/server/app/api/profile/route.ts`（见 4.4 节），餐食记录接口位于 `apps/server/app/api/meal-records/route.ts`（见 4.5 节）。
+演示资料接口位于 `apps/server/app/api/profile/route.ts`（见 4.4 节），餐食记录接口位于 `apps/server/app/api/meal-records/route.ts` 与 `apps/server/app/api/meal-records/[id]/route.ts`（见 4.5 节）。
 
 ### 4.2 AI
 
@@ -178,6 +178,20 @@ MealRecord 当前字段：
 错误映射：未知菜品（仍含 `OTHER` 食材或做法）返回 422 `UNKNOWN_DISH`；请求体不合法返回 400 `VALIDATION_FAILED`；资料缺失或数据库故障返回 503 `DB_UNAVAILABLE`。
 
 `nowProvider` 可注入，默认 `() => new Date()`，因此单元测试可以用固定时钟验证跨日期与时段行为。
+
+`DELETE /api/meal-records/{id}` 的处理方式：
+
+| 路径 | 当前职责 |
+| --- | --- |
+| `apps/server/lib/meal-record-service.ts` | 另导出 `deleteMealRecord(database, id)` |
+| `apps/server/lib/meal-record-delete-handler.ts` | `createMealRecordDeleteHandler(database)` 返回 DELETE，负责状态码与错误映射 |
+| `apps/server/app/api/meal-records/[id]/route.ts` | 薄封装：注入 `prisma` 后导出 DELETE |
+
+- 采用 `deleteMany({ where: { id, profileId: DEMO_PROFILE_ID } })` 并返回 `count === 1`：既避免记录不存在时抛异常，也让 `where` 天然带上资料归属条件；
+- **只能删除属于固定演示资料的记录**。用其他资料的记录编号发起删除会因条件不匹配而删不到，接口返回 404 且原记录保留；
+- 成功返回 204，未找到（含空编号）返回 404 `MEAL_NOT_FOUND`，异常返回 503 `DB_UNAVAILABLE`；
+- 使用物理删除，不提供恢复、软删除或审计；界面上的确认弹层属于步骤 18；
+- 查询接口按 `profileId` 过滤，因此其他资料的记录不会出现在历史列表中。
 
 ## 5. 共享包
 
@@ -299,9 +313,9 @@ MealRecord 当前字段：
 2. 客户端或浏览器请求 `GET /api/health`，Next.js 返回固定 JSON。
 3. 客户端请求 `GET /api/profile`，服务端按固定 `DEMO_PROFILE_ID` 读取数据库并返回演示资料。
 4. 客户端请求 `PATCH /api/profile`，服务端用共享契约校验后更新资料并返回最新结果。
-5. 客户端 `POST /api/meal-records` 提交确认后的菜品，服务端重新评估后落库；`GET /api/meal-records` 返回最近 30 天按上海日期分组的记录与汇总。
+5. 客户端 `POST /api/meal-records` 提交确认后的菜品，服务端重新评估后落库；`GET /api/meal-records` 返回最近 30 天按上海日期分组的记录与汇总；`DELETE /api/meal-records/{id}` 物理删除属于演示资料的记录。
 
-AI 工厂可以独立创建模型对象，但尚未被任何 Route Handler 调用。根 Vitest 入口当前可运行 shared、nutrition 和 server 的 113 个测试（shared 17、nutrition 66、server 30），并能解析工作区 TypeScript 源码包。nutrition 已通过记录接口被真实调用；餐食记录删除、AI 解析与小程序端仍不存在。
+AI 工厂可以独立创建模型对象，但尚未被任何 Route Handler 调用。根 Vitest 入口当前可运行 shared、nutrition 和 server 的 117 个测试（shared 17、nutrition 66、server 34），并能解析工作区 TypeScript 源码包。nutrition 已通过记录接口被真实调用；AI 解析与小程序端仍不存在。
 
 ## 9. 目标数据流边界
 
@@ -325,7 +339,7 @@ AI 工厂可以独立创建模型对象，但尚未被任何 Route Handler 调�
 - 自动化测试目前是 113 个契约、规则与接口测试（用假数据库与假时钟），尚无针对真实数据库的集成测试；
 - 热量区间规则只覆盖 9 个已知食材标签、10 个已知做法和两个演示样例，扩展评测集前需同步递增规则版本并补测试；
 - 规则层已能返回“需要补充信息”，但界面上的“跳过补充”入口在步骤 15 才实现；
-- 记录接口已实现创建与查询，删除接口尚未实现；客户端提交的 `clientAssessmentSnapshot` 当前被完全忽略，未用于结果一致性提示；
+- 记录接口已实现创建、查询与物理删除；客户端提交的 `clientAssessmentSnapshot` 当前被完全忽略，未用于结果一致性提示；
 - 30 天窗口与 50 条上限只由单测覆盖，尚未在真实数据量下验证；
 - 接口层已有统一的错误响应与错误码映射，但解析与图片相关错误码尚未被任何接口使用；
 - 没有图片上传、压缩、请求体大小和超时处理；
@@ -333,4 +347,4 @@ AI 工厂可以独立创建模型对象，但尚未被任何 Route Handler 调�
 - 没有评测集；
 - 高保真 HTML 原型与 Taro 代码尚未对齐；
 - `.workbuddy_html/` 未被 `.gitignore` 排除，且当前已纳入版本控制；后续原型变更会进入 Git 差异；
-- 当前 Git `main` 已包含步骤 1 至步骤 7 的提交（`01afa66`、`dcd640f`、`4f087d5`、`1d56406`、`2174d63`、`d043690`、`c7205ac`）；步骤 8 的记录接口与数据模型变更和本文档更新在同一提交中。
+- 当前 Git `main` 已包含步骤 1 至步骤 8 的提交（`01afa66`、`dcd640f`、`4f087d5`、`1d56406`、`2174d63`、`d043690`、`c7205ac`、`cde21b7`）；步骤 9 的删除接口与本文档更新在同一提交中。
