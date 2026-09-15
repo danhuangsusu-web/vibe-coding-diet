@@ -1,6 +1,6 @@
 # 食刻 AI 当前架构
 
-> 基线日期：2026-09-15（已同步步骤 1）
+> 基线日期：2026-09-15（已同步步骤 1、步骤 2）
 > 记录原则：本文件描述当前仓库事实。尚未实现的目标只在“计划边界”中标注，不与现状混写。
 
 ## 1. 总览
@@ -12,7 +12,7 @@
 - `packages/shared`：跨端 Zod Schema 与共享类型；
 - `packages/nutrition`：确定性营养评级规则。
 
-当前代码已完成工程骨架、静态首页、健康接口、模型供应商工厂、基础 Schema、最小评级函数、Prisma 数据模型，以及 shared、nutrition、server 的 Vitest 自动化测试基线。小程序到服务端、AI、规则和数据库的完整链路尚不存在。
+当前代码已完成工程骨架、静态首页、健康接口、模型供应商工厂、最小评级函数、Prisma 数据模型、shared、nutrition、server 的 Vitest 自动化测试基线，以及完整的共享业务契约（资料、餐食、评估、记录、统一 API 错误）。小程序到服务端、AI、规则和数据库的完整链路尚不存在。
 
 ## 2. 根目录职责
 
@@ -20,7 +20,7 @@
 | --- | --- | --- |
 | `package.json` | 定义 monorepo 名称、Node/pnpm 约束和两端开发、构建、测试、类型、数据库脚本，并声明根 Vitest 开发依赖 | `test` 运行一次全仓测试，`test:watch` 进入监听模式 |
 | `pnpm-workspace.yaml` | 纳入 `apps/*` 和 `packages/*`，声明允许执行的依赖构建脚本 | 当前工作区入口 |
-| `pnpm-lock.yaml` | 锁定真实依赖树 | Jest/Playwright 名称仅为传递依赖 |
+| `pnpm-lock.yaml` | 锁定真实依赖树 | 步骤 1 起包含 Vitest 3.2.7 及其传递依赖；Jest/Playwright 名称仅为传递依赖 |
 | `vitest.config.ts` | 定义 shared、nutrition、server 的 Node 测试入口 | 只收集三处 `*.test.ts`，零测试视为失败 |
 | `.npmrc` | 将 pnpm store 放在仓库内并放宽 peer dependency 检查 | `.pnpm-store` 被忽略 |
 | `.gitignore` | 忽略依赖、构建产物、缓存、覆盖率和环境文件 | 当前仓库已启用 Git |
@@ -28,7 +28,6 @@
 | `食刻AI_PRD_通俗版.md` | 当前产品范围基准 V0.3 | 本轮设计的上游需求资料 |
 | `PRD.docx` | 更早、范围更大的产品设想 | 仅作为探索资料，不控制本轮范围 |
 | `a small prd.txt` | 三个产品方向的早期分析 | 仅作为背景资料 |
-| `prompt.txt` | 空文件 | 当前无职责 |
 | `scripts/` | 空目录 | 当前无可执行内容 |
 | `.workbuddy_html/` | 五个高保真浏览器原型与设计记录，P0 视觉验收基准 | 未被 `.gitignore` 排除；若后续初始化 Git，需决定是否纳入版本控制 |
 | `.workbuddy` | 仅有历史工作记录目录，当前不含 P01 至 P05 HTML | 不作为页面视觉验收路径 |
@@ -85,7 +84,7 @@
 | 路径 | 当前职责 |
 | --- | --- |
 | `apps/server/lib/ai-provider.ts` | 读取 `AI_BASE_URL`、`AI_API_KEY`、`AI_MODEL`，创建 OpenAI 兼容模型实例；配置缺失时抛出错误 |
-| `apps/server/lib/workspace-imports.test.ts` | 冒烟验证服务端测试可直接导入 exports 指向 TypeScript 源码的 shared 与 nutrition 工作区包 |
+| `apps/server/lib/workspace-imports.test.ts` | 冒烟验证服务端测试可直接导入 exports 指向 TypeScript 源码的 shared 与 nutrition 工作区包；使用受控大写枚举构造样例 |
 
 当前没有 Prompt、结构化生成调用、超时控制、重试策略或 `/api/parse-meal`。
 
@@ -114,23 +113,37 @@ MealRecord 当前字段：
 - createdAt；
 - profile 关系及 profileId/createdAt 索引。
 
-当前没有 Prisma 访问封装、默认资料初始化、资料 API、记录 CRUD 或迁移文件。Schema 已可校验，当前 PostgreSQL 可连接。
+当前没有 Prisma 访问封装、默认资料初始化、资料 API、记录 CRUD 或迁移文件。Schema 已可校验，当前 PostgreSQL 可连接。Schema 尚未包含步骤 2 契约中的 `isDemo` 与唯一 `clientRequestId`，两者将在步骤 6 对齐数据模型时补上。
 
 ## 5. 共享包
 
 ### 5.1 packages/shared
 
-`packages/shared/src/index.ts` 当前定义：
+`packages/shared/src/index.ts` 只做 re-export，真实契约拆分为六个同目录模块。该包不依赖应用层，只依赖 Zod。
 
-- `mealItemSchema`；
-- `parsedMealSchema`；
-- `MealItem` 和 `ParsedMeal` 类型。
+| 模块 | 当前职责 | 主要导出 |
+| --- | --- | --- |
+| `common.ts` | 跨契约复用的基础枚举与标量 | `goalDirectionSchema`（FAT_LOSS/MAINTAIN/MUSCLE_GAIN）、`mealRatingSchema`（GREEN/YELLOW/RED）、`inputTypeSchema`（IMAGE/TEXT）、`adviceIdSchema`（7 个白名单 ID）、`calorieRangeSchema`、`nonEmptyTextSchema`、`isoDateTimeSchema` |
+| `meal.ts` | 菜品与餐食的输入契约 | `ingredientTagSchema`（10 个受控标签）、`cookingMethodSchema`（11 个受控做法）、`portionLevelSchema`、`mealItemSchema`、`parsedMealSchema`、`confirmedMealItemSchema`、`confirmedMealSchema` |
+| `profile.ts` | 演示资料 | `demoProfileSchema`、`updateDemoProfileRequestSchema` |
+| `assessment.ts` | 规则评估结果 | `mealAdviceSchema`、`mealAssessmentSchema` |
+| `record.ts` | 记录保存与历史查询 | `createMealRecordRequestSchema`、`mealRecordSchema`、`dailyMealRecordsSchema`、`mealRecordsResponseSchema` |
+| `api-error.ts` | 统一错误契约 | `apiErrorCodeSchema`（12 个错误码）、`apiErrorSchema`、`apiErrorResponseSchema` |
 
-MealItem 已包含 displayName、ingredients、cookingMethods、portionLevel、confidence 和 uncertainties。该包不依赖应用层，只依赖 Zod。
+关键约束：
 
-当前还没有资料、评估、记录、统一 API 错误或接口请求响应 Schema。
+- `cookingMethods` 与 `ingredients` 是**受控枚举**，不再接受自由字符串；未命中时使用 `OTHER`，并要求同时在 `otherCookingMethods` / `otherIngredients` 中给出原文，二者必须配对出现；
+- `mealItemSchema` 保留 AI 置信度 `confidence`（0 至 1），`confirmedMealItemSchema` 不含置信度，改为 `wasManuallyAdjusted`；
+- `calorieRangeSchema` 要求 `min <= max`，资料契约要求 `dailyCalorieMin` **严格小于** `dailyCalorieMax`；
+- `mealAssessmentSchema` 必填 `ruleVersion`、`modelVersion` 可选，建议限定 1 至 2 条且 `adviceId` 不重复；
+- `createMealRecordRequestSchema` 必填 UUID `clientRequestId`（D4a）与可选 `isDemo`（D2a，默认 false），`sourceType` 与 `sourceText` 互斥；
+- 按 D3b，P0 不定义 `mealType`；
+- `apiErrorSchema` 是按 `code` 判别的 discriminated union，每个错误码的 `retryable` 被固定为布尔字面量，不是自由布尔值；
+- 所有对象 Schema 均为 `strict()`，多余字段会被拒绝。
 
-`packages/shared/src/index.test.ts` 使用现有 Schema 解析一份有效餐食，确认共享契约可由根 Vitest 入口加载和执行。
+破坏性变更：原有 `MealItem` / `ParsedMeal` 的字段名与结构保留，但 `ingredients`、`cookingMethods` 的取值从自由字符串收紧为受控大写枚举，旧写法不再通过校验。
+
+`packages/shared/src/index.test.ts` 现有 17 个测试，覆盖每个契约的有效样例与关键无效样例，并逐条验证计划点名的五个拒绝场景：空菜品、非法份量、非法置信度、反向热量区间、非法每日范围。小程序只引用导出的 TypeScript 类型，运行时 Zod 校验仅在服务端执行。
 
 ### 5.2 packages/nutrition
 
@@ -192,7 +205,7 @@ MealItem 已包含 displayName、ingredients、cookingMethods、portionLevel、c
 1. 小程序直接渲染静态首页，不发起业务请求。
 2. 客户端或浏览器请求 `GET /api/health`，Next.js 返回固定 JSON。
 
-AI 工厂可以独立创建模型对象，Prisma Schema 和数据库连接可以独立验证，但它们尚未被业务 Route Handler 串联。根 Vitest 入口当前可运行 shared、nutrition 和 server 的 3 个冒烟测试，并能解析工作区 TypeScript 源码包。
+AI 工厂可以独立创建模型对象，Prisma Schema 和数据库连接可以独立验证，但它们尚未被业务 Route Handler 串联。根 Vitest 入口当前可运行 shared、nutrition 和 server 的 19 个测试（shared 17、nutrition 1、server 1），并能解析工作区 TypeScript 源码包。
 
 ## 9. 目标数据流边界
 
@@ -211,10 +224,9 @@ AI 工厂可以独立创建模型对象，Prisma Schema 和数据库连接可以
 
 ## 10. 已知技术债与风险
 
-- 自动化测试目前只有 3 个步骤 1 冒烟测试，尚未覆盖领域边界、数据库或业务 API；
+- 自动化测试目前是 19 个契约与冒烟测试，尚未覆盖领域边界、数据库或业务 API；
 - `rateMeal` 未处理 mealBudget 为 0 或负数；
-- Prisma Schema 与已批准产品之间缺少目标方向字段；
-- 当前 Schema 只覆盖 AI 解析结果，没有接口全链路契约；
+- Prisma Schema 与已批准产品之间缺少目标方向、建议 ID 字段，也尚未同步共享契约中的 `isDemo` 与唯一 `clientRequestId`（计划在步骤 6 对齐）；
 - 没有默认 DemoProfile 初始化方式；
 - 没有数据库 CRUD 或统一错误响应；
 - 没有图片上传、压缩、请求体大小和超时处理；
@@ -222,4 +234,4 @@ AI 工厂可以独立创建模型对象，Prisma Schema 和数据库连接可以
 - 没有规则数据来源、规则版本和评测集；
 - 高保真 HTML 原型与 Taro 代码尚未对齐；
 - `.workbuddy_html/` 未被 `.gitignore` 排除，且当前已纳入版本控制；后续原型变更会进入 Git 差异；
-- 当前 Git `main` 已包含步骤 1 提交 `01afa66`；本文档更新尚需作为后续工作树变更管理。
+- 当前 Git `main` 已包含步骤 1 提交 `01afa66`；步骤 2 的契约变更与本文档更新在同一提交中。

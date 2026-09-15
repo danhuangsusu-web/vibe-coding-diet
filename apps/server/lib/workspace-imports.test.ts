@@ -9,8 +9,8 @@ describe('server test baseline', () => {
       items: [
         {
           displayName: 'Tofu',
-          ingredients: ['tofu'],
-          cookingMethods: ['boiled'],
+          ingredients: ['TOFU'],
+          cookingMethods: ['BOILED'],
           portionLevel: 'small',
           confidence: 0.9,
           uncertainties: []
