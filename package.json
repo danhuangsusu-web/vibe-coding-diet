@@ -1,0 +1,20 @@
+{
+  "name": "food-sense",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@11.19.0",
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "scripts": {
+    "dev:miniprogram": "pnpm --filter @food-sense/miniprogram dev:weapp",
+    "build:miniprogram": "pnpm --filter @food-sense/miniprogram build:weapp",
+    "dev:server": "pnpm --filter @food-sense/server dev",
+    "build:server": "pnpm --filter @food-sense/server build",
+    "typecheck": "pnpm -r typecheck",
+    "db:generate": "pnpm --filter @food-sense/server db:generate",
+    "db:validate": "pnpm --filter @food-sense/server db:validate",
+    "db:push": "pnpm --filter @food-sense/server db:push",
+    "db:check": "pnpm --filter @food-sense/server db:check"
+  }
+}

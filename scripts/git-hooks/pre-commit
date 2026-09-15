@@ -1,0 +1,72 @@
+#!/bin/sh
+# 提交前强制拦截：环境文件与密钥
+# 由 core.hooksPath 指向，对命令行与 VS Code / GitHub Desktop 同时生效
+#
+# 设计原则：fail-closed（读不到差异就中止，不放行）
+
+echo "[hook] 正在执行提交前安全检查..."
+
+STAGED=$(git diff --cached --name-only --diff-filter=ACM)
+
+# --- 检查 1：禁止提交任何 .env 家族文件，白名单只有 .env.example ---
+# 同时能拦住 .env.example.example 这类畸形改名
+BLOCKED=$(echo "$STAGED" \
+  | grep -E '(^|/)\.env(\.[A-Za-z0-9_.-]*)?$' \
+  | grep -vE '(^|/)\.env\.example$')
+
+if [ -n "$BLOCKED" ]; then
+  echo ""
+  echo "[BLOCKED] 检测到环境文件被暂存，提交已中止："
+  echo "$BLOCKED"
+  echo ""
+  echo "处理：git reset   然后确认该文件不该被提交，或改名回 .env.example"
+  echo "若确实要提交模板文件，它必须正好叫 .env.example 且值为空。"
+  exit 1
+fi
+
+# --- 检查 2：扫描暂存内容中的密钥 ---
+# --no-textconv 很关键：否则遇到 PRD.docx 之类的二进制文件，
+# git 会尝试调用外部转换器，失败后 diff 输出为空，grep 找不到东西，
+# 钩子就会"放行"——这是致命的 fail-open。
+# 读不到差异时也必须 fail-closed（中止），不能放行。
+DIFFOUT=$(git diff --cached --no-textconv 2>/dev/null)
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "[BLOCKED] 无法读取暂存区差异（常因二进制文件转换失败），"
+  echo "          为安全起见中止提交，不放行。"
+  exit 1
+fi
+
+# 值必须至少 6 个有效字符，这样 AI_API_KEY="" 的空值不会被误判
+KEYPAT='(AI_API_KEY|AI_BASE_URL|AI_MODEL|DATABASE_URL|API_SECRET|ACCESS_TOKEN|API_KEY)[[:space:]]*=[[:space:]]*"?[A-Za-z0-9_.:/@+%-]{6,}'
+
+HITS=$(printf '%s\n' "$DIFFOUT" \
+  | grep -nEi "$KEYPAT" \
+  | grep -vF '`' \
+  | grep -Evi 'change-me|your[_-]|placeholder|xxxx|xxxxx|example\.com|<[^>]*>|^\s*[0-9]+:\s*#')
+
+if [ -n "$HITS" ]; then
+  echo ""
+  echo "[BLOCKED] 暂存内容中包含疑似真实密钥，提交已中止。"
+  echo "          命中的配置项（为安全起见不打印具体值）："
+  echo "$HITS" \
+    | grep -oiE 'AI_API_KEY|AI_BASE_URL|AI_MODEL|DATABASE_URL|API_SECRET|ACCESS_TOKEN|API_KEY' \
+    | sort -u
+  echo ""
+  echo "处理：git reset，把该值改回空值或占位符后重新 add。"
+  echo "若该密钥已提交过：立刻去服务商后台轮换（revoke），比改历史重要。"
+  exit 1
+fi
+
+# --- 检查 3：防止把构建产物塞进来 ---
+BIG=$(echo "$STAGED" | grep -E 'node_modules/|/dist/|\.next/')
+
+if [ -n "$BIG" ]; then
+  echo ""
+  echo "[BLOCKED] 检测到构建产物或依赖目录被暂存，提交已中止："
+  echo "$BIG" | head -10
+  exit 1
+fi
+
+echo "[hook] 检查通过"
+exit 0

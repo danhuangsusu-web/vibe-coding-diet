@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>P01 今日首页 · 食刻 AI</title>
+<style>
+/* ============================================================
+   食刻 AI · 设计 Token（五页统一）
+   逻辑视口 375px · 微信胶囊适配见 .mp-capsule 注释
+   ============================================================ */
+:root{
+  --bg-cream:      #FAF6EF;
+  --bg-oat:        #F3EDE2;
+  --bg-butter:     #FBF3DC;
+  --card-white:    #FFFDF9;
+  --primary:       #F0A65B;
+  --primary-deep:  #C97F33;  /* 加深，保证白底对比度 ≥ 4.5 */
+  --primary-soft:  #FAE3C7;
+  --text-primary:   #3E3833;
+  --text-secondary: #6E655B;  /* 加深，正文辅助可读 */
+  --text-tertiary:  #9A9086;  /* 加深，小字可读 */
+  --ok-bg:      #E3F1E6;  --ok-accent:  #6FAE87;  --ok-text:  #3F7050;
+  --warn-bg:    #FBF0D3;  --warn-accent:#D9AE4E;  --warn-text:#8A6B28;
+  --alert-bg:   #F8E4DC;  --alert-accent:#D68F73; --alert-text:#9C5238;
+  --shadow-soft: 0 6px 18px rgba(196,168,128,.12);
+  --shadow-main: 0 10px 28px rgba(217,138,61,.20);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  background:#E4DED2;min-height:100vh;padding:40px 16px;
+  display:flex;flex-wrap:wrap;gap:48px;align-items:flex-start;justify-content:center;
+  -webkit-font-smoothing:antialiased;color:var(--text-primary);
+}
+
+/* ===== 作品集展示信息（非页面内容） ===== */
+.demo-note{width:300px;padding-top:24px;font-size:13px;line-height:2;color:#6E655B;}
+.demo-note h4{font-size:14px;color:#3E3833;margin-bottom:10px;}
+.demo-note code{background:#F3EDE2;border-radius:6px;padding:2px 7px;font-size:12px;}
+.demo-state{text-align:center;margin-top:16px;font-size:12px;letter-spacing:2px;color:#6E655B;}
+.demo-state b{display:block;font-size:14px;color:#3E3833;letter-spacing:1px;margin-bottom:3px;}
+.phone-wrap{display:flex;flex-direction:column;align-items:center;}
+
+/* ===== 手机外壳（仅作品集展示用） ===== */
+.phone{
+  width:375px;background:#1f1d1b;border-radius:54px;padding:12px;flex-shrink:0;
+  box-shadow:0 32px 80px rgba(62,56,51,.28),0 8px 24px rgba(62,56,51,.15);
+}
+.screen{
+  /* 375px 逻辑视口：内容按 375 设计，外壳边框仅为展示 */
+  width:351px;height:740px;border-radius:44px;overflow:hidden;
+  background:var(--bg-cream);position:relative;
+  overflow-y:auto;scrollbar-width:none;display:flex;flex-direction:column;
+}
+.screen::-webkit-scrollbar{display:none;}
+
+/* ===== 状态栏 + 微信胶囊安全区 =====
+   适配规则：内容顶部预留 statusBarHeight + 胶囊高度(32px) + 8px 间距；
+   胶囊区域(.mp-capsule)右侧不可放置可点击元素。 */
+.statusbar{
+  height:54px;display:flex;justify-content:space-between;align-items:center;
+  padding:20px 24px 0;flex-shrink:0;position:sticky;top:0;z-index:10;
+  background:linear-gradient(var(--bg-cream) 78%,transparent);
+}
+.sb-time{font-size:15px;font-weight:600;letter-spacing:.3px;font-variant-numeric:tabular-nums;}
+.sb-icons{display:flex;align-items:center;gap:6px;}
+.sb-icons svg{display:block;}
+/* 微信小程序胶囊占位（右上角 · 87×32px · 距右 10px） */
+.mp-capsule-row{display:flex;justify-content:flex-end;padding:2px 10px 0;flex-shrink:0;}
+.mp-capsule{
+  width:87px;height:32px;border-radius:999px;
+  border:1px solid rgba(62,56,51,.14);
+  display:flex;align-items:center;justify-content:center;gap:0;
+}
+.mp-capsule span{width:1px;height:18px;background:rgba(62,56,51,.14);}
+.mp-capsule i{width:6px;height:6px;border-radius:50%;background:#3E3833;opacity:.55;margin:0 9px;font-style:normal;}
+.mp-capsule .dot3{width:16px;display:flex;gap:3px;justify-content:center;}
+.mp-capsule .dot3 i{width:3.5px;height:3.5px;margin:0;}
+.mp-capsule .ring{width:13px;height:13px;border-radius:50%;border:1.6px solid #3E3833;opacity:.55;margin:0 9px;position:relative;}
+.mp-capsule .ring::after{content:"";position:absolute;inset:3.5px;border-radius:50%;background:#3E3833;}
+
+.page{padding:10px 20px 32px;flex:1;}
+
+/* ===== M1 用户信息区 ===== */
+.user-zone{display:flex;justify-content:space-between;align-items:center;padding:8px 2px 0;}
+.hello{font-size:12px;color:var(--text-tertiary);letter-spacing:.5px;margin-bottom:5px;}
+.user-name{font-size:17px;font-weight:600;display:flex;align-items:center;gap:8px;}
+.goal-tag{font-size:12px;font-weight:500;color:var(--primary-deep);background:var(--primary-soft);border-radius:999px;padding:4px 11px;}
+.avatar{
+  width:44px;height:44px;border-radius:50%;flex-shrink:0;
+  background:linear-gradient(135deg,#F6C98B,#EFA15E);
+  display:flex;align-items:center;justify-content:center;
+  /* TDesign 风格 user 图标 */
+}
+.avatar svg{width:22px;height:22px;}
+
+/* ===== M2 今日数据汇总 ===== */
+.summary-card{
+  margin-top:16px;background:var(--card-white);border-radius:24px;
+  padding:24px 24px 22px;box-shadow:var(--shadow-soft);
+}
+.date-line{font-size:12px;color:var(--text-tertiary);display:flex;justify-content:space-between;align-items:center;}
+.date-line .edit{font-size:12px;color:var(--primary-deep);min-height:32px;display:inline-flex;align-items:center;}
+.big-kcal{margin-top:12px;text-align:center;display:flex;align-items:baseline;justify-content:center;gap:7px;}
+.big-kcal .num{font-size:64px;font-weight:300;letter-spacing:-2px;line-height:1;}
+.big-kcal .unit{font-size:14px;color:var(--text-secondary);}
+.range-line{margin-top:10px;font-size:12px;color:var(--text-secondary);text-align:center;}
+.range-line b{color:var(--text-primary);font-weight:600;}
+.progress-row{display:flex;align-items:center;gap:16px;margin-top:18px;}
+.ring-wrap{position:relative;width:72px;height:72px;flex-shrink:0;}
+.ring-wrap svg{transform:rotate(-90deg);}
+.ring-label{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:var(--ok-text);}
+.progress-side{flex:1;min-width:0;}
+.status-pill{display:inline-flex;align-items:center;gap:8px;background:var(--ok-bg);border-radius:999px;padding:8px 14px;min-height:32px;}
+.status-pill .dot{width:9px;height:9px;border-radius:50%;background:var(--ok-accent);box-shadow:0 0 0 4px rgba(111,174,135,.18);}
+.status-pill span{font-size:12px;font-weight:500;color:var(--ok-text);}
+.meal-hint{margin-top:9px;font-size:12px;line-height:1.7;color:var(--text-secondary);}
+.meal-hint b{color:var(--text-primary);font-weight:600;}
+
+/* ===== M3 快捷输入（双明确入口，无 FAB） ===== */
+.entry-row{display:flex;gap:12px;margin-top:20px;position:relative;}
+.entry-card{
+  flex:1;border-radius:20px;padding:18px 16px;cursor:pointer;
+  transition:transform .15s ease;min-height:108px;
+}
+.entry-card:active{transform:scale(.97);}
+.entry-photo{background:linear-gradient(145deg,#F3AC62,#E8964A);color:#fff;box-shadow:var(--shadow-main);}
+.entry-photo .e-icon{width:44px;height:44px;border-radius:14px;background:rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;margin-bottom:12px;}
+.entry-photo .e-title{font-size:15px;font-weight:600;}
+.entry-photo .e-sub{font-size:12px;opacity:.88;margin-top:3px;}
+.entry-text{background:var(--card-white);box-shadow:var(--shadow-soft);}
+.entry-text .e-icon{width:44px;height:44px;border-radius:14px;background:var(--primary-soft);display:flex;align-items:center;justify-content:center;margin-bottom:12px;color:var(--primary-deep);}
+.entry-text .e-title{font-size:15px;font-weight:600;}
+.entry-text .e-sub{font-size:12px;color:var(--text-tertiary);margin-top:3px;}
+.e-icon svg{width:22px;height:22px;}
+.guide-tip{
+  position:absolute;top:-36px;left:12px;background:var(--text-primary);color:#FFF6E8;
+  font-size:12px;padding:7px 13px;border-radius:12px 12px 12px 2px;white-space:nowrap;
+  animation:bob 2.4s ease-in-out infinite;
+}
+@keyframes bob{0%,100%{transform:translateY(0);}50%{transform:translateY(-4px);}}
+
+/* ===== M4 最近记录 ===== */
+.recent-head{display:flex;justify-content:space-between;align-items:center;margin:24px 2px 12px;}
+.recent-head h3{font-size:15px;font-weight:600;}
+.recent-head a{font-size:12px;color:var(--text-tertiary);text-decoration:none;min-height:32px;display:inline-flex;align-items:center;}
+.record-card{
+  background:var(--card-white);border-radius:20px;padding:14px 16px;
+  display:flex;align-items:center;gap:13px;box-shadow:var(--shadow-soft);
+  margin-bottom:10px;min-height:64px;
+}
+/* 真实缩略图（CSS 绘制的餐食示意，非 emoji） */
+.meal-thumb{width:52px;height:52px;border-radius:16px;flex-shrink:0;overflow:hidden;position:relative;}
+.thumb-bowl{background:linear-gradient(160deg,#F6DFC0 0%,#EFC998 100%);}
+.thumb-bowl::before{content:"";position:absolute;left:50%;top:16px;width:30px;height:16px;transform:translateX(-50%);background:#FFFDF9;border-radius:4px 4px 14px 14px;box-shadow:inset 0 -3px 0 #E8D5B5;}
+.thumb-bowl::after{content:"";position:absolute;left:50%;top:13px;width:24px;height:5px;transform:translateX(-50%);background:#C9A05E;border-radius:999px;}
+.thumb-cup{background:linear-gradient(160deg,#DFEBE1 0%,#C4DCC9 100%);}
+.thumb-cup::before{content:"";position:absolute;left:50%;top:15px;width:16px;height:22px;transform:translateX(-50%);background:#FFFDF9;border-radius:3px 3px 6px 6px;box-shadow:inset 0 5px 0 #C89B6A;}
+.thumb-cup::after{content:"";position:absolute;right:11px;top:19px;width:7px;height:9px;border:2.5px solid #FFFDF9;border-radius:50%;border-left-color:transparent;}
+.record-info{flex:1;min-width:0;}
+.record-info .m-name{font-size:14px;font-weight:500;}
+.record-info .m-meta{font-size:12px;color:var(--text-tertiary);margin-top:4px;}
+.record-right{flex-shrink:0;text-align:right;}
+.mini-badge{display:inline-flex;align-items:center;gap:5px;font-size:12px;border-radius:999px;padding:5px 11px;font-weight:500;min-height:26px;}
+.mini-badge i{width:7px;height:7px;border-radius:50%;font-style:normal;}
+.b-ok{background:var(--ok-bg);color:var(--ok-text);} .b-ok i{background:var(--ok-accent);}
+.b-warn{background:var(--warn-bg);color:var(--warn-text);} .b-warn i{background:var(--warn-accent);}
+.b-alert{background:var(--alert-bg);color:var(--alert-text);} .b-alert i{background:var(--alert-accent);}
+
+/* ===== 空状态 ===== */
+.empty-zone{margin-top:24px;text-align:center;padding:8px 20px 0;}
+.empty-art{
+  width:120px;height:120px;margin:0 auto;border-radius:36px;
+  background:linear-gradient(160deg,#F7ECD8,#F0DCB8);
+  position:relative;display:flex;align-items:center;justify-content:center;
+}
+.empty-art::before{content:"";width:56px;height:34px;background:#FFFDF9;border-radius:6px 6px 26px 26px;box-shadow:inset 0 -6px 0 #EBDCC0;}
+.empty-art::after{content:"";position:absolute;top:36px;width:40px;height:8px;background:#C9A05E;border-radius:999px;}
+.empty-title{margin-top:18px;font-size:15px;font-weight:600;}
+.empty-sub{margin-top:7px;font-size:12px;color:var(--text-secondary);line-height:1.8;}
+</style>
+</head>
+<body>
+
+<!-- ============ 状态 A：有记录 ============ -->
+<div class="phone-wrap">
+<div class="phone">
+  <div class="screen">
+    <div class="statusbar">
+      <span class="sb-time">9:41</span>
+      <span class="sb-icons">
+        <svg width="17" height="11" viewBox="0 0 17 11" fill="#3E3833"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.7" y="4.7" width="3" height="6.3" rx="1"/><rect x="9.4" y="2.3" width="3" height="8.7" rx="1"/><rect x="14" y="0" width="3" height="11" rx="1"/></svg>
+        <svg width="16" height="12" viewBox="0 0 16 12" fill="#3E3833"><path d="M8 9.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"/><path d="M8 5.5c-2 0-3.8.8-5.1 2l1.4 1.5A5.2 5.2 0 0 1 8 7.5c1.3 0 2.6.6 3.7 1.5l1.4-1.4A7.2 7.2 0 0 0 8 5.5z"/><path d="M8 1C4.9 1 2.1 2.3 0 4.4l1.4 1.4A9.3 9.3 0 0 1 8 3c2.6 0 5 1.1 6.6 2.8L16 4.4A11.2 11.2 0 0 0 8 1z"/></svg>
+        <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="20" height="11" rx="3.5" stroke="#3E3833" opacity=".45"/><rect x="2.2" y="2.2" width="15" height="7.6" rx="2" fill="#3E3833"/><path d="M22.5 4v4c1.1-.3 1.9-1.1 1.9-2s-.8-1.7-1.9-2z" fill="#3E3833" opacity=".45"/></svg>
+      </span>
+    </div>
+    <!-- 微信小程序胶囊占位区（右侧不可放置可点击元素） -->
+    <div class="mp-capsule-row"><div class="mp-capsule"><span class="dot3"><i></i><i></i><i></i></span><span></span><span class="ring"></span></div></div>
+
+    <div class="page">
+      <!-- M1 用户信息区 -->
+      <div class="user-zone">
+        <div>
+          <div class="hello">早上好，今天也请好好吃饭</div>
+          <div class="user-name">小苏 <span class="goal-tag">减脂期</span></div>
+        </div>
+        <div class="avatar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#FFF6E8" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/></svg>
+        </div>
+      </div>
+
+      <!-- M2 今日数据汇总 -->
+      <div class="summary-card">
+        <div class="date-line"><span>9月10日 · 周三</span><span class="edit">调整目标 ›</span></div>
+        <div class="big-kcal"><span class="num">1290</span><span class="unit">kcal 已记录</span></div>
+        <div class="range-line">今日建议 <b>1400 – 1600</b> kcal · 还可约 <b>310</b> kcal</div>
+        <div class="progress-row">
+          <div class="ring-wrap">
+            <svg width="72" height="72" viewBox="0 0 72 72">
+              <circle cx="36" cy="36" r="30" fill="none" stroke="#F0E9DC" stroke-width="7"/>
+              <circle cx="36" cy="36" r="30" fill="none" stroke="#6FAE87" stroke-width="7"
+                      stroke-linecap="round" stroke-dasharray="188.5" stroke-dashoffset="35"/>
+            </svg>
+            <div class="ring-label">81%</div>
+          </div>
+          <div class="progress-side">
+            <div class="status-pill"><span class="dot"></span><span>接近上限，晚餐轻一点</span></div>
+            <div class="meal-hint">已记录 <b>3</b> 次 · 午餐占了约 <b>750</b> kcal</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- M3 快捷输入（无 FAB，双明确入口） -->
+      <div class="entry-row">
+        <div class="guide-tip">拍一下外卖，马上知道合不合适</div>
+        <div class="entry-card entry-photo">
+          <div class="e-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h2.5l1.8-2.5h7.4L17.5 8H20a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="14" r="3.5"/></svg>
+          </div>
+          <div class="e-title">拍照 / 相册</div>
+          <div class="e-sub">识别菜单或餐食照片</div>
+        </div>
+        <div class="entry-card entry-text">
+          <div class="e-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20h16"/><path d="M6 16l9.5-9.5a2.1 2.1 0 0 1 3 3L9 19l-4 1 1-4z"/></svg>
+          </div>
+          <div class="e-title">文字输入</div>
+          <div class="e-sub">一句话描述这顿饭</div>
+        </div>
+      </div>
+
+      <!-- M4 最近记录（仅区间，无单点热量） -->
+      <div class="recent-head"><h3>今天吃了</h3><a href="#">全部记录 ›</a></div>
+
+      <div class="record-card">
+        <div class="meal-thumb thumb-bowl"></div>
+        <div class="record-info">
+          <div class="m-name">干煸芸豆 + 溜肉段 + 米饭</div>
+          <div class="m-meta">12:40 · 午餐 · 约 650 – 850 kcal</div>
+        </div>
+        <div class="record-right"><span class="mini-badge b-warn"><i></i>黄灯</span></div>
+      </div>
+
+      <div class="record-card">
+        <div class="meal-thumb thumb-cup"></div>
+        <div class="record-info">
+          <div class="m-name">燕麦奶拿铁（小杯）</div>
+          <div class="m-meta">10:05 · 加餐 · 约 120 – 160 kcal</div>
+        </div>
+        <div class="record-right"><span class="mini-badge b-ok"><i></i>绿灯</span></div>
+      </div>
+
+      <div class="record-card">
+        <div class="meal-thumb thumb-bowl"></div>
+        <div class="record-info">
+          <div class="m-name">全麦三明治 + 无糖豆浆</div>
+          <div class="m-meta">08:20 · 早餐 · 约 380 – 440 kcal</div>
+        </div>
+        <div class="record-right"><span class="mini-badge b-ok"><i></i>绿灯</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="demo-state"><b>状态 A</b>有记录 · 首页主视图</div>
+</div>
+
+<!-- ============ 状态 B：空状态（首页没有记录） ============ -->
+<div class="phone-wrap">
+<div class="phone">
+  <div class="screen">
+    <div class="statusbar">
+      <span class="sb-time">9:41</span>
+      <span class="sb-icons">
+        <svg width="17" height="11" viewBox="0 0 17 11" fill="#3E3833"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.7" y="4.7" width="3" height="6.3" rx="1"/><rect x="9.4" y="2.3" width="3" height="8.7" rx="1"/><rect x="14" y="0" width="3" height="11" rx="1"/></svg>
+        <svg width="16" height="12" viewBox="0 0 16 12" fill="#3E3833"><path d="M8 9.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"/><path d="M8 5.5c-2 0-3.8.8-5.1 2l1.4 1.5A5.2 5.2 0 0 1 8 7.5c1.3 0 2.6.6 3.7 1.5l1.4-1.4A7.2 7.2 0 0 0 8 5.5z"/><path d="M8 1C4.9 1 2.1 2.3 0 4.4l1.4 1.4A9.3 9.3 0 0 1 8 3c2.6 0 5 1.1 6.6 2.8L16 4.4A11.2 11.2 0 0 0 8 1z"/></svg>
+        <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="20" height="11" rx="3.5" stroke="#3E3833" opacity=".45"/><rect x="2.2" y="2.2" width="15" height="7.6" rx="2" fill="#3E3833"/><path d="M22.5 4v4c1.1-.3 1.9-1.1 1.9-2s-.8-1.7-1.9-2z" fill="#3E3833" opacity=".45"/></svg>
+      </span>
+    </div>
+    <div class="mp-capsule-row"><div class="mp-capsule"><span class="dot3"><i></i><i></i><i></i></span><span></span><span class="ring"></span></div></div>
+
+    <div class="page">
+      <div class="user-zone">
+        <div>
+          <div class="hello">早上好，今天也请好好吃饭</div>
+          <div class="user-name">小苏 <span class="goal-tag">减脂期</span></div>
+        </div>
+        <div class="avatar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#FFF6E8" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/></svg>
+        </div>
+      </div>
+
+      <div class="summary-card">
+        <div class="date-line"><span>9月10日 · 周三</span><span class="edit">调整目标 ›</span></div>
+        <div class="big-kcal"><span class="num">0</span><span class="unit">kcal 已记录</span></div>
+        <div class="range-line">今日建议 <b>1400 – 1600</b> kcal · 尚未记录</div>
+        <div class="progress-row">
+          <div class="ring-wrap">
+            <svg width="72" height="72" viewBox="0 0 72 72">
+              <circle cx="36" cy="36" r="30" fill="none" stroke="#F0E9DC" stroke-width="7"/>
+            </svg>
+            <div class="ring-label" style="color:var(--text-tertiary);">0%</div>
+          </div>
+          <div class="progress-side">
+            <div class="status-pill" style="background:var(--bg-oat);"><span class="dot" style="background:#C9BBA0;box-shadow:0 0 0 4px rgba(201,187,160,.18);"></span><span style="color:var(--text-secondary);">从第一餐开始吧</span></div>
+            <div class="meal-hint">拍照或写一句话，就能记录第一餐</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="entry-row">
+        <div class="entry-card entry-photo">
+          <div class="e-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h2.5l1.8-2.5h7.4L17.5 8H20a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="14" r="3.5"/></svg>
+          </div>
+          <div class="e-title">拍照 / 相册</div>
+          <div class="e-sub">识别菜单或餐食照片</div>
+        </div>
+        <div class="entry-card entry-text">
+          <div class="e-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20h16"/><path d="M6 16l9.5-9.5a2.1 2.1 0 0 1 3 3L9 19l-4 1 1-4z"/></svg>
+          </div>
+          <div class="e-title">文字输入</div>
+          <div class="e-sub">一句话描述这顿饭</div>
+        </div>
+      </div>
+
+      <!-- 空状态 -->
+      <div class="empty-zone">
+        <div class="empty-art"></div>
+        <div class="empty-title">今天还没有记录</div>
+        <div class="empty-sub">拍下第一顿饭，或写一句话告诉我<br>估算出区间后，再决定要不要保存</div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="demo-state"><b>状态 B</b>空状态 · 首页没有记录</div>
+</div>
+
+<!-- ============ 适配说明（作品集展示用） ============ -->
+<aside class="demo-note">
+  <h4>适配与规范说明</h4>
+  <b>逻辑视口：</b>页面内容按 <code>375px</code> 设计；深色外壳仅用于作品集展示，不属于小程序 UI。<br>
+  <b>微信胶囊：</b>右上角预留 <code>87×32px</code> 胶囊区，右侧不放置可点击元素。<br>
+  <b>安全区：</b>顶部预留 <code>statusBarHeight</code>；底部主操作避开 <code>safe-area-inset-bottom</code>。<br>
+  <b>字号：</b>正文 ≥ <code>14px</code>，辅助 ≥ <code>12px</code>；交互热区 ≥ <code>44px</code>。<br>
+  <b>数据规则：</b>已记录 <code>1290</code> = 400+140+750（各餐代表值取下限），建议 <code>1400–1600</code>，余 <code>310</code>；午餐参考额度 <code>500–580</code>。卡片只展示估算区间，不出现伪精确单值。
+</aside>
+
+</body>
+</html>

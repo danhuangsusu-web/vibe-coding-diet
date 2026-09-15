@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>P05 历史与设置页 · 食刻 AI</title>
+<style>
+:root{
+  --bg-cream:#FAF6EF; --bg-oat:#F3EDE2; --bg-butter:#FBF3DC; --card-white:#FFFDF9;
+  --primary:#F0A65B; --primary-deep:#C97F33; --primary-soft:#FAE3C7;
+  --text-primary:#3E3833; --text-secondary:#6E655B; --text-tertiary:#9A9086;
+  --ok-bg:#E3F1E6; --ok-accent:#6FAE87; --ok-text:#3F7050;
+  --warn-bg:#FBF0D3; --warn-accent:#D9AE4E; --warn-text:#8A6B28;
+  --alert-bg:#F8E4DC; --alert-accent:#D68F73; --alert-text:#9C5238;
+  --shadow-soft:0 6px 18px rgba(196,168,128,.12);
+  --shadow-main:0 10px 28px rgba(217,138,61,.20);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  background:#E4DED2;min-height:100vh;padding:40px 16px;
+  display:flex;flex-wrap:wrap;gap:48px;align-items:flex-start;justify-content:center;
+  -webkit-font-smoothing:antialiased;color:var(--text-primary);
+}
+.demo-state{text-align:center;margin-top:16px;font-size:12px;letter-spacing:1.5px;color:#6E655B;}
+.demo-state b{display:block;font-size:14px;color:#3E3833;margin-bottom:3px;}
+.phone-wrap{display:flex;flex-direction:column;align-items:center;}
+
+.phone{width:375px;background:#1f1d1b;border-radius:54px;padding:12px;flex-shrink:0;box-shadow:0 32px 80px rgba(62,56,51,.28),0 8px 24px rgba(62,56,51,.15);}
+.screen{
+  width:351px;height:740px;border-radius:44px;overflow:hidden;
+  background:var(--bg-cream);position:relative;
+  overflow-y:auto;scrollbar-width:none;display:flex;flex-direction:column;
+}
+.screen::-webkit-scrollbar{display:none;}
+
+.statusbar{
+  height:54px;display:flex;justify-content:space-between;align-items:center;
+  padding:20px 24px 0;flex-shrink:0;position:sticky;top:0;z-index:10;
+  background:linear-gradient(var(--bg-cream) 78%,transparent);
+}
+.sb-time{font-size:15px;font-weight:600;letter-spacing:.3px;font-variant-numeric:tabular-nums;}
+.sb-icons{display:flex;align-items:center;gap:6px;}
+.sb-icons svg{display:block;}
+.mp-capsule-row{display:flex;justify-content:flex-end;padding:2px 10px 0;flex-shrink:0;}
+.mp-capsule{width:87px;height:32px;border-radius:999px;border:1px solid rgba(62,56,51,.14);display:flex;align-items:center;justify-content:center;}
+.mp-capsule span{width:1px;height:18px;background:rgba(62,56,51,.14);}
+.mp-capsule .dot3{width:16px;display:flex;gap:3px;justify-content:center;margin:0 9px;}
+.mp-capsule .dot3 i{width:3.5px;height:3.5px;border-radius:50%;background:#3E3833;opacity:.55;font-style:normal;}
+.mp-capsule .ring{width:13px;height:13px;border-radius:50%;border:1.6px solid #3E3833;opacity:.55;margin:0 9px;position:relative;}
+.mp-capsule .ring::after{content:"";position:absolute;inset:3.5px;border-radius:50%;background:#3E3833;}
+
+.page-head{padding:8px 22px 0;flex-shrink:0;}
+.page-title{font-size:22px;font-weight:600;letter-spacing:.5px;}
+.page-sub{font-size:12px;color:var(--text-tertiary);margin-top:5px;}
+
+.page{padding:14px 20px 24px;flex:1;}
+
+/* 日期分组 */
+.day-group{margin-top:14px;}
+.day-label{display:flex;align-items:center;gap:8px;margin:0 2px 10px;font-size:12px;color:var(--text-tertiary);}
+.day-label .d-kcal{margin-left:auto;font-size:12px;color:var(--text-secondary);background:var(--bg-oat);border-radius:999px;padding:4px 11px;}
+
+/* 记录卡（默认无左滑删除展示，仅区间） */
+.record-card{
+  background:var(--card-white);border-radius:18px;padding:14px 15px;
+  display:flex;align-items:center;gap:12px;box-shadow:var(--shadow-soft);
+  margin-bottom:10px;min-height:66px;
+}
+.meal-thumb{width:48px;height:48px;border-radius:15px;flex-shrink:0;position:relative;overflow:hidden;}
+.thumb-bowl{background:linear-gradient(160deg,#F6DFC0,#EFC998);}
+.thumb-bowl::before{content:"";position:absolute;left:50%;top:15px;width:27px;height:15px;transform:translateX(-50%);background:#FFFDF9;border-radius:4px 4px 12px 12px;box-shadow:inset 0 -3px 0 #E8D5B5;}
+.thumb-bowl::after{content:"";position:absolute;left:50%;top:12px;width:21px;height:5px;transform:translateX(-50%);background:#C9A05E;border-radius:999px;}
+.thumb-cup{background:linear-gradient(160deg,#DFEBE1,#C4DCC9);}
+.thumb-cup::before{content:"";position:absolute;left:50%;top:14px;width:15px;height:20px;transform:translateX(-50%);background:#FFFDF9;border-radius:3px 3px 6px 6px;box-shadow:inset 0 5px 0 #C89B6A;}
+.thumb-noodle{background:linear-gradient(160deg,#F4E8D0,#E8D3AC);}
+.thumb-noodle::before{content:"";position:absolute;left:50%;top:16px;width:26px;height:14px;transform:translateX(-50%);background:#FFFDF9;border-radius:4px 4px 12px 12px;}
+.thumb-noodle::after{content:"";position:absolute;left:50%;top:12px;width:22px;height:4px;transform:translateX(-50%);background:#B87F4E;border-radius:999px;}
+.record-info{flex:1;min-width:0;}
+.record-info .m-name{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.record-info .m-meta{font-size:12px;color:var(--text-tertiary);margin-top:4px;}
+.record-right{flex-shrink:0;display:flex;align-items:center;gap:9px;}
+.mini-badge{display:inline-flex;align-items:center;gap:5px;font-size:12px;border-radius:999px;padding:5px 11px;font-weight:500;min-height:26px;}
+.mini-badge i{width:7px;height:7px;border-radius:50%;font-style:normal;}
+.b-ok{background:var(--ok-bg);color:var(--ok-text);} .b-ok i{background:var(--ok-accent);}
+.b-warn{background:var(--warn-bg);color:var(--warn-text);} .b-warn i{background:var(--warn-accent);}
+.b-alert{background:var(--alert-bg);color:var(--alert-text);} .b-alert i{background:var(--alert-accent);}
+/* 删除入口（默认就是一个安静的小图标按钮，不展示滑出态） */
+.rec-del{
+  width:36px;height:36px;border-radius:50%;background:var(--bg-oat);color:var(--text-tertiary);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.rec-del svg{width:15px;height:15px;}
+
+/* 撤销 Toast */
+.undo-toast{
+  position:absolute;left:20px;right:20px;bottom:24px;z-index:20;
+  background:var(--text-primary);border-radius:16px;
+  padding:14px 16px;display:flex;align-items:center;gap:12px;
+  box-shadow:0 14px 36px rgba(62,56,51,.3);
+}
+.undo-toast .ut-body{flex:1;}
+.undo-toast .ut-t{font-size:14px;font-weight:500;color:#FFF6E8;}
+.undo-toast .ut-s{font-size:12px;color:rgba(255,246,232,.7);margin-top:2px;}
+.undo-toast .ut-btn{
+  flex-shrink:0;font-size:14px;font-weight:600;color:#F6C98B;
+  background:rgba(246,201,139,.14);border-radius:999px;min-height:38px;padding:0 17px;
+  display:inline-flex;align-items:center;
+}
+
+/* 设置区（默认折叠） */
+.settings-zone{margin-top:22px;}
+.settings-card{background:var(--card-white);border-radius:20px;box-shadow:var(--shadow-soft);overflow:hidden;}
+.settings-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 18px;min-height:56px;
+}
+.settings-header .sh-left{display:flex;align-items:center;gap:12px;}
+.settings-header .sh-icon{width:38px;height:38px;border-radius:12px;background:var(--primary-soft);color:var(--primary-deep);display:flex;align-items:center;justify-content:center;}
+.settings-header .sh-icon svg{width:18px;height:18px;}
+.settings-header .sh-t{font-size:15px;font-weight:600;}
+.settings-header .sh-s{font-size:12px;color:var(--text-tertiary);margin-top:2px;}
+.settings-header .sh-arrow{color:var(--text-tertiary);display:flex;align-items:center;}
+.settings-header .sh-arrow svg{width:18px;height:18px;}
+/* 展开后的设置内容（第二个手机展示） */
+.settings-body{padding:2px 18px 8px;}
+.set-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;min-height:52px;}
+.set-row + .set-row{border-top:1px dashed #F0E8DA;}
+.set-label{font-size:14px;font-weight:500;}
+.set-label .s-sub{display:block;font-size:12px;color:var(--text-tertiary);margin-top:3px;font-weight:400;}
+.goal-seg{display:flex;background:var(--bg-oat);border-radius:999px;padding:3px;}
+.g-seg{font-size:12px;color:var(--text-secondary);border-radius:999px;padding:7px 13px;min-height:34px;display:flex;align-items:center;}
+.g-seg.active{background:var(--card-white);color:var(--primary-deep);font-weight:600;box-shadow:0 2px 8px rgba(196,168,128,.22);}
+.range-stepper{display:flex;align-items:center;gap:12px;}
+.step-btn{width:36px;height:36px;border-radius:50%;background:var(--primary-soft);color:var(--primary-deep);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:500;}
+.step-val{text-align:center;}
+.step-val .v{font-size:16px;font-weight:600;letter-spacing:-.3px;}
+.step-val .u{font-size:12px;color:var(--text-tertiary);margin-top:1px;}
+.switch{width:48px;height:28px;border-radius:999px;background:var(--ok-accent);position:relative;flex-shrink:0;}
+.switch::after{content:"";position:absolute;top:3px;right:3px;width:22px;height:22px;border-radius:50%;background:var(--card-white);box-shadow:0 2px 6px rgba(0,0,0,.14);}
+
+/* 免责声明 */
+.disclaimer{margin-top:24px;padding:0 10px;text-align:center;font-size:12px;line-height:1.9;color:var(--text-tertiary);}
+.disclaimer b{color:var(--text-secondary);font-weight:600;}
+
+/* 历史空状态 */
+.hist-empty{margin-top:30px;text-align:center;padding:0 20px;}
+.hist-empty .he-art{width:104px;height:104px;margin:0 auto;border-radius:32px;background:linear-gradient(160deg,#F7ECD8,#F0DCB8);position:relative;display:flex;align-items:center;justify-content:center;}
+.hist-empty .he-art::before{content:"";width:48px;height:30px;background:#FFFDF9;border-radius:6px 6px 22px 22px;box-shadow:inset 0 -5px 0 #EBDCC0;}
+.hist-empty .he-t{margin-top:16px;font-size:15px;font-weight:600;}
+.hist-empty .he-s{margin-top:6px;font-size:12px;color:var(--text-secondary);line-height:1.8;}
+</style>
+</head>
+<body>
+
+<!-- ============ A 默认：记录列表 + 设置折叠 ============ -->
+<div class="phone-wrap">
+<div class="phone"><div class="screen">
+  <div class="statusbar">
+    <span class="sb-time">9:41</span>
+    <span class="sb-icons">
+      <svg width="17" height="11" viewBox="0 0 17 11" fill="#3E3833"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.7" y="4.7" width="3" height="6.3" rx="1"/><rect x="9.4" y="2.3" width="3" height="8.7" rx="1"/><rect x="14" y="0" width="3" height="11" rx="1"/></svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="#3E3833"><path d="M8 9.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"/><path d="M8 5.5c-2 0-3.8.8-5.1 2l1.4 1.5A5.2 5.2 0 0 1 8 7.5c1.3 0 2.6.6 3.7 1.5l1.4-1.4A7.2 7.2 0 0 0 8 5.5z"/><path d="M8 1C4.9 1 2.1 2.3 0 4.4l1.4 1.4A9.3 9.3 0 0 1 8 3c2.6 0 5 1.1 6.6 2.8L16 4.4A11.2 11.2 0 0 0 8 1z"/></svg>
+      <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="20" height="11" rx="3.5" stroke="#3E3833" opacity=".45"/><rect x="2.2" y="2.2" width="15" height="7.6" rx="2" fill="#3E3833"/><path d="M22.5 4v4c1.1-.3 1.9-1.1 1.9-2s-.8-1.7-1.9-2z" fill="#3E3833" opacity=".45"/></svg>
+    </span>
+  </div>
+  <div class="mp-capsule-row"><div class="mp-capsule"><span class="dot3"><i></i><i></i><i></i></span><span></span><span class="ring"></span></div></div>
+
+  <div class="page-head">
+    <div class="page-title">记录与设置</div>
+    <div class="page-sub">最近保存的餐食 · 演示参数</div>
+  </div>
+
+  <div class="page">
+    <div class="day-group">
+      <div class="day-label">今天 · 9月10日 <span class="d-kcal">已记录 约 1290 kcal</span></div>
+
+      <div class="record-card">
+        <div class="meal-thumb thumb-bowl"></div>
+        <div class="record-info">
+          <div class="m-name">干煸芸豆 + 溜肉段 + 米饭</div>
+          <div class="m-meta">12:40 · 午餐 · 约 650 – 850 kcal</div>
+        </div>
+        <div class="record-right">
+          <span class="mini-badge b-warn"><i></i>黄灯</span>
+          <div class="rec-del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/><path d="M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13"/></svg></div>
+        </div>
+      </div>
+
+      <div class="record-card">
+        <div class="meal-thumb thumb-cup"></div>
+        <div class="record-info">
+          <div class="m-name">燕麦奶拿铁（小杯）</div>
+          <div class="m-meta">10:05 · 加餐 · 约 120 – 160 kcal</div>
+        </div>
+        <div class="record-right">
+          <span class="mini-badge b-ok"><i></i>绿灯</span>
+          <div class="rec-del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/><path d="M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13"/></svg></div>
+        </div>
+      </div>
+
+      <div class="record-card">
+        <div class="meal-thumb thumb-bowl"></div>
+        <div class="record-info">
+          <div class="m-name">全麦三明治 + 无糖豆浆</div>
+          <div class="m-meta">08:20 · 早餐 · 约 380 – 440 kcal</div>
+        </div>
+        <div class="record-right">
+          <span class="mini-badge b-ok"><i></i>绿灯</span>
+          <div class="rec-del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/><path d="M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13"/></svg></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="day-group">
+      <div class="day-label">昨天 · 9月9日 <span class="d-kcal">共 约 1720 kcal</span></div>
+      <div class="record-card">
+        <div class="meal-thumb thumb-noodle"></div>
+        <div class="record-info">
+          <div class="m-name">红烧牛肉面（大碗 · 加蛋）</div>
+          <div class="m-meta">19:15 · 晚餐 · 约 780 – 950 kcal</div>
+        </div>
+        <div class="record-right">
+          <span class="mini-badge b-alert"><i></i>红灯</span>
+          <div class="rec-del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/><path d="M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13"/></svg></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 设置区：默认折叠 -->
+    <div class="settings-zone">
+      <div class="settings-card">
+        <div class="settings-header">
+          <div class="sh-left">
+            <div class="sh-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.3 1a7 7 0 0 0-2-1.2L14 3h-4l-.6 2.7a7 7 0 0 0-2 1.2l-2.3-1-2 3.4 2 1.5A7 7 0 0 0 5 12c0 .4 0 .8.1 1.2l-2 1.5 2 3.4 2.3-1a7 7 0 0 0 2 1.2L10 21h4l.6-2.7a7 7 0 0 0 2-1.2l2.3 1 2-3.4-2-1.5c.1-.4.1-.8.1-1.2z"/></svg>
+            </div>
+            <div>
+              <div class="sh-t">演示设置</div>
+              <div class="sh-s">目标 · 每日建议范围</div>
+            </div>
+          </div>
+          <div class="sh-arrow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="disclaimer">
+      食刻 AI 为产品演示 Demo，数据均为估算区间，<b>不构成医疗诊断或专业营养建议</b>。<br>
+      演示使用虚构资料；图片仅用于当次识别，不会长期保存。
+    </div>
+  </div>
+</div></div>
+<div class="demo-state"><b>A</b>默认 · 记录列表 + 设置折叠</div>
+</div>
+
+<!-- ============ B 删除撤销 Toast ============ -->
+<div class="phone-wrap">
+<div class="phone"><div class="screen">
+  <div class="statusbar">
+    <span class="sb-time">9:41</span>
+    <span class="sb-icons">
+      <svg width="17" height="11" viewBox="0 0 17 11" fill="#3E3833"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.7" y="4.7" width="3" height="6.3" rx="1"/><rect x="9.4" y="2.3" width="3" height="8.7" rx="1"/><rect x="14" y="0" width="3" height="11" rx="1"/></svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="#3E3833"><path d="M8 9.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"/><path d="M8 5.5c-2 0-3.8.8-5.1 2l1.4 1.5A5.2 5.2 0 0 1 8 7.5c1.3 0 2.6.6 3.7 1.5l1.4-1.4A7.2 7.2 0 0 0 8 5.5z"/><path d="M8 1C4.9 1 2.1 2.3 0 4.4l1.4 1.4A9.3 9.3 0 0 1 8 3c2.6 0 5 1.1 6.6 2.8L16 4.4A11.2 11.2 0 0 0 8 1z"/></svg>
+      <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="20" height="11" rx="3.5" stroke="#3E3833" opacity=".45"/><rect x="2.2" y="2.2" width="15" height="7.6" rx="2" fill="#3E3833"/><path d="M22.5 4v4c1.1-.3 1.9-1.1 1.9-2s-.8-1.7-1.9-2z" fill="#3E3833" opacity=".45"/></svg>
+    </span>
+  </div>
+  <div class="mp-capsule-row"><div class="mp-capsule"><span class="dot3"><i></i><i></i><i></i></span><span></span><span class="ring"></span></div></div>
+
+  <div class="page-head">
+    <div class="page-title">记录与设置</div>
+    <div class="page-sub">最近保存的餐食 · 演示参数</div>
+  </div>
+
+  <div class="page">
+    <div class="day-group">
+      <div class="day-label">今天 · 9月10日 <span class="d-kcal">已记录 约 1290 kcal</span></div>
+      <!-- 午餐记录已被删除，只剩两条 -->
+      <div class="record-card">
+        <div class="meal-thumb thumb-cup"></div>
+        <div class="record-info">
+          <div class="m-name">燕麦奶拿铁（小杯）</div>
+          <div class="m-meta">10:05 · 加餐 · 约 120 – 160 kcal</div>
+        </div>
+        <div class="record-right">
+          <span class="mini-badge b-ok"><i></i>绿灯</span>
+          <div class="rec-del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/><path d="M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13"/></svg></div>
+        </div>
+      </div>
+      <div class="record-card">
+        <div class="meal-thumb thumb-bowl"></div>
+        <div class="record-info">
+          <div class="m-name">全麦三明治 + 无糖豆浆</div>
+          <div class="m-meta">08:20 · 早餐 · 约 380 – 440 kcal</div>
+        </div>
+        <div class="record-right">
+          <span class="mini-badge b-ok"><i></i>绿灯</span>
+          <div class="rec-del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/><path d="M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13"/></svg></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 删除撤销 Toast -->
+  <div class="undo-toast">
+    <div class="ut-body">
+      <div class="ut-t">已删除「午餐」这条记录</div>
+      <div class="ut-s">今日汇总已同步更新</div>
+    </div>
+    <div class="ut-btn">撤销</div>
+  </div>
+</div></div>
+<div class="demo-state"><b>B</b>删除后 · 支持撤销</div>
+</div>
+
+<!-- ============ C 设置展开 ============ -->
+<div class="phone-wrap">
+<div class="phone"><div class="screen">
+  <div class="statusbar">
+    <span class="sb-time">9:41</span>
+    <span class="sb-icons">
+      <svg width="17" height="11" viewBox="0 0 17 11" fill="#3E3833"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.7" y="4.7" width="3" height="6.3" rx="1"/><rect x="9.4" y="2.3" width="3" height="8.7" rx="1"/><rect x="14" y="0" width="3" height="11" rx="1"/></svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="#3E3833"><path d="M8 9.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"/><path d="M8 5.5c-2 0-3.8.8-5.1 2l1.4 1.5A5.2 5.2 0 0 1 8 7.5c1.3 0 2.6.6 3.7 1.5l1.4-1.4A7.2 7.2 0 0 0 8 5.5z"/><path d="M8 1C4.9 1 2.1 2.3 0 4.4l1.4 1.4A9.3 9.3 0 0 1 8 3c2.6 0 5 1.1 6.6 2.8L16 4.4A11.2 11.2 0 0 0 8 1z"/></svg>
+      <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="20" height="11" rx="3.5" stroke="#3E3833" opacity=".45"/><rect x="2.2" y="2.2" width="15" height="7.6" rx="2" fill="#3E3833"/><path d="M22.5 4v4c1.1-.3 1.9-1.1 1.9-2s-.8-1.7-1.9-2z" fill="#3E3833" opacity=".45"/></svg>
+    </span>
+  </div>
+  <div class="mp-capsule-row"><div class="mp-capsule"><span class="dot3"><i></i><i></i><i></i></span><span></span><span class="ring"></span></div></div>
+
+  <div class="page-head">
+    <div class="page-title">记录与设置</div>
+    <div class="page-sub">最近保存的餐食 · 演示参数</div>
+  </div>
+
+  <div class="page">
+    <!-- 设置区：展开态 -->
+    <div class="settings-zone" style="margin-top:6px;">
+      <div class="settings-card">
+        <div class="settings-header">
+          <div class="sh-left">
+            <div class="sh-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.3 1a7 7 0 0 0-2-1.2L14 3h-4l-.6 2.7a7 7 0 0 0-2 1.2l-2.3-1-2 3.4 2 1.5A7 7 0 0 0 5 12c0 .4 0 .8.1 1.2l-2 1.5 2 3.4 2.3-1a7 7 0 0 0 2 1.2L10 21h4l.6-2.7a7 7 0 0 0 2-1.2l2.3 1 2-3.4-2-1.5c.1-.4.1-.8.1-1.2z"/></svg>
+            </div>
+            <div>
+              <div class="sh-t">演示设置</div>
+              <div class="sh-s">仅作用于 Demo 数据</div>
+            </div>
+          </div>
+          <div class="sh-arrow" style="transform:rotate(90deg);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
+          </div>
+        </div>
+        <div class="settings-body">
+          <div class="set-row">
+            <div class="set-label">目标方向<span class="s-sub">影响每日建议范围</span></div>
+            <div class="goal-seg">
+              <div class="g-seg active">减脂</div>
+              <div class="g-seg">维持</div>
+              <div class="g-seg">增肌</div>
+            </div>
+          </div>
+          <div class="set-row">
+            <div class="set-label">每日建议下限</div>
+            <div class="range-stepper">
+              <div class="step-btn">−</div>
+              <div class="step-val"><div class="v">1400</div><div class="u">kcal</div></div>
+              <div class="step-btn">＋</div>
+            </div>
+          </div>
+          <div class="set-row">
+            <div class="set-label">每日建议上限</div>
+            <div class="range-stepper">
+              <div class="step-btn">−</div>
+              <div class="step-val"><div class="v">1600</div><div class="u">kcal</div></div>
+              <div class="step-btn">＋</div>
+            </div>
+          </div>
+          <div class="set-row">
+            <div class="set-label">识别前压缩图片<span class="s-sub">节省 AI 调用成本</span></div>
+            <div class="switch"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="disclaimer">
+      食刻 AI 为产品演示 Demo，数据均为估算区间，<b>不构成医疗诊断或专业营养建议</b>。<br>
+      演示使用虚构资料；图片仅用于当次识别，不会长期保存。<br>
+      如有特殊饮食需求，请咨询注册营养师或医生。
+    </div>
+  </div>
+</div></div>
+<div class="demo-state"><b>C</b>设置展开 · 每日建议范围可调</div>
+</div>
+
+<!-- ============ D 历史空状态 ============ -->
+<div class="phone-wrap">
+<div class="phone"><div class="screen">
+  <div class="statusbar">
+    <span class="sb-time">9:41</span>
+    <span class="sb-icons">
+      <svg width="17" height="11" viewBox="0 0 17 11" fill="#3E3833"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.7" y="4.7" width="3" height="6.3" rx="1"/><rect x="9.4" y="2.3" width="3" height="8.7" rx="1"/><rect x="14" y="0" width="3" height="11" rx="1"/></svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="#3E3833"><path d="M8 9.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"/><path d="M8 5.5c-2 0-3.8.8-5.1 2l1.4 1.5A5.2 5.2 0 0 1 8 7.5c1.3 0 2.6.6 3.7 1.5l1.4-1.4A7.2 7.2 0 0 0 8 5.5z"/><path d="M8 1C4.9 1 2.1 2.3 0 4.4l1.4 1.4A9.3 9.3 0 0 1 8 3c2.6 0 5 1.1 6.6 2.8L16 4.4A11.2 11.2 0 0 0 8 1z"/></svg>
+      <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="20" height="11" rx="3.5" stroke="#3E3833" opacity=".45"/><rect x="2.2" y="2.2" width="15" height="7.6" rx="2" fill="#3E3833"/><path d="M22.5 4v4c1.1-.3 1.9-1.1 1.9-2s-.8-1.7-1.9-2z" fill="#3E3833" opacity=".45"/></svg>
+    </span>
+  </div>
+  <div class="mp-capsule-row"><div class="mp-capsule"><span class="dot3"><i></i><i></i><i></i></span><span></span><span class="ring"></span></div></div>
+
+  <div class="page-head">
+    <div class="page-title">记录与设置</div>
+    <div class="page-sub">最近保存的餐食 · 演示参数</div>
+  </div>
+
+  <div class="page">
+    <div class="hist-empty">
+      <div class="he-art"></div>
+      <div class="he-t">还没有保存过记录</div>
+      <div class="he-s">保存过的每一餐都会出现在这里<br>回到首页，记录今天的第一顿吧</div>
+    </div>
+  </div>
+</div></div>
+<div class="demo-state"><b>D</b>历史记录为空</div>
+</div>
+
+</body>
+</html>

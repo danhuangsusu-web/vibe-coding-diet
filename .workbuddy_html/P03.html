@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>P03 识别确认页 · 食刻 AI</title>
+<style>
+:root{
+  --bg-cream:#FAF6EF; --bg-oat:#F3EDE2; --bg-butter:#FBF3DC; --card-white:#FFFDF9;
+  --primary:#F0A65B; --primary-deep:#C97F33; --primary-soft:#FAE3C7;
+  --text-primary:#3E3833; --text-secondary:#6E655B; --text-tertiary:#9A9086;
+  --ok-bg:#E3F1E6; --ok-accent:#6FAE87; --ok-text:#3F7050;
+  --warn-bg:#FBF0D3; --warn-accent:#D9AE4E; --warn-text:#8A6B28;
+  --alert-bg:#F8E4DC; --alert-accent:#D68F73; --alert-text:#9C5238;
+  --shadow-soft:0 6px 18px rgba(196,168,128,.12);
+  --shadow-main:0 10px 28px rgba(217,138,61,.20);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  background:#E4DED2;min-height:100vh;padding:40px 16px;
+  display:flex;flex-wrap:wrap;gap:48px;align-items:flex-start;justify-content:center;
+  -webkit-font-smoothing:antialiased;color:var(--text-primary);
+}
+.demo-state{text-align:center;margin-top:16px;font-size:12px;letter-spacing:1.5px;color:#6E655B;}
+.demo-state b{display:block;font-size:14px;color:#3E3833;margin-bottom:3px;}
+.phone-wrap{display:flex;flex-direction:column;align-items:center;}
+
+.phone{width:375px;background:#1f1d1b;border-radius:54px;padding:12px;flex-shrink:0;box-shadow:0 32px 80px rgba(62,56,51,.28),0 8px 24px rgba(62,56,51,.15);}
+.screen{
+  width:351px;height:740px;border-radius:44px;overflow:hidden;
+  background:var(--bg-cream);position:relative;
+  overflow-y:auto;scrollbar-width:none;display:flex;flex-direction:column;
+}
+.screen::-webkit-scrollbar{display:none;}
+
+.statusbar{
+  height:54px;display:flex;justify-content:space-between;align-items:center;
+  padding:20px 24px 0;flex-shrink:0;position:sticky;top:0;z-index:10;
+  background:linear-gradient(var(--bg-cream) 78%,transparent);
+}
+.sb-time{font-size:15px;font-weight:600;letter-spacing:.3px;font-variant-numeric:tabular-nums;}
+.sb-icons{display:flex;align-items:center;gap:6px;}
+.sb-icons svg{display:block;}
+.mp-capsule-row{display:flex;justify-content:flex-end;padding:2px 10px 0;flex-shrink:0;}
+.mp-capsule{width:87px;height:32px;border-radius:999px;border:1px solid rgba(62,56,51,.14);display:flex;align-items:center;justify-content:center;}
+.mp-capsule span{width:1px;height:18px;background:rgba(62,56,51,.14);}
+.mp-capsule .dot3{width:16px;display:flex;gap:3px;justify-content:center;margin:0 9px;}
+.mp-capsule .dot3 i{width:3.5px;height:3.5px;border-radius:50%;background:#3E3833;opacity:.55;font-style:normal;}
+.mp-capsule .ring{width:13px;height:13px;border-radius:50%;border:1.6px solid #3E3833;opacity:.55;margin:0 9px;position:relative;}
+.mp-capsule .ring::after{content:"";position:absolute;inset:3.5px;border-radius:50%;background:#3E3833;}
+
+.nav{display:flex;align-items:center;justify-content:space-between;padding:8px 20px 4px;flex-shrink:0;}
+.nav-back{width:44px;height:44px;border-radius:50%;background:var(--card-white);box-shadow:var(--shadow-soft);display:flex;align-items:center;justify-content:center;color:var(--text-primary);}
+.nav-back svg{width:20px;height:20px;}
+.nav-title{font-size:16px;font-weight:600;}
+.nav-spacer{width:44px;}
+.nav-sub{text-align:center;font-size:12px;color:var(--text-tertiary);margin-top:4px;flex-shrink:0;}
+
+.page{padding:12px 20px 24px;flex:1;}
+
+/* 来源摘要 */
+.src-summary{background:var(--card-white);border-radius:20px;box-shadow:var(--shadow-soft);padding:12px 14px;display:flex;align-items:center;gap:12px;}
+.src-img{width:44px;height:44px;border-radius:14px;background:linear-gradient(160deg,#F6DFC0,#EFC998);flex-shrink:0;position:relative;overflow:hidden;}
+.src-img::before{content:"";position:absolute;left:50%;top:14px;width:24px;height:13px;transform:translateX(-50%);background:#FFFDF9;border-radius:3px 3px 10px 10px;}
+.src-img::after{content:"";position:absolute;left:50%;top:11px;width:18px;height:4px;transform:translateX(-50%);background:#C9A05E;border-radius:999px;}
+.src-info{flex:1;min-width:0;}
+.src-info .s-t{font-size:14px;font-weight:500;}
+.src-info .s-s{font-size:12px;color:var(--text-tertiary);margin-top:2px;}
+.src-count{font-size:12px;color:var(--primary-deep);background:var(--primary-soft);border-radius:999px;padding:5px 11px;font-weight:500;flex-shrink:0;}
+
+/* 整餐级提示（移出单品卡，置于列表顶部） */
+.meal-note{
+  margin-top:14px;background:var(--warn-bg);border-radius:16px;
+  padding:13px 15px;display:flex;gap:11px;align-items:flex-start;
+}
+.meal-note .mn-icon{width:30px;height:30px;border-radius:10px;background:var(--card-white);display:flex;align-items:center;justify-content:center;color:var(--warn-text);flex-shrink:0;}
+.meal-note .mn-icon svg{width:16px;height:16px;}
+.meal-note .mn-text{font-size:12px;color:var(--warn-text);line-height:1.8;}
+.meal-note .mn-text b{font-weight:600;}
+
+.zone-head{display:flex;justify-content:space-between;align-items:center;margin:18px 2px 10px;}
+.zone-head h3{font-size:14px;font-weight:600;}
+.zone-head span{font-size:12px;color:var(--text-tertiary);}
+
+/* 菜品卡 */
+.dish-card{background:var(--card-white);border-radius:20px;box-shadow:var(--shadow-soft);padding:15px 15px 14px;margin-bottom:12px;position:relative;}
+.dish-card.low-conf{background:linear-gradient(0deg,var(--card-white),var(--card-white)),var(--warn-bg);box-shadow:var(--shadow-soft);outline:1.5px solid rgba(217,174,78,.35);}
+.dish-top{display:flex;align-items:flex-start;gap:12px;}
+.dish-thumb{width:44px;height:44px;border-radius:14px;flex-shrink:0;position:relative;overflow:hidden;}
+.dish-thumb.green{background:linear-gradient(160deg,#DFEBE1,#BCD9C4);}
+.dish-thumb.green::before{content:"";position:absolute;left:50%;top:15px;width:20px;height:18px;transform:translateX(-50%);background:#6FAE87;border-radius:50% 50% 45% 45%;}
+.dish-thumb.meat{background:linear-gradient(160deg,#F6DFC0,#EBC493);}
+.dish-thumb.meat::before{content:"";position:absolute;left:50%;top:16px;width:22px;height:14px;transform:translateX(-50%);background:#C98A5E;border-radius:8px;}
+.dish-thumb.rice{background:linear-gradient(160deg,#F4EEE2,#E8DEC8);}
+.dish-thumb.rice::before{content:"";position:absolute;left:50%;top:15px;width:22px;height:13px;transform:translateX(-50%);background:#FFFDF9;border-radius:3px 3px 9px 9px;box-shadow:inset 0 -3px 0 #E8D5B5;}
+.dish-main{flex:1;min-width:0;}
+.dish-name-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.dish-name{font-size:15px;font-weight:600;}
+.conf{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:500;border-radius:999px;padding:4px 10px;min-height:24px;}
+.conf i{width:6px;height:6px;border-radius:50%;font-style:normal;}
+.conf-high{background:var(--ok-bg);color:var(--ok-text);} .conf-high i{background:var(--ok-accent);}
+.conf-mid{background:var(--warn-bg);color:var(--warn-text);} .conf-mid i{background:var(--warn-accent);}
+.conf-low{background:var(--alert-bg);color:var(--alert-text);} .conf-low i{background:var(--alert-accent);}
+.dish-uncertain{font-size:12px;color:var(--text-secondary);margin-top:4px;line-height:1.6;}
+.dish-del{
+  width:36px;height:36px;border-radius:50%;background:var(--alert-bg);color:var(--alert-text);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.dish-del svg{width:15px;height:15px;}
+
+.attr-row{display:flex;align-items:flex-start;gap:8px;margin-top:12px;}
+.attr-label{font-size:12px;color:var(--text-tertiary);padding-top:8px;width:36px;flex-shrink:0;}
+.tag-wrap{display:flex;flex-wrap:wrap;gap:7px;flex:1;}
+.cook-tag{font-size:12px;border-radius:999px;padding:7px 13px;background:var(--bg-oat);color:var(--text-secondary);min-height:32px;display:inline-flex;align-items:center;}
+.cook-tag.active{background:var(--primary-soft);color:var(--primary-deep);font-weight:600;}
+.cook-tag.oily.active{background:var(--warn-bg);color:var(--warn-text);font-weight:600;}
+.tag-edit{font-size:12px;color:var(--primary-deep);display:inline-flex;align-items:center;min-height:32px;font-weight:500;}
+
+.portion-row{display:flex;align-items:center;gap:8px;margin-top:10px;}
+.portion-seg{flex:1;display:flex;background:var(--bg-oat);border-radius:999px;padding:3px;}
+.p-seg{flex:1;text-align:center;font-size:12px;color:var(--text-secondary);border-radius:999px;min-height:36px;display:flex;align-items:center;justify-content:center;}
+.p-seg.active{background:var(--card-white);color:var(--primary-deep);font-weight:600;box-shadow:0 2px 8px rgba(196,168,128,.22);}
+
+/* 低可信度补充输入 */
+.low-input{
+  margin-top:12px;background:var(--bg-oat);border-radius:14px;padding:11px 13px;
+  display:flex;align-items:center;gap:9px;
+}
+.low-input svg{width:16px;height:16px;color:var(--primary-deep);flex-shrink:0;}
+.low-input .li-text{font-size:12px;color:var(--text-tertiary);}
+
+/* 添加菜品 */
+.add-dish{
+  border:2px dashed #D9B98A;border-radius:20px;background:transparent;
+  min-height:52px;display:flex;align-items:center;justify-content:center;gap:8px;
+  color:var(--primary-deep);font-size:14px;font-weight:500;
+}
+.add-dish svg{width:17px;height:17px;}
+
+.assure-line{margin-top:14px;font-size:12px;color:var(--text-tertiary);line-height:1.7;text-align:center;padding:0 10px;}
+
+.cta-wrap{position:sticky;bottom:0;padding:12px 20px 20px;flex-shrink:0;background:linear-gradient(transparent,var(--bg-cream) 35%);z-index:12;}
+.cta-btn{
+  height:52px;border-radius:999px;background:linear-gradient(145deg,#F3AC62,#E8964A);
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  color:#fff;font-size:16px;font-weight:600;letter-spacing:1px;box-shadow:var(--shadow-main);
+}
+.cta-note{text-align:center;font-size:12px;color:var(--text-tertiary);margin-top:8px;}
+</style>
+</head>
+<body>
+
+<div class="phone-wrap">
+<div class="phone"><div class="screen">
+  <div class="statusbar">
+    <span class="sb-time">9:41</span>
+    <span class="sb-icons">
+      <svg width="17" height="11" viewBox="0 0 17 11" fill="#3E3833"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.7" y="4.7" width="3" height="6.3" rx="1"/><rect x="9.4" y="2.3" width="3" height="8.7" rx="1"/><rect x="14" y="0" width="3" height="11" rx="1"/></svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="#3E3833"><path d="M8 9.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"/><path d="M8 5.5c-2 0-3.8.8-5.1 2l1.4 1.5A5.2 5.2 0 0 1 8 7.5c1.3 0 2.6.6 3.7 1.5l1.4-1.4A7.2 7.2 0 0 0 8 5.5z"/><path d="M8 1C4.9 1 2.1 2.3 0 4.4l1.4 1.4A9.3 9.3 0 0 1 8 3c2.6 0 5 1.1 6.6 2.8L16 4.4A11.2 11.2 0 0 0 8 1z"/></svg>
+      <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="20" height="11" rx="3.5" stroke="#3E3833" opacity=".45"/><rect x="2.2" y="2.2" width="15" height="7.6" rx="2" fill="#3E3833"/><path d="M22.5 4v4c1.1-.3 1.9-1.1 1.9-2s-.8-1.7-1.9-2z" fill="#3E3833" opacity=".45"/></svg>
+    </span>
+  </div>
+  <div class="mp-capsule-row"><div class="mp-capsule"><span class="dot3"><i></i><i></i><i></i></span><span></span><span class="ring"></span></div></div>
+
+  <div class="nav">
+    <div class="nav-back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></div>
+    <div class="nav-title">确认识别结果</div>
+    <div class="nav-spacer"></div>
+  </div>
+  <div class="nav-sub">确认或改一改，再开始计算</div>
+
+  <div class="page">
+    <div class="src-summary">
+      <div class="src-img"></div>
+      <div class="src-info">
+        <div class="s-t">外卖菜单截图</div>
+        <div class="s-s">12:26 上传 · 已压缩</div>
+      </div>
+      <div class="src-count">3 道菜</div>
+    </div>
+
+    <!-- 整餐级提示（移出单品卡，置顶） -->
+    <div class="meal-note">
+      <div class="mn-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3l9 16H3l9-16z"/><path d="M12 10v4"/><circle cx="12" cy="17" r=".5" fill="currentColor"/></svg>
+      </div>
+      <div class="mn-text"><b>整餐提示：</b>有两道菜都可能用油较多，且实际用油量无法确认，估算区间会偏宽，评级会按偏保守处理。</div>
+    </div>
+
+    <div class="zone-head"><h3>识别出的菜品</h3><span>点 ✕ 可删除</span></div>
+
+    <!-- 低可信度置顶：米饭 -->
+    <div class="dish-card low-conf">
+      <div class="dish-top">
+        <div class="dish-thumb rice"></div>
+        <div class="dish-main">
+          <div class="dish-name-row">
+            <span class="dish-name">米饭</span>
+            <span class="conf conf-low"><i></i>不确定</span>
+          </div>
+          <div class="dish-uncertain">截图中份量不清晰，请补充后再计算</div>
+        </div>
+        <div class="dish-del">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </div>
+      </div>
+      <!-- 低可信度补充 -->
+      <div class="low-input">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20h16"/><path d="M6 16l9.5-9.5a2.1 2.1 0 0 1 3 3L9 19l-4 1 1-4z"/></svg>
+        <div class="li-text">补充一下，例如：一小碗米饭 / 半碗</div>
+      </div>
+      <div class="portion-row">
+        <div class="attr-label">份量</div>
+        <div class="portion-seg">
+          <div class="p-seg">小份</div>
+          <div class="p-seg active">正常份</div>
+          <div class="p-seg">大份</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 中可信度：溜肉段 -->
+    <div class="dish-card">
+      <div class="dish-top">
+        <div class="dish-thumb meat"></div>
+        <div class="dish-main">
+          <div class="dish-name-row">
+            <span class="dish-name">溜肉段</span>
+            <span class="conf conf-mid"><i></i>可能</span>
+          </div>
+          <div class="dish-uncertain">与「锅包肉」外观相似，请确认菜名</div>
+        </div>
+        <div class="dish-del">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </div>
+      </div>
+      <div class="attr-row">
+        <div class="attr-label">做法</div>
+        <div class="tag-wrap">
+          <span class="cook-tag oily active">溜（过油）</span>
+          <span class="cook-tag">糖醋</span>
+          <span class="tag-edit">修改 ›</span>
+        </div>
+      </div>
+      <div class="portion-row">
+        <div class="attr-label">份量</div>
+        <div class="portion-seg">
+          <div class="p-seg">小份</div>
+          <div class="p-seg active">正常份</div>
+          <div class="p-seg">大份</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 高可信度：干煸芸豆 -->
+    <div class="dish-card">
+      <div class="dish-top">
+        <div class="dish-thumb green"></div>
+        <div class="dish-main">
+          <div class="dish-name-row">
+            <span class="dish-name">干煸芸豆</span>
+            <span class="conf conf-high"><i></i>较确定</span>
+          </div>
+        </div>
+        <div class="dish-del">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </div>
+      </div>
+      <div class="attr-row">
+        <div class="attr-label">做法</div>
+        <div class="tag-wrap">
+          <span class="cook-tag oily active">干煸</span>
+          <span class="cook-tag">清炒</span>
+          <span class="tag-edit">修改 ›</span>
+        </div>
+      </div>
+      <div class="portion-row">
+        <div class="attr-label">份量</div>
+        <div class="portion-seg">
+          <div class="p-seg">小份</div>
+          <div class="p-seg active">正常份</div>
+          <div class="p-seg">大份</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="add-dish">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      添加漏掉的菜品
+    </div>
+
+    <div class="assure-line">未经你的确认，不会生成评级，也不会保存任何记录</div>
+  </div>
+
+  <div class="cta-wrap">
+    <div class="cta-btn">确认无误，开始计算</div>
+    <div class="cta-note">热量与红黄绿灯由规则计算，AI 不直接决定</div>
+  </div>
+</div></div>
+<div class="demo-state"><b>P03</b>识别确认 · 低可信度置顶 + 整餐提示上移</div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,33 @@
+{
+  "name": "@food-sense/server",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "db:generate": "prisma generate",
+    "db:validate": "prisma validate",
+    "db:push": "prisma db push",
+    "db:check": "node scripts/check-db.mjs"
+  },
+  "dependencies": {
+    "@ai-sdk/openai-compatible": "3.0.45",
+    "@food-sense/nutrition": "workspace:*",
+    "@food-sense/shared": "workspace:*",
+    "@prisma/client": "6.19.3",
+    "ai": "7.0.94",
+    "next": "15.5.25",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "zod": "^4.1.8"
+  },
+  "devDependencies": {
+    "@types/node": "^24.3.1",
+    "@types/react": "^18.3.24",
+    "@types/react-dom": "^18.3.7",
+    "prisma": "6.19.3",
+    "typescript": "^5.9.2"
+  }
+}

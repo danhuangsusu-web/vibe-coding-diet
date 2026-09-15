@@ -1,0 +1,40 @@
+{
+  "name": "@food-sense/miniprogram",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev:weapp": "taro build --type weapp --watch",
+    "build:weapp": "taro build --type weapp",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@babel/runtime": "^7.28.4",
+    "@food-sense/shared": "workspace:*",
+    "@tarojs/components": "4.2.1",
+    "@tarojs/helper": "4.2.1",
+    "@tarojs/plugin-framework-react": "4.2.1",
+    "@tarojs/plugin-platform-weapp": "4.2.1",
+    "@tarojs/react": "4.2.1",
+    "@tarojs/runtime": "4.2.1",
+    "@tarojs/shared": "4.2.1",
+    "@tarojs/taro": "4.2.1",
+    "jotai": "^2.13.1",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "tdesign-miniprogram": "1.16.1"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.28.4",
+    "@babel/preset-react": "^7.28.0",
+    "@prefresh/babel-plugin": "^0.5.2",
+    "@tarojs/cli": "4.2.1",
+    "@tarojs/webpack5-runner": "4.2.1",
+    "@types/react": "^18.3.24",
+    "@types/wechat-miniprogram": "3.4.10",
+    "babel-preset-taro": "4.2.1",
+    "react-refresh": "0.14.2",
+    "sass": "^1.92.1",
+    "typescript": "^5.9.2",
+    "webpack": "5.91.0"
+  }
+}

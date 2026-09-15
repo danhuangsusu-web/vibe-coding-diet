@@ -1,0 +1,48 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model DemoProfile {
+  id               String       @id @default(cuid())
+  name             String
+  dailyCalorieMin  Int
+  dailyCalorieMax  Int
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  mealRecords      MealRecord[]
+}
+
+model MealRecord {
+  id          String      @id @default(cuid())
+  profileId   String
+  sourceType  InputType
+  sourceText  String?
+  items       Json
+  calorieMin  Int
+  calorieMax  Int
+  rating      MealRating
+  reason      String
+  advice      String
+  modelVersion String?
+  ruleVersion  String
+  createdAt    DateTime    @default(now())
+  profile      DemoProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId, createdAt])
+}
+
+enum InputType {
+  IMAGE
+  TEXT
+}
+
+enum MealRating {
+  GREEN
+  YELLOW
+  RED
+}

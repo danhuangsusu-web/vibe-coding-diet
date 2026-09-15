@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>P04 评估结果页 · 食刻 AI</title>
+<style>
+:root{
+  --bg-cream:#FAF6EF; --bg-oat:#F3EDE2; --bg-butter:#FBF3DC; --card-white:#FFFDF9;
+  --primary:#F0A65B; --primary-deep:#C97F33; --primary-soft:#FAE3C7;
+  --text-primary:#3E3833; --text-secondary:#6E655B; --text-tertiary:#9A9086;
+  --ok-bg:#E3F1E6; --ok-accent:#6FAE87; --ok-text:#3F7050;
+  --warn-bg:#FBF0D3; --warn-accent:#D9AE4E; --warn-text:#8A6B28;
+  --alert-bg:#F8E4DC; --alert-accent:#D68F73; --alert-text:#9C5238;
+  --shadow-soft:0 6px 18px rgba(196,168,128,.12);
+  --shadow-main:0 10px 28px rgba(217,138,61,.20);
+  --shadow-warn:0 14px 34px rgba(217,174,78,.22);
+  --shadow-ok:0 14px 34px rgba(111,174,135,.20);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  background:#E4DED2;min-height:100vh;padding:40px 16px;
+  display:flex;flex-wrap:wrap;gap:48px;align-items:flex-start;justify-content:center;
+  -webkit-font-smoothing:antialiased;color:var(--text-primary);
+}
+.demo-state{text-align:center;margin-top:16px;font-size:12px;letter-spacing:1.5px;color:#6E655B;}
+.demo-state b{display:block;font-size:14px;color:#3E3833;margin-bottom:3px;}
+.phone-wrap{display:flex;flex-direction:column;align-items:center;}
+
+.phone{width:375px;background:#1f1d1b;border-radius:54px;padding:12px;flex-shrink:0;box-shadow:0 32px 80px rgba(62,56,51,.28),0 8px 24px rgba(62,56,51,.15);}
+.screen{
+  width:351px;height:740px;border-radius:44px;overflow:hidden;
+  background:var(--bg-cream);position:relative;
+  overflow-y:auto;scrollbar-width:none;display:flex;flex-direction:column;
+}
+.screen::-webkit-scrollbar{display:none;}
+
+.statusbar{
+  height:54px;display:flex;justify-content:space-between;align-items:center;
+  padding:20px 24px 0;flex-shrink:0;position:sticky;top:0;z-index:10;
+  background:linear-gradient(var(--bg-cream) 78%,transparent);
+}
+.sb-time{font-size:15px;font-weight:600;letter-spacing:.3px;font-variant-numeric:tabular-nums;}
+.sb-icons{display:flex;align-items:center;gap:6px;}
+.sb-icons svg{display:block;}
+.mp-capsule-row{display:flex;justify-content:flex-end;padding:2px 10px 0;flex-shrink:0;}
+.mp-capsule{width:87px;height:32px;border-radius:999px;border:1px solid rgba(62,56,51,.14);display:flex;align-items:center;justify-content:center;}
+.mp-capsule span{width:1px;height:18px;background:rgba(62,56,51,.14);}
+.mp-capsule .dot3{width:16px;display:flex;gap:3px;justify-content:center;margin:0 9px;}
+.mp-capsule .dot3 i{width:3.5px;height:3.5px;border-radius:50%;background:#3E3833;opacity:.55;font-style:normal;}
+.mp-capsule .ring{width:13px;height:13px;border-radius:50%;border:1.6px solid #3E3833;opacity:.55;margin:0 9px;position:relative;}
+.mp-capsule .ring::after{content:"";position:absolute;inset:3.5px;border-radius:50%;background:#3E3833;}
+
+.nav{display:flex;align-items:center;justify-content:space-between;padding:8px 20px 4px;flex-shrink:0;}
+.nav-back{width:44px;height:44px;border-radius:50%;background:var(--card-white);box-shadow:var(--shadow-soft);display:flex;align-items:center;justify-content:center;color:var(--text-primary);}
+.nav-back svg{width:20px;height:20px;}
+.nav-title{font-size:16px;font-weight:600;}
+.nav-spacer{width:44px;}
+
+.page{padding:10px 20px 24px;flex:1;}
+
+/* ===== 评级主视觉 ===== */
+.verdict-hero{border-radius:26px;padding:24px 22px 22px;text-align:center;position:relative;overflow:hidden;}
+.verdict-hero.warn{background:linear-gradient(160deg,#FDF5E0,#F9EAC4);box-shadow:var(--shadow-warn);}
+.verdict-hero.ok{background:linear-gradient(160deg,#EDF6EF,#DFEFE4);box-shadow:var(--shadow-ok);}
+.light-row{display:flex;justify-content:center;gap:13px;margin-bottom:14px;}
+.lamp{width:15px;height:15px;border-radius:50%;background:rgba(62,56,51,.10);}
+.verdict-hero.warn .lamp.on{background:var(--warn-accent);box-shadow:0 0 0 6px rgba(217,174,78,.20),0 0 16px rgba(217,174,78,.45);}
+.verdict-hero.ok .lamp.on{background:var(--ok-accent);box-shadow:0 0 0 6px rgba(111,174,135,.20),0 0 16px rgba(111,174,135,.4);}
+.verdict-icon{
+  width:60px;height:60px;border-radius:50%;background:var(--card-white);margin:0 auto;
+  display:flex;align-items:center;justify-content:center;
+}
+.verdict-hero.warn .verdict-icon{color:var(--warn-text);box-shadow:0 6px 16px rgba(184,147,74,.20);}
+.verdict-hero.ok .verdict-icon{color:var(--ok-text);box-shadow:0 6px 16px rgba(111,174,135,.22);}
+.verdict-icon svg{width:26px;height:26px;}
+.verdict-title{margin-top:12px;font-size:22px;font-weight:600;letter-spacing:1px;}
+.verdict-hero.warn .verdict-title{color:var(--warn-text);}
+.verdict-hero.ok .verdict-title{color:var(--ok-text);}
+.verdict-sub{margin-top:6px;font-size:12px;line-height:1.7;padding:0 6px;}
+.verdict-hero.warn .verdict-sub{color:var(--warn-text);opacity:.88;}
+.verdict-hero.ok .verdict-sub{color:var(--ok-text);opacity:.88;}
+
+/* ===== 热量区间大卡 ===== */
+.kcal-card{margin-top:14px;background:var(--card-white);border-radius:22px;box-shadow:var(--shadow-soft);padding:20px 22px 18px;text-align:center;}
+.kcal-label{font-size:12px;color:var(--text-tertiary);letter-spacing:1px;}
+.kcal-range{margin-top:9px;display:flex;align-items:baseline;justify-content:center;gap:8px;}
+.kcal-range .about{font-size:15px;color:var(--text-secondary);font-weight:300;}
+.kcal-range .num{font-size:50px;font-weight:300;letter-spacing:-1.5px;line-height:1;}
+.kcal-range .dash{font-size:22px;font-weight:300;color:var(--text-tertiary);}
+.kcal-range .unit{font-size:14px;color:var(--text-secondary);}
+/* 重算前后对比 */
+.recalc-line{
+  margin-top:12px;display:flex;align-items:center;justify-content:center;gap:9px;
+  font-size:12px;color:var(--text-secondary);
+}
+.recalc-line .old{text-decoration:line-through;color:var(--text-tertiary);}
+.recalc-line svg{width:14px;height:14px;color:var(--ok-accent);}
+.recalc-line .new{color:var(--ok-text);font-weight:600;}
+.quota-line{margin-top:12px;display:inline-flex;align-items:center;gap:7px;background:var(--bg-oat);border-radius:999px;padding:8px 14px;font-size:12px;color:var(--text-secondary);min-height:32px;}
+.quota-line b{font-weight:600;}
+.quota-line b.warn-t{color:var(--warn-text);}
+.quota-line b.ok-t{color:var(--ok-text);}
+
+/* ===== 判定原因 ===== */
+.reason-card{margin-top:12px;background:var(--card-white);border-radius:18px;box-shadow:var(--shadow-soft);padding:14px 15px;display:flex;gap:12px;align-items:flex-start;}
+.reason-icon{width:36px;height:36px;border-radius:12px;background:var(--warn-bg);color:var(--warn-text);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.reason-icon svg{width:17px;height:17px;}
+.reason-body{flex:1;}
+.reason-title{font-size:13px;font-weight:600;}
+.reason-text{font-size:12px;color:var(--text-secondary);line-height:1.8;margin-top:4px;}
+.reason-text b{color:var(--warn-text);font-weight:600;}
+
+/* ===== 行动建议 ===== */
+.suggest-head{display:flex;align-items:center;justify-content:space-between;margin:18px 2px 10px;}
+.suggest-head h3{font-size:14px;font-weight:600;}
+.suggest-head span{font-size:12px;color:var(--text-tertiary);}
+.suggest-card{background:var(--card-white);border-radius:18px;box-shadow:var(--shadow-soft);padding:13px 14px;display:flex;align-items:center;gap:12px;margin-bottom:10px;}
+.suggest-num{width:32px;height:32px;border-radius:50%;background:var(--primary-soft);color:var(--primary-deep);font-size:14px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.suggest-body{flex:1;min-width:0;}
+.suggest-text{font-size:14px;font-weight:500;line-height:1.5;}
+.suggest-effect{font-size:12px;color:var(--ok-text);margin-top:3px;}
+.suggest-apply{
+  flex-shrink:0;font-size:13px;font-weight:500;color:var(--primary-deep);
+  background:var(--primary-soft);border-radius:999px;min-height:36px;padding:0 15px;
+  display:inline-flex;align-items:center;
+}
+.suggest-apply.applied{background:var(--ok-bg);color:var(--ok-text);}
+
+.assure-line{margin-top:12px;font-size:12px;color:var(--text-tertiary);line-height:1.7;text-align:center;padding:0 12px;}
+
+/* ===== 底部 CTA ===== */
+.cta-wrap{position:sticky;bottom:0;padding:12px 20px 20px;flex-shrink:0;background:linear-gradient(transparent,var(--bg-cream) 35%);z-index:12;}
+.cta-btn{height:52px;border-radius:999px;background:linear-gradient(145deg,#F3AC62,#E8964A);display:flex;align-items:center;justify-content:center;gap:8px;color:#fff;font-size:16px;font-weight:600;letter-spacing:1px;box-shadow:var(--shadow-main);}
+.cta-secondary{text-align:center;margin-top:10px;font-size:13px;color:var(--text-secondary);min-height:36px;display:flex;align-items:center;justify-content:center;}
+
+/* ===== 保存反馈（toast / 失败） ===== */
+.toast-ok{
+  position:absolute;left:50%;bottom:110px;transform:translateX(-50%);z-index:20;
+  background:var(--text-primary);color:#FFF6E8;border-radius:999px;
+  padding:0 20px;min-height:44px;display:flex;align-items:center;gap:9px;
+  font-size:14px;box-shadow:0 10px 26px rgba(62,56,51,.28);white-space:nowrap;
+}
+.toast-ok svg{width:17px;height:17px;color:#9BD3AE;}
+.save-fail{
+  position:absolute;left:20px;right:20px;bottom:100px;z-index:20;
+  background:var(--card-white);border-radius:18px;box-shadow:0 14px 36px rgba(62,56,51,.22);
+  padding:14px 16px;display:flex;align-items:center;gap:12px;
+}
+.save-fail .sf-icon{width:38px;height:38px;border-radius:12px;background:var(--alert-bg);color:var(--alert-text);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.save-fail .sf-icon svg{width:18px;height:18px;}
+.save-fail .sf-body{flex:1;}
+.save-fail .sf-t{font-size:14px;font-weight:600;}
+.save-fail .sf-s{font-size:12px;color:var(--text-secondary);margin-top:2px;}
+.save-fail .sf-retry{flex-shrink:0;font-size:13px;font-weight:600;color:var(--primary-deep);background:var(--primary-soft);border-radius:999px;min-height:36px;padding:0 15px;display:inline-flex;align-items:center;}
+</style>
+</head>
+<body>
+
+<!-- ============ A 黄灯 · 默认结果 ============ -->
+<div class="phone-wrap">
+<div class="phone"><div class="screen">
+  <div class="statusbar">
+    <span class="sb-time">9:41</span>
+    <span class="sb-icons">
+      <svg width="17" height="11" viewBox="0 0 17 11" fill="#3E3833"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.7" y="4.7" width="3" height="6.3" rx="1"/><rect x="9.4" y="2.3" width="3" height="8.7" rx="1"/><rect x="14" y="0" width="3" height="11" rx="1"/></svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="#3E3833"><path d="M8 9.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"/><path d="M8 5.5c-2 0-3.8.8-5.1 2l1.4 1.5A5.2 5.2 0 0 1 8 7.5c1.3 0 2.6.6 3.7 1.5l1.4-1.4A7.2 7.2 0 0 0 8 5.5z"/><path d="M8 1C4.9 1 2.1 2.3 0 4.4l1.4 1.4A9.3 9.3 0 0 1 8 3c2.6 0 5 1.1 6.6 2.8L16 4.4A11.2 11.2 0 0 0 8 1z"/></svg>
+      <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="20" height="11" rx="3.5" stroke="#3E3833" opacity=".45"/><rect x="2.2" y="2.2" width="15" height="7.6" rx="2" fill="#3E3833"/><path d="M22.5 4v4c1.1-.3 1.9-1.1 1.9-2s-.8-1.7-1.9-2z" fill="#3E3833" opacity=".45"/></svg>
+    </span>
+  </div>
+  <div class="mp-capsule-row"><div class="mp-capsule"><span class="dot3"><i></i><i></i><i></i></span><span></span><span class="ring"></span></div></div>
+
+  <div class="nav">
+    <div class="nav-back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></div>
+    <div class="nav-title">这顿饭怎么样</div>
+    <div class="nav-spacer"></div>
+  </div>
+
+  <div class="page">
+    <div class="verdict-hero warn">
+      <div class="light-row"><div class="lamp"></div><div class="lamp on"></div><div class="lamp"></div></div>
+      <div class="verdict-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 12h7"/></svg>
+      </div>
+      <div class="verdict-title">适量食用</div>
+      <div class="verdict-sub">可以吃，建议稍微调整一下吃法</div>
+    </div>
+
+    <div class="kcal-card">
+      <div class="kcal-label">本餐热量估算区间</div>
+      <div class="kcal-range">
+        <span class="about">约</span><span class="num">650</span><span class="dash">–</span><span class="num">850</span><span class="unit">千卡</span>
+      </div>
+      <div class="quota-line">午餐参考 500 – 580 千卡 · <b class="warn-t">略偏高</b></div>
+    </div>
+
+    <div class="reason-card">
+      <div class="reason-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.8-3.8"/></svg>
+      </div>
+      <div class="reason-body">
+        <div class="reason-title">为什么是黄灯</div>
+        <div class="reason-text"><b>两道菜都可能用油较多</b>，且实际用油量无法确认，区间偏宽。蔬菜和蛋白质的搭配本身不错。</div>
+      </div>
+    </div>
+
+    <div class="suggest-head"><h3>这样吃更合适</h3><span>现实可做的小调整</span></div>
+    <div class="suggest-card">
+      <div class="suggest-num">1</div>
+      <div class="suggest-body">
+        <div class="suggest-text">米饭减半，留一半菜汁不拌饭</div>
+        <div class="suggest-effect">更接近参考额度</div>
+      </div>
+      <div class="suggest-apply">采用</div>
+    </div>
+    <div class="suggest-card">
+      <div class="suggest-num">2</div>
+      <div class="suggest-body">
+        <div class="suggest-text">芸豆换成清炒时蔬（如果方便）</div>
+        <div class="suggest-effect">更接近参考额度</div>
+      </div>
+      <div class="suggest-apply">采用</div>
+    </div>
+
+    <div class="assure-line">估算仅供参考，不构成医疗或营养处方建议。<br>评价的是这顿选择，不是你。</div>
+  </div>
+
+  <div class="cta-wrap">
+    <div class="cta-btn">保存这顿饭</div>
+    <div class="cta-secondary">暂不保存，返回首页</div>
+  </div>
+</div></div>
+<div class="demo-state"><b>A</b>黄灯 · 先给决定，再给数据</div>
+</div>
+
+<!-- ============ B 采用建议后 · 重新计算 ============ -->
+<div class="phone-wrap">
+<div class="phone"><div class="screen">
+  <div class="statusbar">
+    <span class="sb-time">9:41</span>
+    <span class="sb-icons">
+      <svg width="17" height="11" viewBox="0 0 17 11" fill="#3E3833"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.7" y="4.7" width="3" height="6.3" rx="1"/><rect x="9.4" y="2.3" width="3" height="8.7" rx="1"/><rect x="14" y="0" width="3" height="11" rx="1"/></svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="#3E3833"><path d="M8 9.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"/><path d="M8 5.5c-2 0-3.8.8-5.1 2l1.4 1.5A5.2 5.2 0 0 1 8 7.5c1.3 0 2.6.6 3.7 1.5l1.4-1.4A7.2 7.2 0 0 0 8 5.5z"/><path d="M8 1C4.9 1 2.1 2.3 0 4.4l1.4 1.4A9.3 9.3 0 0 1 8 3c2.6 0 5 1.1 6.6 2.8L16 4.4A11.2 11.2 0 0 0 8 1z"/></svg>
+      <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="20" height="11" rx="3.5" stroke="#3E3833" opacity=".45"/><rect x="2.2" y="2.2" width="15" height="7.6" rx="2" fill="#3E3833"/><path d="M22.5 4v4c1.1-.3 1.9-1.1 1.9-2s-.8-1.7-1.9-2z" fill="#3E3833" opacity=".45"/></svg>
+    </span>
+  </div>
+  <div class="mp-capsule-row"><div class="mp-capsule"><span class="dot3"><i></i><i></i><i></i></span><span></span><span class="ring"></span></div></div>
+
+  <div class="nav">
+    <div class="nav-back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></div>
+    <div class="nav-title">这顿饭怎么样</div>
+    <div class="nav-spacer"></div>
+  </div>
+
+  <div class="page">
+    <div class="verdict-hero warn">
+      <div class="light-row"><div class="lamp"></div><div class="lamp on"></div><div class="lamp"></div></div>
+      <div class="verdict-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 12h7"/></svg>
+      </div>
+      <div class="verdict-title">适量食用</div>
+      <div class="verdict-sub">已按「米饭减半」重新估算<br>更接近参考额度了</div>
+    </div>
+
+    <div class="kcal-card">
+      <div class="kcal-label">调整后的估算区间</div>
+      <div class="recalc-line">
+        <span class="old">约 650 – 850</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg>
+        <span class="new">约 480 – 680 千卡</span>
+      </div>
+      <div class="kcal-range" style="margin-top:6px;">
+        <span class="about">约</span><span class="num">480</span><span class="dash">–</span><span class="num">680</span><span class="unit">千卡</span>
+      </div>
+      <div class="quota-line">午餐参考 500 – 580 千卡 · <b class="ok-t">更接近参考额度</b></div>
+    </div>
+
+    <div class="reason-card">
+      <div class="reason-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.8-3.8"/></svg>
+      </div>
+      <div class="reason-body">
+        <div class="reason-title">为什么还是黄灯</div>
+        <div class="reason-text">两道菜仍可能用油较多，用油量无法确认，所以<b>不承诺一定回到绿灯</b>；但米饭减半后已经更接近参考额度。</div>
+      </div>
+    </div>
+
+    <div class="suggest-head"><h3>这样吃更合适</h3><span>已采用 1 条</span></div>
+    <div class="suggest-card">
+      <div class="suggest-num" style="background:var(--ok-bg);color:var(--ok-text);">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+      </div>
+      <div class="suggest-body">
+        <div class="suggest-text">米饭减半，留一半菜汁不拌饭</div>
+        <div class="suggest-effect">已采用 · 区间已重算</div>
+      </div>
+      <div class="suggest-apply applied">已采用</div>
+    </div>
+    <div class="suggest-card">
+      <div class="suggest-num">2</div>
+      <div class="suggest-body">
+        <div class="suggest-text">芸豆换成清炒时蔬（如果方便）</div>
+        <div class="suggest-effect">更接近参考额度</div>
+      </div>
+      <div class="suggest-apply">采用</div>
+    </div>
+
+    <div class="assure-line">估算仅供参考，不构成医疗或营养处方建议。</div>
+  </div>
+
+  <div class="cta-wrap">
+    <div class="cta-btn">保存这顿饭</div>
+    <div class="cta-secondary">暂不保存，返回首页</div>
+  </div>
+</div></div>
+<div class="demo-state"><b>B</b>采用建议后重算 · 不承诺变绿</div>
+</div>
+
+<!-- ============ C 保存成功 ============ -->
+<div class="phone-wrap">
+<div class="phone"><div class="screen">
+  <div class="statusbar">
+    <span class="sb-time">9:41</span>
+    <span class="sb-icons">
+      <svg width="17" height="11" viewBox="0 0 17 11" fill="#3E3833"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.7" y="4.7" width="3" height="6.3" rx="1"/><rect x="9.4" y="2.3" width="3" height="8.7" rx="1"/><rect x="14" y="0" width="3" height="11" rx="1"/></svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="#3E3833"><path d="M8 9.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"/><path d="M8 5.5c-2 0-3.8.8-5.1 2l1.4 1.5A5.2 5.2 0 0 1 8 7.5c1.3 0 2.6.6 3.7 1.5l1.4-1.4A7.2 7.2 0 0 0 8 5.5z"/><path d="M8 1C4.9 1 2.1 2.3 0 4.4l1.4 1.4A9.3 9.3 0 0 1 8 3c2.6 0 5 1.1 6.6 2.8L16 4.4A11.2 11.2 0 0 0 8 1z"/></svg>
+      <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="20" height="11" rx="3.5" stroke="#3E3833" opacity=".45"/><rect x="2.2" y="2.2" width="15" height="7.6" rx="2" fill="#3E3833"/><path d="M22.5 4v4c1.1-.3 1.9-1.1 1.9-2s-.8-1.7-1.9-2z" fill="#3E3833" opacity=".45"/></svg>
+    </span>
+  </div>
+  <div class="mp-capsule-row"><div class="mp-capsule"><span class="dot3"><i></i><i></i><i></i></span><span></span><span class="ring"></span></div></div>
+
+  <div class="nav">
+    <div class="nav-back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></div>
+    <div class="nav-title">这顿饭怎么样</div>
+    <div class="nav-spacer"></div>
+  </div>
+
+  <div class="page" style="opacity:.45;">
+    <div class="verdict-hero warn">
+      <div class="light-row"><div class="lamp"></div><div class="lamp on"></div><div class="lamp"></div></div>
+      <div class="verdict-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 12h7"/></svg>
+      </div>
+      <div class="verdict-title">适量食用</div>
+      <div class="verdict-sub">可以吃，建议稍微调整一下吃法</div>
+    </div>
+    <div class="kcal-card">
+      <div class="kcal-label">本餐热量估算区间</div>
+      <div class="kcal-range"><span class="about">约</span><span class="num">650</span><span class="dash">–</span><span class="num">850</span><span class="unit">千卡</span></div>
+    </div>
+  </div>
+
+  <div class="cta-wrap">
+    <div class="cta-btn">保存这顿饭</div>
+    <div class="cta-secondary">暂不保存，返回首页</div>
+  </div>
+
+  <!-- 保存成功 Toast -->
+  <div class="toast-ok">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+    已保存，首页汇总已更新
+  </div>
+</div></div>
+<div class="demo-state"><b>C</b>保存成功 · Toast 反馈</div>
+</div>
+
+<!-- ============ D 保存失败 ============ -->
+<div class="phone-wrap">
+<div class="phone"><div class="screen">
+  <div class="statusbar">
+    <span class="sb-time">9:41</span>
+    <span class="sb-icons">
+      <svg width="17" height="11" viewBox="0 0 17 11" fill="#3E3833"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.7" y="4.7" width="3" height="6.3" rx="1"/><rect x="9.4" y="2.3" width="3" height="8.7" rx="1"/><rect x="14" y="0" width="3" height="11" rx="1"/></svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="#3E3833"><path d="M8 9.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"/><path d="M8 5.5c-2 0-3.8.8-5.1 2l1.4 1.5A5.2 5.2 0 0 1 8 7.5c1.3 0 2.6.6 3.7 1.5l1.4-1.4A7.2 7.2 0 0 0 8 5.5z"/><path d="M8 1C4.9 1 2.1 2.3 0 4.4l1.4 1.4A9.3 9.3 0 0 1 8 3c2.6 0 5 1.1 6.6 2.8L16 4.4A11.2 11.2 0 0 0 8 1z"/></svg>
+      <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="20" height="11" rx="3.5" stroke="#3E3833" opacity=".45"/><rect x="2.2" y="2.2" width="15" height="7.6" rx="2" fill="#3E3833"/><path d="M22.5 4v4c1.1-.3 1.9-1.1 1.9-2s-.8-1.7-1.9-2z" fill="#3E3833" opacity=".45"/></svg>
+    </span>
+  </div>
+  <div class="mp-capsule-row"><div class="mp-capsule"><span class="dot3"><i></i><i></i><i></i></span><span></span><span class="ring"></span></div></div>
+
+  <div class="nav">
+    <div class="nav-back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></div>
+    <div class="nav-title">这顿饭怎么样</div>
+    <div class="nav-spacer"></div>
+  </div>
+
+  <div class="page" style="opacity:.45;">
+    <div class="verdict-hero warn">
+      <div class="light-row"><div class="lamp"></div><div class="lamp on"></div><div class="lamp"></div></div>
+      <div class="verdict-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 12h7"/></svg>
+      </div>
+      <div class="verdict-title">适量食用</div>
+      <div class="verdict-sub">可以吃，建议稍微调整一下吃法</div>
+    </div>
+    <div class="kcal-card">
+      <div class="kcal-label">本餐热量估算区间</div>
+      <div class="kcal-range"><span class="about">约</span><span class="num">650</span><span class="dash">–</span><span class="num">850</span><span class="unit">千卡</span></div>
+    </div>
+  </div>
+
+  <div class="cta-wrap">
+    <div class="cta-btn">保存这顿饭</div>
+    <div class="cta-secondary">暂不保存，返回首页</div>
+  </div>
+
+  <!-- 保存失败提示 -->
+  <div class="save-fail">
+    <div class="sf-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v6"/><circle cx="12" cy="16.5" r=".5" fill="currentColor"/></svg>
+    </div>
+    <div class="sf-body">
+      <div class="sf-t">保存没有成功</div>
+      <div class="sf-s">网络异常，内容还留在本页</div>
+    </div>
+    <div class="sf-retry">重试</div>
+  </div>
+</div></div>
+<div class="demo-state"><b>D</b>保存失败 · 可重试</div>
+</div>
+
+</body>
+</html>

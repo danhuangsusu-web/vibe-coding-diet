@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>P02 餐食输入页 · 食刻 AI</title>
+<style>
+:root{
+  --bg-cream:#FAF6EF; --bg-oat:#F3EDE2; --bg-butter:#FBF3DC; --card-white:#FFFDF9;
+  --primary:#F0A65B; --primary-deep:#C97F33; --primary-soft:#FAE3C7;
+  --text-primary:#3E3833; --text-secondary:#6E655B; --text-tertiary:#9A9086;
+  --ok-bg:#E3F1E6; --ok-accent:#6FAE87; --ok-text:#3F7050;
+  --warn-bg:#FBF0D3; --warn-accent:#D9AE4E; --warn-text:#8A6B28;
+  --alert-bg:#F8E4DC; --alert-accent:#D68F73; --alert-text:#9C5238;
+  --shadow-soft:0 6px 18px rgba(196,168,128,.12);
+  --shadow-main:0 10px 28px rgba(217,138,61,.20);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  background:#E4DED2;min-height:100vh;padding:40px 16px;
+  display:flex;flex-wrap:wrap;gap:48px;align-items:flex-start;justify-content:center;
+  -webkit-font-smoothing:antialiased;color:var(--text-primary);
+}
+.demo-state{text-align:center;margin-top:16px;font-size:12px;letter-spacing:1.5px;color:#6E655B;}
+.demo-state b{display:block;font-size:14px;color:#3E3833;margin-bottom:3px;}
+.phone-wrap{display:flex;flex-direction:column;align-items:center;}
+
+.phone{
+  width:375px;background:#1f1d1b;border-radius:54px;padding:12px;flex-shrink:0;
+  box-shadow:0 32px 80px rgba(62,56,51,.28),0 8px 24px rgba(62,56,51,.15);
+}
+.screen{
+  width:351px;height:740px;border-radius:44px;overflow:hidden;
+  background:var(--bg-cream);position:relative;
+  overflow-y:auto;scrollbar-width:none;display:flex;flex-direction:column;
+}
+.screen::-webkit-scrollbar{display:none;}
+
+/* 状态栏 + 微信胶囊安全区 */
+.statusbar{
+  height:54px;display:flex;justify-content:space-between;align-items:center;
+  padding:20px 24px 0;flex-shrink:0;position:sticky;top:0;z-index:10;
+  background:linear-gradient(var(--bg-cream) 78%,transparent);
+}
+.sb-time{font-size:15px;font-weight:600;letter-spacing:.3px;font-variant-numeric:tabular-nums;}
+.sb-icons{display:flex;align-items:center;gap:6px;}
+.sb-icons svg{display:block;}
+.mp-capsule-row{display:flex;justify-content:flex-end;padding:2px 10px 0;flex-shrink:0;}
+.mp-capsule{width:87px;height:32px;border-radius:999px;border:1px solid rgba(62,56,51,.14);display:flex;align-items:center;justify-content:center;}
+.mp-capsule span{width:1px;height:18px;background:rgba(62,56,51,.14);}
+.mp-capsule .dot3{width:16px;display:flex;gap:3px;justify-content:center;margin:0 9px;}
+.mp-capsule .dot3 i{width:3.5px;height:3.5px;border-radius:50%;background:#3E3833;opacity:.55;font-style:normal;}
+.mp-capsule .ring{width:13px;height:13px;border-radius:50%;border:1.6px solid #3E3833;opacity:.55;margin:0 9px;position:relative;}
+.mp-capsule .ring::after{content:"";position:absolute;inset:3.5px;border-radius:50%;background:#3E3833;}
+
+/* 导航 */
+.nav{display:flex;align-items:center;justify-content:space-between;padding:8px 20px 4px;flex-shrink:0;}
+.nav-back{
+  width:44px;height:44px;border-radius:50%;background:var(--card-white);box-shadow:var(--shadow-soft);
+  display:flex;align-items:center;justify-content:center;color:var(--text-primary);
+}
+.nav-back svg{width:20px;height:20px;}
+.nav-title{font-size:16px;font-weight:600;}
+.nav-spacer{width:44px;}
+.nav-sub{text-align:center;font-size:12px;color:var(--text-tertiary);margin-top:4px;flex-shrink:0;}
+
+.page{padding:12px 20px 24px;flex:1;}
+
+/* 上传大卡 */
+.upload-card{background:var(--card-white);border-radius:24px;box-shadow:var(--shadow-soft);padding:20px;}
+.upload-title{font-size:15px;font-weight:600;}
+.upload-sub{font-size:12px;color:var(--text-tertiary);margin-top:3px;}
+.drop-zone{
+  margin-top:14px;border-radius:20px;background:#F7EFDF;border:2px dashed #D9B98A;
+  padding:24px 20px 20px;display:flex;flex-direction:column;align-items:center;gap:8px;
+  cursor:pointer;transition:transform .15s ease;min-height:150px;justify-content:center;
+}
+.drop-zone:active{transform:scale(.98);}
+.cam-icon{
+  width:52px;height:52px;border-radius:18px;background:linear-gradient(145deg,#F3AC62,#E8964A);
+  display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-main);color:#fff;
+}
+.cam-icon svg{width:26px;height:26px;}
+.drop-main{font-size:14px;font-weight:500;margin-top:2px;}
+.drop-sub{font-size:12px;color:var(--text-secondary);line-height:1.7;text-align:center;}
+.src-row{display:flex;gap:10px;margin-top:12px;}
+.src-btn{
+  flex:1;display:flex;align-items:center;justify-content:center;gap:7px;
+  background:var(--primary-soft);color:var(--primary-deep);
+  border-radius:999px;min-height:44px;font-size:14px;font-weight:500;
+}
+.src-btn svg{width:17px;height:17px;}
+.src-btn.ghost{background:var(--bg-butter);color:var(--warn-text);}
+
+/* 文字输入 */
+.text-zone{margin-top:16px;}
+.text-label{font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px;}
+.text-label .or{font-size:12px;font-weight:400;color:var(--text-tertiary);}
+.text-input{
+  margin-top:10px;background:var(--card-white);border-radius:20px;box-shadow:var(--shadow-soft);
+  padding:14px 16px;min-height:76px;
+}
+.text-input .placeholder{font-size:14px;color:var(--text-tertiary);line-height:1.7;}
+.text-input .typed{font-size:14px;color:var(--text-primary);line-height:1.7;}
+.char-count{text-align:right;font-size:12px;color:var(--text-tertiary);margin-top:5px;padding-right:2px;}
+
+/* 示例 */
+.example-zone{margin-top:12px;}
+.example-head{font-size:12px;color:var(--text-tertiary);margin-bottom:8px;padding-left:2px;}
+.example-chips{display:flex;flex-wrap:wrap;gap:8px;}
+.ex-chip{background:var(--bg-butter);color:var(--warn-text);font-size:12px;border-radius:999px;padding:8px 13px;min-height:32px;display:inline-flex;align-items:center;}
+.tip-line{margin-top:10px;font-size:12px;color:var(--text-tertiary);line-height:1.7;padding:0 2px;}
+
+/* 主操作（吸底） */
+.cta-wrap{position:sticky;bottom:0;padding:12px 20px 20px;flex-shrink:0;background:linear-gradient(transparent,var(--bg-cream) 35%);z-index:12;}
+.cta-btn{
+  height:52px;border-radius:999px;background:linear-gradient(145deg,#F3AC62,#E8964A);
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  color:#fff;font-size:16px;font-weight:600;letter-spacing:1px;box-shadow:var(--shadow-main);
+}
+.cta-btn svg{width:18px;height:18px;}
+.cta-btn.disabled{background:#E3DCCB;box-shadow:none;color:#B5A98F;}
+.cta-note{text-align:center;font-size:12px;color:var(--text-tertiary);margin-top:8px;}
+
+/* ===== 加载态 ===== */
+.loading-screen{
+  position:absolute;inset:0;background:var(--bg-cream);border-radius:44px;z-index:15;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 40px;
+}
+.load-thumb{
+  width:92px;height:92px;border-radius:28px;background:linear-gradient(145deg,#F3AC62,#E8964A);
+  display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-main);color:#fff;
+  animation:breathe 2.2s ease-in-out infinite;
+}
+.load-thumb svg{width:40px;height:40px;}
+@keyframes breathe{0%,100%{transform:scale(1);}50%{transform:scale(1.05);}}
+.load-title{margin-top:24px;font-size:17px;font-weight:600;}
+.load-step{margin-top:7px;font-size:12px;color:var(--text-secondary);}
+.load-bar{margin-top:20px;width:210px;height:8px;border-radius:999px;background:var(--bg-oat);overflow:hidden;}
+.load-bar-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#F6C98B,#E8964A);animation:fillflow 1.8s ease-in-out infinite;}
+@keyframes fillflow{0%{width:18%;margin-left:0;}50%{width:62%;margin-left:12%;}100%{width:18%;margin-left:82%;}}
+.load-dots{display:flex;gap:20px;margin-top:22px;}
+.ld{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:12px;color:var(--text-tertiary);}
+.ld .ldot{width:10px;height:10px;border-radius:50%;background:#E8DFCE;}
+.ld.done{color:var(--ok-text);} .ld.done .ldot{background:var(--ok-accent);}
+.ld.doing{color:var(--primary-deep);} .ld.doing .ldot{background:var(--primary);animation:pulse 1.2s ease-in-out infinite;}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(240,166,91,.35);}50%{box-shadow:0 0 0 6px rgba(240,166,91,0);}}
+.load-tips{margin-top:24px;font-size:12px;line-height:1.8;color:var(--text-secondary);max-width:260px;text-align:center;}
+.load-tips b{color:var(--primary-deep);font-weight:600;}
+.load-cancel{margin-top:20px;font-size:14px;color:var(--text-secondary);background:var(--bg-oat);border-radius:999px;padding:0 24px;min-height:44px;display:inline-flex;align-items:center;}
+
+/* ===== 失败 / 权限 / 降级态 ===== */
+.fail-screen{
+  position:absolute;inset:0;background:var(--bg-cream);border-radius:44px;z-index:15;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 36px;text-align:center;
+}
+.fail-icon{
+  width:88px;height:88px;border-radius:28px;background:var(--warn-bg);
+  display:flex;align-items:center;justify-content:center;color:var(--warn-text);
+}
+.fail-icon.red{background:var(--alert-bg);color:var(--alert-text);}
+.fail-icon svg{width:38px;height:38px;}
+.fail-title{margin-top:22px;font-size:17px;font-weight:600;}
+.fail-desc{margin-top:9px;font-size:12px;color:var(--text-secondary);line-height:1.9;max-width:250px;}
+.fail-actions{margin-top:26px;display:flex;flex-direction:column;gap:12px;width:100%;max-width:250px;}
+.fail-primary{
+  height:48px;border-radius:999px;background:linear-gradient(145deg,#F3AC62,#E8964A);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;box-shadow:var(--shadow-main);
+}
+.fail-ghost{
+  height:48px;border-radius:999px;background:var(--card-white);color:var(--text-primary);
+  display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:500;box-shadow:var(--shadow-soft);
+}
+</style>
+</head>
+<body>
+
+<!-- ============ A 默认输入态 ============ -->
+<div class="phone-wrap">
+<div class="phone"><div class="screen">
+  <div class="statusbar">
+    <span class="sb-time">9:41</span>
+    <span class="sb-icons">
+      <svg width="17" height="11" viewBox="0 0 17 11" fill="#3E3833"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.7" y="4.7" width="3" height="6.3" rx="1"/><rect x="9.4" y="2.3" width="3" height="8.7" rx="1"/><rect x="14" y="0" width="3" height="11" rx="1"/></svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="#3E3833"><path d="M8 9.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"/><path d="M8 5.5c-2 0-3.8.8-5.1 2l1.4 1.5A5.2 5.2 0 0 1 8 7.5c1.3 0 2.6.6 3.7 1.5l1.4-1.4A7.2 7.2 0 0 0 8 5.5z"/><path d="M8 1C4.9 1 2.1 2.3 0 4.4l1.4 1.4A9.3 9.3 0 0 1 8 3c2.6 0 5 1.1 6.6 2.8L16 4.4A11.2 11.2 0 0 0 8 1z"/></svg>
+      <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="20" height="11" rx="3.5" stroke="#3E3833" opacity=".45"/><rect x="2.2" y="2.2" width="15" height="7.6" rx="2" fill="#3E3833"/><path d="M22.5 4v4c1.1-.3 1.9-1.1 1.9-2s-.8-1.7-1.9-2z" fill="#3E3833" opacity=".45"/></svg>
+    </span>
+  </div>
+  <div class="mp-capsule-row"><div class="mp-capsule"><span class="dot3"><i></i><i></i><i></i></span><span></span><span class="ring"></span></div></div>
+
+  <div class="nav">
+    <div class="nav-back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></div>
+    <div class="nav-title">记录这一餐</div>
+    <div class="nav-spacer"></div>
+  </div>
+  <div class="nav-sub">拍张照，或写一句话就好</div>
+
+  <div class="page">
+    <div class="upload-card">
+      <div class="upload-title">上传餐食照片</div>
+      <div class="upload-sub">支持外卖菜单截图或餐食实拍 · 一次一张</div>
+      <div class="drop-zone">
+        <div class="cam-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h2.5l1.8-2.5h7.4L17.5 8H20a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="14" r="3.5"/></svg>
+        </div>
+        <div class="drop-main">点这里拍照或上传</div>
+        <div class="drop-sub">AI 识别菜品与做法，热量由规则估算</div>
+      </div>
+      <div class="src-row">
+        <div class="src-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h2.5l1.8-2.5h7.4L17.5 8H20a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="14" r="3.5"/></svg>
+          拍照
+        </div>
+        <div class="src-btn ghost">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M4 18l5-5 3 3 4-4 4 4"/></svg>
+          从相册选择
+        </div>
+      </div>
+    </div>
+
+    <div class="text-zone">
+      <div class="text-label">文字描述 <span class="or">或</span></div>
+      <div class="text-input"><div class="placeholder">例如：我准备吃青椒肉丝盖饭</div></div>
+      <div class="char-count">0 / 100</div>
+    </div>
+
+    <div class="example-zone">
+      <div class="example-head">试试这样说</div>
+      <div class="example-chips">
+        <span class="ex-chip">干煸芸豆 + 溜肉段 + 米饭</span>
+        <span class="ex-chip">一碗兰州拉面加个煎蛋</span>
+      </div>
+      <div class="tip-line">带上做法（干煸 / 清蒸）和份量（小份 / 大碗），估算会更可靠。图片识别失败时，文字随时兜底。</div>
+    </div>
+  </div>
+
+  <div class="cta-wrap">
+    <div class="cta-btn">开始分析
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg>
+    </div>
+    <div class="cta-note">识别后先给你确认，再计算保存</div>
+  </div>
+</div></div>
+<div class="demo-state"><b>A</b>默认输入态</div>
+</div>
+
+<!-- ============ B 禁用态（未输入内容） ============ -->
+<div class="phone-wrap">
+<div class="phone"><div class="screen">
+  <div class="statusbar">
+    <span class="sb-time">9:41</span>
+    <span class="sb-icons">
+      <svg width="17" height="11" viewBox="0 0 17 11" fill="#3E3833"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.7" y="4.7" width="3" height="6.3" rx="1"/><rect x="9.4" y="2.3" width="3" height="8.7" rx="1"/><rect x="14" y="0" width="3" height="11" rx="1"/></svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="#3E3833"><path d="M8 9.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"/><path d="M8 5.5c-2 0-3.8.8-5.1 2l1.4 1.5A5.2 5.2 0 0 1 8 7.5c1.3 0 2.6.6 3.7 1.5l1.4-1.4A7.2 7.2 0 0 0 8 5.5z"/><path d="M8 1C4.9 1 2.1 2.3 0 4.4l1.4 1.4A9.3 9.3 0 0 1 8 3c2.6 0 5 1.1 6.6 2.8L16 4.4A11.2 11.2 0 0 0 8 1z"/></svg>
+      <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="20" height="11" rx="3.5" stroke="#3E3833" opacity=".45"/><rect x="2.2" y="2.2" width="15" height="7.6" rx="2" fill="#3E3833"/><path d="M22.5 4v4c1.1-.3 1.9-1.1 1.9-2s-.8-1.7-1.9-2z" fill="#3E3833" opacity=".45"/></svg>
+    </span>
+  </div>
+  <div class="mp-capsule-row"><div class="mp-capsule"><span class="dot3"><i></i><i></i><i></i></span><span></span><span class="ring"></span></div></div>
+
+  <div class="nav">
+    <div class="nav-back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></div>
+    <div class="nav-title">记录这一餐</div>
+    <div class="nav-spacer"></div>
+  </div>
+  <div class="nav-sub">拍张照，或写一句话就好</div>
+
+  <div class="page">
+    <div class="upload-card" style="opacity:.55;">
+      <div class="upload-title">上传餐食照片</div>
+      <div class="upload-sub">支持外卖菜单截图或餐食实拍 · 一次一张</div>
+      <div class="drop-zone">
+        <div class="cam-icon" style="background:#D9CFBB;box-shadow:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h2.5l1.8-2.5h7.4L17.5 8H20a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="14" r="3.5"/></svg>
+        </div>
+        <div class="drop-main">点这里拍照或上传</div>
+        <div class="drop-sub">AI 识别菜品与做法，热量由规则估算</div>
+      </div>
+      <div class="src-row">
+        <div class="src-btn" style="background:var(--bg-oat);color:var(--text-tertiary);">拍照</div>
+        <div class="src-btn ghost" style="background:var(--bg-oat);color:var(--text-tertiary);">从相册选择</div>
+      </div>
+    </div>
+
+    <div class="text-zone">
+      <div class="text-label">文字描述 <span class="or">或</span></div>
+      <div class="text-input"><div class="placeholder">例如：我准备吃青椒肉丝盖饭</div></div>
+      <div class="char-count">0 / 100</div>
+    </div>
+  </div>
+
+  <div class="cta-wrap">
+    <div class="cta-btn disabled">开始分析</div>
+    <div class="cta-note">先上传一张照片，或输入一句描述</div>
+  </div>
+</div></div>
+<div class="demo-state"><b>B</b>禁用态 · 未提供任何输入</div>
+</div>
+
+<!-- ============ C AI 分析中 ============ -->
+<div class="phone-wrap">
+<div class="phone"><div class="screen">
+  <div class="statusbar">
+    <span class="sb-time">9:41</span>
+    <span class="sb-icons">
+      <svg width="17" height="11" viewBox="0 0 17 11" fill="#3E3833"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.7" y="4.7" width="3" height="6.3" rx="1"/><rect x="9.4" y="2.3" width="3" height="8.7" rx="1"/><rect x="14" y="0" width="3" height="11" rx="1"/></svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="#3E3833"><path d="M8 9.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"/><path d="M8 5.5c-2 0-3.8.8-5.1 2l1.4 1.5A5.2 5.2 0 0 1 8 7.5c1.3 0 2.6.6 3.7 1.5l1.4-1.4A7.2 7.2 0 0 0 8 5.5z"/><path d="M8 1C4.9 1 2.1 2.3 0 4.4l1.4 1.4A9.3 9.3 0 0 1 8 3c2.6 0 5 1.1 6.6 2.8L16 4.4A11.2 11.2 0 0 0 8 1z"/></svg>
+      <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="20" height="11" rx="3.5" stroke="#3E3833" opacity=".45"/><rect x="2.2" y="2.2" width="15" height="7.6" rx="2" fill="#3E3833"/><path d="M22.5 4v4c1.1-.3 1.9-1.1 1.9-2s-.8-1.7-1.9-2z" fill="#3E3833" opacity=".45"/></svg>
+    </span>
+  </div>
+  <div class="mp-capsule-row"><div class="mp-capsule"><span class="dot3"><i></i><i></i><i></i></span><span></span><span class="ring"></span></div></div>
+
+  <div class="loading-screen">
+    <div class="load-thumb">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h2.5l1.8-2.5h7.4L17.5 8H20a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="14" r="3.5"/></svg>
+    </div>
+    <div class="load-title">AI 正在分析这顿饭</div>
+    <div class="load-step">正在识别菜品与做法…</div>
+    <div class="load-bar"><div class="load-bar-fill"></div></div>
+    <div class="load-dots">
+      <div class="ld done"><span class="ldot"></span>上传完成</div>
+      <div class="ld doing"><span class="ldot"></span>识别中</div>
+      <div class="ld"><span class="ldot"></span>待你确认</div>
+    </div>
+    <div class="load-tips">识别结果会先给你<b>确认修改</b>，确认后才计算热量与评级，不会直接保存。</div>
+    <div class="load-cancel">取消并改用文字输入</div>
+  </div>
+</div></div>
+<div class="demo-state"><b>C</b>AI 分析中 · 超过 4 秒展示进度</div>
+</div>
+
+<!-- ============ D 相机/相册权限被拒绝 ============ -->
+<div class="phone-wrap">
+<div class="phone"><div class="screen">
+  <div class="statusbar">
+    <span class="sb-time">9:41</span>
+    <span class="sb-icons">
+      <svg width="17" height="11" viewBox="0 0 17 11" fill="#3E3833"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.7" y="4.7" width="3" height="6.3" rx="1"/><rect x="9.4" y="2.3" width="3" height="8.7" rx="1"/><rect x="14" y="0" width="3" height="11" rx="1"/></svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="#3E3833"><path d="M8 9.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"/><path d="M8 5.5c-2 0-3.8.8-5.1 2l1.4 1.5A5.2 5.2 0 0 1 8 7.5c1.3 0 2.6.6 3.7 1.5l1.4-1.4A7.2 7.2 0 0 0 8 5.5z"/><path d="M8 1C4.9 1 2.1 2.3 0 4.4l1.4 1.4A9.3 9.3 0 0 1 8 3c2.6 0 5 1.1 6.6 2.8L16 4.4A11.2 11.2 0 0 0 8 1z"/></svg>
+      <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="20" height="11" rx="3.5" stroke="#3E3833" opacity=".45"/><rect x="2.2" y="2.2" width="15" height="7.6" rx="2" fill="#3E3833"/><path d="M22.5 4v4c1.1-.3 1.9-1.1 1.9-2s-.8-1.7-1.9-2z" fill="#3E3833" opacity=".45"/></svg>
+    </span>
+  </div>
+  <div class="mp-capsule-row"><div class="mp-capsule"><span class="dot3"><i></i><i></i><i></i></span><span></span><span class="ring"></span></div></div>
+
+  <div class="fail-screen">
+    <div class="fail-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h2.5l1.8-2.5h7.4L17.5 8H20a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><path d="M3 3l18 18"/></svg>
+    </div>
+    <div class="fail-title">无法使用相机和相册</div>
+    <div class="fail-desc">需要你在系统设置中允许访问，才能上传照片；也可以先用文字描述这一餐。</div>
+    <div class="fail-actions">
+      <div class="fail-primary">去开启权限</div>
+      <div class="fail-ghost">改用文字输入</div>
+    </div>
+  </div>
+</div></div>
+<div class="demo-state"><b>D</b>权限被拒绝</div>
+</div>
+
+<!-- ============ E 上传失败 / AI 超时 ============ -->
+<div class="phone-wrap">
+<div class="phone"><div class="screen">
+  <div class="statusbar">
+    <span class="sb-time">9:41</span>
+    <span class="sb-icons">
+      <svg width="17" height="11" viewBox="0 0 17 11" fill="#3E3833"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.7" y="4.7" width="3" height="6.3" rx="1"/><rect x="9.4" y="2.3" width="3" height="8.7" rx="1"/><rect x="14" y="0" width="3" height="11" rx="1"/></svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="#3E3833"><path d="M8 9.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"/><path d="M8 5.5c-2 0-3.8.8-5.1 2l1.4 1.5A5.2 5.2 0 0 1 8 7.5c1.3 0 2.6.6 3.7 1.5l1.4-1.4A7.2 7.2 0 0 0 8 5.5z"/><path d="M8 1C4.9 1 2.1 2.3 0 4.4l1.4 1.4A9.3 9.3 0 0 1 8 3c2.6 0 5 1.1 6.6 2.8L16 4.4A11.2 11.2 0 0 0 8 1z"/></svg>
+      <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="20" height="11" rx="3.5" stroke="#3E3833" opacity=".45"/><rect x="2.2" y="2.2" width="15" height="7.6" rx="2" fill="#3E3833"/><path d="M22.5 4v4c1.1-.3 1.9-1.1 1.9-2s-.8-1.7-1.9-2z" fill="#3E3833" opacity=".45"/></svg>
+    </span>
+  </div>
+  <div class="mp-capsule-row"><div class="mp-capsule"><span class="dot3"><i></i><i></i><i></i></span><span></span><span class="ring"></span></div></div>
+
+  <div class="fail-screen">
+    <div class="fail-icon red">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v6"/><circle cx="12" cy="16.5" r=".5" fill="currentColor"/></svg>
+    </div>
+    <div class="fail-title">这次没有成功</div>
+    <div class="fail-desc">网络有点慢或 AI 响应超时了。你的内容没有丢失，可以再试一次，或改用文字输入。</div>
+    <div class="fail-actions">
+      <div class="fail-primary">重新尝试</div>
+      <div class="fail-ghost">改用文字输入</div>
+    </div>
+  </div>
+</div></div>
+<div class="demo-state"><b>E</b>上传失败 / AI 超时</div>
+</div>
+
+<!-- ============ F 未识别到餐食 ============ -->
+<div class="phone-wrap">
+<div class="phone"><div class="screen">
+  <div class="statusbar">
+    <span class="sb-time">9:41</span>
+    <span class="sb-icons">
+      <svg width="17" height="11" viewBox="0 0 17 11" fill="#3E3833"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.7" y="4.7" width="3" height="6.3" rx="1"/><rect x="9.4" y="2.3" width="3" height="8.7" rx="1"/><rect x="14" y="0" width="3" height="11" rx="1"/></svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="#3E3833"><path d="M8 9.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"/><path d="M8 5.5c-2 0-3.8.8-5.1 2l1.4 1.5A5.2 5.2 0 0 1 8 7.5c1.3 0 2.6.6 3.7 1.5l1.4-1.4A7.2 7.2 0 0 0 8 5.5z"/><path d="M8 1C4.9 1 2.1 2.3 0 4.4l1.4 1.4A9.3 9.3 0 0 1 8 3c2.6 0 5 1.1 6.6 2.8L16 4.4A11.2 11.2 0 0 0 8 1z"/></svg>
+      <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="20" height="11" rx="3.5" stroke="#3E3833" opacity=".45"/><rect x="2.2" y="2.2" width="15" height="7.6" rx="2" fill="#3E3833"/><path d="M22.5 4v4c1.1-.3 1.9-1.1 1.9-2s-.8-1.7-1.9-2z" fill="#3E3833" opacity=".45"/></svg>
+    </span>
+  </div>
+  <div class="mp-capsule-row"><div class="mp-capsule"><span class="dot3"><i></i><i></i><i></i></span><span></span><span class="ring"></span></div></div>
+
+  <div class="fail-screen">
+    <div class="fail-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.8-3.8"/><path d="M8.5 11h5"/></svg>
+    </div>
+    <div class="fail-title">没有认出这是一顿饭</div>
+    <div class="fail-desc">照片里可能没有清晰的餐食。换一张更清楚的照片，或直接用文字告诉我菜名。</div>
+    <div class="fail-actions">
+      <div class="fail-primary">重新上传</div>
+      <div class="fail-ghost">改用文字输入</div>
+    </div>
+  </div>
+</div></div>
+<div class="demo-state"><b>F</b>未识别到餐食 · 降级到文字</div>
+</div>
+
+</body>
+</html>
