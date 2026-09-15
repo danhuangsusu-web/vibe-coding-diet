@@ -10,6 +10,7 @@ datasource db {
 model DemoProfile {
   id               String       @id @default(cuid())
   name             String
+  goalDirection    GoalDirection
   dailyCalorieMin  Int
   dailyCalorieMax  Int
   createdAt        DateTime     @default(now())
@@ -18,22 +19,41 @@ model DemoProfile {
 }
 
 model MealRecord {
-  id          String      @id @default(cuid())
-  profileId   String
-  sourceType  InputType
-  sourceText  String?
-  items       Json
-  calorieMin  Int
-  calorieMax  Int
-  rating      MealRating
-  reason      String
-  advice      String
-  modelVersion String?
-  ruleVersion  String
-  createdAt    DateTime    @default(now())
-  profile      DemoProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  id              String       @id @default(cuid())
+  profileId       String
+  clientRequestId String       @unique
+  sourceType      InputType
+  sourceText      String?
+  items           Json
+  calorieMin      Int
+  calorieMax      Int
+  rating          MealRating
+  reason          String
+  adviceIds       AdviceId[]
+  advice          String
+  isDemo          Boolean      @default(false)
+  modelVersion    String?
+  ruleVersion     String
+  createdAt       DateTime     @default(now())
+  profile         DemoProfile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
 
   @@index([profileId, createdAt])
+}
+
+enum GoalDirection {
+  FAT_LOSS
+  MAINTAIN
+  MUSCLE_GAIN
+}
+
+enum AdviceId {
+  REDUCE_RICE
+  REDUCE_OILY_DISH
+  REMOVE_SKIN
+  SEPARATE_SAUCE
+  DRAIN_OIL
+  SWAP_FOR_VEGETABLE
+  KEEP_CURRENT
 }
 
 enum InputType {

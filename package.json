@@ -17,7 +17,8 @@
     "db:generate": "pnpm --filter @food-sense/server db:generate",
     "db:validate": "pnpm --filter @food-sense/server db:validate",
     "db:push": "pnpm --filter @food-sense/server db:push",
-    "db:check": "pnpm --filter @food-sense/server db:check"
+    "db:check": "pnpm --filter @food-sense/server db:check",
+    "db:seed": "pnpm --filter @food-sense/server db:seed"
   },
   "devDependencies": {
     "vitest": "^3.2.7"

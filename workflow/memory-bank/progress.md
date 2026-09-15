@@ -1,7 +1,7 @@
 # 食刻 AI 进度记录
 
-> 当前阶段：步骤 1–5 已完成并经用户确认；步骤 6 未开始
-> 下一步：开始步骤 6（对齐数据库模型并初始化演示资料）；D5 仍待确认，但不阻塞
+> 当前阶段：步骤 1–6 已完成并经用户确认；步骤 7 未开始
+> 下一步：开始步骤 7（实现演示资料读取与更新接口）；D5 仍待确认，但不阻塞
 > 最后更新：2026-09-15
 
 ## 2026-09-14 工作流整理基线
@@ -258,8 +258,46 @@
 
 ### 当前停点
 
-- 步骤 5 已由用户验收确认，未开始步骤 6；
+- 步骤 5 已由用户验收确认，步骤 6 已在其后完成并验收；
 - 用户已确认 7 条建议文案的安全性与可执行性。
+
+## 2026-09-15 步骤 6 对齐数据库模型并初始化演示资料（已验收）
+
+### 已完成
+
+- 更新 `apps/server/prisma/schema.prisma`：
+  - `DemoProfile` 增加 `goalDirection`（`GoalDirection` 枚举，非空）；
+  - `MealRecord` 增加唯一 `clientRequestId`、结构化 `adviceIds`（`AdviceId` 数组）和 `isDemo`（默认 false）；
+  - 新增 `GoalDirection` 与 `AdviceId` 两个枚举；按 D3b 不增加 `mealType`；
+- 新增 `apps/server/lib/demo-profile.mjs` 与配套类型声明 `demo-profile.d.mts`，定义固定 `DEMO_PROFILE_ID = 'demo-profile'` 与默认虚构资料（名称“小苏”、目标方向减脂、每日 1400–1600 千卡）；
+- 新增 `apps/server/scripts/seed-profile.mjs`，按固定 ID 执行 upsert，重复执行只更新同一条资料；
+- 在 `apps/server/package.json` 增加 `db:seed`，并在根 `package.json` 增加同名转发脚本；
+- 新增 `apps/server/lib/demo-profile.test.ts`，断言固定标识、默认资料取值和无敏感字段。
+
+### 验证结果
+
+2026-09-15 实际执行：
+
+- `pnpm test`：86 个测试全部通过（nutrition 66、shared 17、server 1、demo-profile 2），退出码 0；
+- `pnpm typecheck`：shared、nutrition、miniprogram、server 四个工作区全部通过；
+- `pnpm db:validate`：Schema 有效；
+- `pnpm db:generate`：Prisma 客户端生成成功；
+- `pnpm db:push`：结构已同步，数据库实际包含 `goalDirection` 列；
+- `pnpm db:check`：PostgreSQL 连接正常；
+- `pnpm db:seed` 可从根目录执行，且重复执行后 `DemoProfile` 行数仍为 1，未创建第二条资料；
+- 默认资料查询结果只有 id、名称、目标方向、每日上下限和时间戳，不含身高、体重、BMI 或疾病字段。
+
+### 已知影响与后续衔接
+
+- 本轮验收时数据库已处于对齐状态，`DemoProfile` 仅一行演示资料，`MealRecord` 为空；
+- P0 使用 `prisma db push`，不创建 migrations；后续变更数据库结构前仍需确认当前库无须保留的数据；
+- 步骤 6 的验证项提到“`GET /api/profile` 能按 `DEMO_PROFILE_ID` 读取同一资料”，该接口属于步骤 7 范围，届时验证；
+- `adviceIds` 只存结构化 ID，展示文案另存于 `advice` 字段，与设计文档第 9 节一致。
+
+### 当前停点
+
+- 步骤 6 已由用户验收确认，未开始步骤 7；
+- 用户已确认数据库变更与默认演示资料（名称“小苏”、默认目标方向减脂）。
 
 ## 决策状态
 

@@ -10,7 +10,8 @@
     "db:generate": "prisma generate",
     "db:validate": "prisma validate",
     "db:push": "prisma db push",
-    "db:check": "node scripts/check-db.mjs"
+    "db:check": "node scripts/check-db.mjs",
+    "db:seed": "node scripts/seed-profile.mjs"
   },
   "dependencies": {
     "@ai-sdk/openai-compatible": "3.0.45",
