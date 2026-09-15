@@ -98,6 +98,25 @@
 - 没有运行数据库结构变更、模型调用、Git 初始化或实施计划步骤；
 - 步骤 0 至 24 均为未开始；等待用户确认本轮文档与下列 D1–D5。
 
+## 2026-09-15 步骤 1 建立自动化测试基线（已验收）
+
+### 已完成
+
+- 在根 `package.json` 增加 `test` 与 `test:watch` 脚本和 Vitest 开发依赖，并新增根级 `vitest.config.ts`；
+- 为 shared、nutrition、server 各补一个最小冒烟测试，其中服务端测试验证测试入口能直接解析并转译 exports 指向 TypeScript 源码的工作区包；
+- 删除遗留的空文件 `prompt.txt`。
+
+### 验证结果
+
+- `pnpm test`：3 个测试文件全部通过，退出码 0；用不存在的过滤器运行时按 `passWithNoTests: false` 以退出码 1 失败，确认零测试不会被当成通过；
+- `pnpm typecheck`：shared、nutrition、miniprogram、server 四个工作区全部通过；
+- 改动仅限测试配置、测试文件和依赖清单，未改动业务代码，未引入 Jest、Playwright、Cypress 或小程序端到端框架。
+
+### 当前停点
+
+- 已提交为 `01afa66`，尚未推送至远端；
+- 该步骤当时只更新了本文件头部状态，未留下独立小节，故在步骤 2 验收后补记。
+
 ## 2026-09-15 步骤 2 补齐共享业务契约（已验收）
 
 ### 已完成
@@ -142,31 +161,3 @@
 - **D5 真机体验版措辞**：(a) 保留但注明需先换正式 AppID；(b) 全文改为“真机调试（需正式 AppID）”。
 
 完整影响范围与后续决策记录格式见 `decisions.md`。在用户确认前，相关设计、契约和计划保持中性。
-
-## 2026-09-15 步骤 1：建立自动化测试基线
-
-### 已完成
-
-- 在根 `package.json` 增加 Vitest `^3.2.7` 开发依赖，以及 `test`、`test:watch` 两个全仓测试命令；
-- 新增根 `vitest.config.ts`，使用 Node 环境，并只收集 shared、nutrition 和 server 范围内的 `*.test.ts`；
-- 配置 `passWithNoTests: false`，避免零测试被误判为成功；
-- 为 `packages/shared` 增加现有 `ParsedMeal` 契约的最小冒烟测试；
-- 为 `packages/nutrition` 增加现有 `rateMeal` 规则的最小冒烟测试；
-- 为 `apps/server` 增加工作区源码导入测试，确认 Vitest 能直接解析 exports 指向 `src/index.ts` 的 `@food-sense/shared` 与 `@food-sense/nutrition`；
-- 更新 `pnpm-lock.yaml`，锁定新增测试依赖；
-- 未修改产品行为，也未引入 Jest、Playwright、Cypress 或小程序端到端框架；
-- 对应提交为 `01afa66 step-1: 建立 Vitest 全仓测试基线`。
-
-### 验证结果
-
-2026-09-15 实际执行：
-
-- `pnpm test`：通过；Vitest 3.2.7 发现并运行 3 个测试文件、3 个测试，全部通过；
-- `pnpm typecheck`：通过；shared、nutrition、miniprogram 和 server 均完成严格 TypeScript 检查；
-- 用户于 2026-09-15 要求将步骤 1 记入进度并同步架构与技术栈，视为该步骤验收确认。
-
-### 当前停点
-
-- 步骤 1 已完成；尚未开始步骤 2；
-- 当前测试只验证既有契约、既有评级函数和服务端解析工作区 TypeScript 源码的能力，不代表后续业务规则或 API 已有完整覆盖；
-- 按逐步执行规则，未在本次文档更新中实现步骤 2；步骤 2 开始前仍需确认其涉及的 D2、D3、D4。
