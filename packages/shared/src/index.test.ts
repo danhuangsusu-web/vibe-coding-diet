@@ -259,6 +259,25 @@ describe('assessment and record contracts', () => {
     ).toBe(false)
   })
 
+  it('defaults record unknown handling and accepts explicit fallback', () => {
+    const baseRequest = {
+      clientRequestId: '550e8400-e29b-41d4-a716-446655440000',
+      sourceType: 'TEXT' as const,
+      sourceText: 'A regular serving of steamed rice',
+      items: [confirmedItem]
+    }
+
+    expect(
+      createMealRecordRequestSchema.parse(baseRequest).unknownHandling
+    ).toBe('PROMPT')
+    expect(
+      createMealRecordRequestSchema.parse({
+        ...baseRequest,
+        unknownHandling: 'CONSERVATIVE_FALLBACK'
+      }).unknownHandling
+    ).toBe('CONSERVATIVE_FALLBACK')
+  })
+
   it('keeps sourceType and sourceText consistent', () => {
     expect(
       createMealRecordRequestSchema.safeParse({

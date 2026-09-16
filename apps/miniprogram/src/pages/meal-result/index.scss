@@ -1,1 +1,577 @@
+@use '../../styles/tokens' as *;
+@use '../../styles/mixins' as *;
 @use '../../styles/flow-page';
+
+.meal-result-page {
+  padding-top: 24px;
+}
+
+.meal-result-page.ui-page--with-bottom-action {
+  padding-bottom: calc(340px + env(safe-area-inset-bottom));
+}
+
+.meal-result-page .ui-page-header {
+  margin-bottom: 24px;
+}
+
+.meal-verdict {
+  padding: 36px 32px 32px;
+  border-radius: 40px;
+  text-align: center;
+}
+
+.meal-verdict--success {
+  background: $color-success-bg;
+}
+
+.meal-verdict--warning {
+  background: $color-warning-bg;
+}
+
+.meal-verdict--danger {
+  background: $color-danger-bg;
+}
+
+.meal-verdict__lights {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+
+.meal-verdict__light {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: $color-bg-oat;
+}
+
+.meal-verdict__light--success.meal-verdict__light--active {
+  background: $color-success-accent;
+}
+
+.meal-verdict__light--warning.meal-verdict__light--active {
+  background: $color-warning-accent;
+}
+
+.meal-verdict__light--danger.meal-verdict__light--active {
+  background: $color-danger-accent;
+}
+
+.meal-verdict__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 112px;
+  height: 112px;
+  margin: 0 auto;
+  border-radius: 50%;
+  background: $color-surface;
+  font-size: 52px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.meal-verdict--success .meal-verdict__icon,
+.meal-verdict--success .meal-verdict__status,
+.meal-verdict--success .meal-verdict__title,
+.meal-verdict--success .meal-verdict__summary,
+.meal-tone--success {
+  color: $color-success-text;
+}
+
+.meal-verdict--warning .meal-verdict__icon,
+.meal-verdict--warning .meal-verdict__status,
+.meal-verdict--warning .meal-verdict__title,
+.meal-verdict--warning .meal-verdict__summary,
+.meal-tone--warning {
+  color: $color-warning-text;
+}
+
+.meal-verdict--danger .meal-verdict__icon,
+.meal-verdict--danger .meal-verdict__status,
+.meal-verdict--danger .meal-verdict__title,
+.meal-verdict--danger .meal-verdict__summary,
+.meal-tone--danger {
+  color: $color-danger-text;
+}
+
+.meal-verdict__status,
+.meal-verdict__title,
+.meal-verdict__summary {
+  @include stable-text;
+  display: block;
+}
+
+.meal-verdict__status {
+  margin-top: 20px;
+  font-size: $font-caption;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.meal-verdict__title {
+  margin-top: 6px;
+  font-size: $font-title;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.meal-verdict__summary {
+  margin-top: 10px;
+  font-size: $font-caption;
+  line-height: 1.7;
+}
+
+.meal-calorie-card {
+  margin-top: 28px;
+  padding: 36px 30px 32px;
+  border-radius: 40px;
+  background: $color-surface;
+  box-shadow: $shadow-soft;
+  text-align: center;
+}
+
+.meal-calorie-card__label {
+  display: block;
+  color: $color-text-tertiary;
+  font-size: $font-caption;
+  line-height: 1.5;
+}
+
+.meal-calorie-card__range {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 12px;
+  min-width: 0;
+  margin-top: 20px;
+  font-variant-numeric: tabular-nums;
+}
+
+.meal-calorie-card__about,
+.meal-calorie-card__dash,
+.meal-calorie-card__unit {
+  flex: 0 0 auto;
+  color: $color-text-secondary;
+  font-size: $font-body;
+}
+
+.meal-calorie-card__dash {
+  color: $color-text-tertiary;
+  font-size: $font-title;
+}
+
+.meal-calorie-card__number {
+  @include stable-text;
+  min-width: 0;
+  font-size: $font-display;
+  font-weight: 300;
+  line-height: 1;
+}
+
+.meal-calorie-card__budget {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 14px;
+  min-height: 64px;
+  margin-top: 28px;
+  padding: 12px 24px;
+  border-radius: 999px;
+  background: $color-bg-oat;
+  color: $color-text-secondary;
+  font-size: $font-caption;
+  line-height: 1.5;
+}
+
+.meal-calorie-card__budget-value {
+  font-weight: 700;
+}
+
+.meal-reason-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 22px;
+  margin-top: 24px;
+  padding: 28px;
+  border-radius: 36px;
+  background: $color-surface;
+  box-shadow: $shadow-soft;
+}
+
+.meal-reason-card__icon {
+  display: flex;
+  flex: 0 0 68px;
+  align-items: center;
+  justify-content: center;
+  width: 68px;
+  height: 68px;
+  border-radius: 22px;
+  font-size: $font-body;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.meal-tone-bg--success {
+  background: $color-success-bg;
+  color: $color-success-text;
+}
+
+.meal-tone-bg--warning {
+  background: $color-warning-bg;
+  color: $color-warning-text;
+}
+
+.meal-tone-bg--danger {
+  background: $color-danger-bg;
+  color: $color-danger-text;
+}
+
+.meal-reason-card__content {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.meal-reason-card__title,
+.meal-reason-card__text,
+.meal-reason-card__uncertainty-title {
+  @include stable-text;
+  display: block;
+}
+
+.meal-reason-card__title {
+  font-size: $font-label;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.meal-reason-card__text {
+  margin-top: 8px;
+  color: $color-text-secondary;
+  font-size: $font-body;
+  line-height: 1.8;
+}
+
+.meal-reason-card__uncertainties {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 2px solid $color-bg-oat;
+}
+
+.meal-reason-card__uncertainty-title {
+  color: $color-text-primary;
+  font-size: $font-caption;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.meal-reason-card__uncertainty {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 10px;
+  color: $color-text-secondary;
+  font-size: $font-caption;
+  line-height: 1.7;
+}
+
+.meal-reason-card__bullet {
+  flex: 0 0 auto;
+  color: $color-brand-deep;
+  font-weight: 700;
+}
+
+.meal-advice-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin: 36px 4px 20px;
+}
+
+.meal-advice-heading__title {
+  font-size: $font-label;
+  font-weight: 600;
+}
+
+.meal-advice-heading__hint {
+  color: $color-text-tertiary;
+  font-size: $font-caption;
+}
+
+.meal-advice-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.meal-advice-card {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  min-height: 120px;
+  padding: 24px 28px;
+  border-radius: 36px;
+  background: $color-surface;
+  box-shadow: $shadow-soft;
+}
+
+.meal-advice-card__number {
+  display: flex;
+  flex: 0 0 64px;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: $color-brand-soft;
+  color: $color-brand-deep;
+  font-size: $font-body;
+  font-weight: 700;
+}
+
+.meal-advice-card__content {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.meal-advice-card__text,
+.meal-advice-card__effect {
+  @include stable-text;
+  display: block;
+}
+
+.meal-advice-card__text {
+  font-size: $font-body;
+  font-weight: 500;
+  line-height: 1.6;
+}
+
+.meal-advice-card__effect {
+  margin-top: 6px;
+  color: $color-success-text;
+  font-size: $font-caption;
+  line-height: 1.5;
+}
+
+.meal-result-assurance {
+  @include stable-text;
+  display: block;
+  margin-top: 28px;
+  padding: 0 24px;
+  color: $color-text-tertiary;
+  font-size: $font-caption;
+  line-height: 1.8;
+  text-align: center;
+}
+
+.meal-result-loading,
+.meal-result-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 56px 36px;
+  border-radius: 40px;
+  background: $color-surface;
+  box-shadow: $shadow-soft;
+  text-align: center;
+}
+
+.meal-result-loading__lights {
+  display: flex;
+  gap: 22px;
+}
+
+.meal-result-loading__light {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: $color-warning-accent;
+}
+
+.meal-result-loading__light:first-child {
+  background: $color-success-accent;
+}
+
+.meal-result-loading__light:last-child {
+  background: $color-danger-accent;
+}
+
+.meal-result-loading__title,
+.meal-result-loading__body,
+.meal-result-message__title,
+.meal-result-message__body {
+  @include stable-text;
+  display: block;
+}
+
+.meal-result-loading__title,
+.meal-result-message__title {
+  margin-top: 28px;
+  font-size: $font-title;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.meal-result-loading__body,
+.meal-result-message__body {
+  margin-top: 12px;
+  color: $color-text-secondary;
+  font-size: $font-body;
+  line-height: 1.8;
+}
+
+.meal-result-message__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 96px;
+  height: 96px;
+  border-radius: 32px;
+  background: $color-bg-oat;
+  color: $color-text-secondary;
+  font-size: $font-title;
+  font-weight: 700;
+}
+
+.meal-result-message--warning .meal-result-message__icon {
+  background: $color-warning-bg;
+  color: $color-warning-text;
+}
+
+.meal-result-message__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+  width: 100%;
+  margin-top: 30px;
+}
+
+.meal-result-message__action,
+.meal-save-error__retry {
+  @include pressable;
+  min-width: 220px;
+  min-height: $touch-target;
+  margin: 0;
+  padding: 12px 24px;
+  border: 0;
+  border-radius: 999px;
+  background: $color-bg-oat;
+  color: $color-text-secondary;
+  font-size: $font-body;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.meal-result-message__action::after,
+.meal-save-error__retry::after {
+  border: 0;
+}
+
+.meal-result-message__action--primary {
+  background: $color-brand-soft;
+  color: $color-brand-deep;
+}
+
+.meal-save-error {
+  position: fixed;
+  z-index: 30;
+  right: $page-gutter;
+  bottom: calc(300px + env(safe-area-inset-bottom));
+  left: $page-gutter;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  max-width: calc(960px - #{$page-gutter * 2});
+  min-height: 120px;
+  margin: 0 auto;
+  padding: 22px 24px;
+  border-radius: 32px;
+  background: $color-surface;
+  box-shadow: $shadow-soft;
+}
+
+.meal-save-error__icon {
+  display: flex;
+  flex: 0 0 68px;
+  align-items: center;
+  justify-content: center;
+  width: 68px;
+  height: 68px;
+  border-radius: 22px;
+  background: $color-danger-bg;
+  color: $color-danger-text;
+  font-size: $font-body;
+  font-weight: 700;
+}
+
+.meal-save-error__content {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.meal-save-error__title,
+.meal-save-error__body {
+  @include stable-text;
+  display: block;
+}
+
+.meal-save-error__title {
+  font-size: $font-body;
+  font-weight: 600;
+}
+
+.meal-save-error__body {
+  margin-top: 4px;
+  color: $color-text-secondary;
+  font-size: $font-caption;
+  line-height: 1.5;
+}
+
+.meal-save-error__retry {
+  flex: 0 0 auto;
+  min-width: 128px;
+  background: $color-brand-soft;
+  color: $color-brand-deep;
+  font-size: $font-caption;
+}
+
+.meal-result-pressable--active {
+  @include pressed;
+}
+
+@media (max-width: 640px) {
+  .meal-calorie-card__range {
+    flex-wrap: wrap;
+  }
+
+  .meal-calorie-card__about {
+    flex-basis: 100%;
+  }
+
+  .meal-reason-card {
+    gap: 16px;
+    padding: 24px;
+  }
+
+  .meal-advice-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .meal-save-error {
+    flex-wrap: wrap;
+  }
+
+  .meal-save-error__content {
+    flex-basis: calc(100% - 88px);
+  }
+
+  .meal-save-error__retry {
+    width: 100%;
+  }
+}

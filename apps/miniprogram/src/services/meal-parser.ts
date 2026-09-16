@@ -25,6 +25,11 @@ export const OFFLINE_DEMO_TEXTS = {
   lightChickenSet: '白灼时蔬、水煮鸡胸和小份米饭'
 } as const
 
+export const OFFLINE_MEAL_PARSER_METADATA = {
+  isDemo: true,
+  modelVersion: 'offline-demo-v1'
+} as const
+
 const OFFLINE_PARSED_MEALS: Record<OfflineDemoMealId, ParsedMeal> = {
   'northeast-combo': {
     items: [

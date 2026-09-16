@@ -116,7 +116,7 @@ export async function createMealRecord(
     database,
     {
       items: request.items,
-      unknownHandling: 'PROMPT',
+      unknownHandling: request.unknownHandling,
       ...(request.modelVersion
         ? { modelVersion: request.modelVersion }
         : {})

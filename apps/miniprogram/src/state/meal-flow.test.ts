@@ -63,7 +63,9 @@ describe('meal flow draft', () => {
         sourceType: 'TEXT',
         sourceText: '水煮鸡胸',
         displayLabel: '文字输入',
-        submittedAt: '2026-09-16T12:26:00+08:00'
+        submittedAt: '2026-09-16T12:26:00+08:00',
+        isDemo: true,
+        modelVersion: 'offline-demo-v1'
       },
       parsedMeal,
       assessment
@@ -83,7 +85,9 @@ describe('meal flow draft', () => {
       inputSummary: {
         sourceType: 'IMAGE',
         displayLabel: '图片输入',
-        submittedAt: '2026-09-16T12:26:00+08:00'
+        submittedAt: '2026-09-16T12:26:00+08:00',
+        isDemo: true,
+        modelVersion: 'offline-demo-v1'
       }
     })
 

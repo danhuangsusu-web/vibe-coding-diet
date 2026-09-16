@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { mealAssessmentSchema } from './assessment'
+import { mealAssessmentSchema, unknownHandlingSchema } from './assessment'
 import {
   inputTypeSchema,
   isoDateTimeSchema,
@@ -15,6 +15,7 @@ export const createMealRecordRequestSchema = z
     sourceText: z.string().trim().min(1).max(100).optional(),
     items: z.array(confirmedMealItemSchema).min(1),
     isDemo: z.boolean().default(false),
+    unknownHandling: unknownHandlingSchema.default('PROMPT'),
     clientAssessmentSnapshot: mealAssessmentSchema.optional(),
     modelVersion: nonEmptyTextSchema.optional()
   })

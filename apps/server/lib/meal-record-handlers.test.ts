@@ -330,6 +330,34 @@ describe('meal record POST handler', () => {
     expect(create).not.toHaveBeenCalled()
   })
 
+  it('saves a conservative fallback only after explicit opt-in', async () => {
+    const { create, database } = createDatabase()
+    const { POST } = createMealRecordHandlers(database, () => NOW)
+    const unknownItem: ConfirmedMealItem = {
+      ...riceItem,
+      displayName: '秘制菜',
+      ingredients: ['OTHER'],
+      otherIngredients: ['未知食材']
+    }
+
+    const response = await POST(
+      postRequest(
+        validRequest({
+          items: [unknownItem],
+          unknownHandling: 'CONSERVATIVE_FALLBACK'
+        })
+      )
+    )
+    const body = await response.json()
+
+    expect(response.status).toBe(201)
+    expect(body.assessment.calorieRange).toEqual({ min: 100, max: 460 })
+    expect(body.assessment.uncertainties).toContain(
+      '菜品“秘制菜”含有未覆盖食材，已使用宽范围保守估算。'
+    )
+    expect(create).toHaveBeenCalledTimes(1)
+  })
+
   it('returns unified errors for a missing profile and database failure', async () => {
     const missing = createDatabase({ profileExists: false })
     const missingHandlers = createMealRecordHandlers(missing.database, () => NOW)

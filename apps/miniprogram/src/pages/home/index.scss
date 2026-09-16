@@ -1,1 +1,129 @@
 @use '../../styles/flow-page';
+@use '../../styles/tokens' as *;
+@use '../../styles/mixins' as *;
+
+.home-record-list__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin: 36px 4px 16px;
+}
+
+.home-record-list__title,
+.home-record-list__hint,
+.home-record-item__title,
+.home-record-item__meta {
+  @include stable-text;
+
+  display: block;
+}
+
+.home-record-list__title {
+  color: $color-text-primary;
+  font-size: $font-label;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.home-record-list__hint {
+  color: $color-text-tertiary;
+  font-size: $font-caption;
+  line-height: 1.4;
+  text-align: right;
+}
+
+.home-record-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.home-record-item {
+  @include pressable;
+
+  width: 100%;
+  min-height: 128px;
+  margin: 0;
+  padding: 24px 28px;
+  border: 0;
+  border-radius: $card-radius;
+  background: $color-surface;
+  box-shadow: $shadow-soft;
+  color: $color-text-primary;
+  line-height: 1.4;
+  text-align: left;
+}
+
+.home-record-item::after {
+  border: 0;
+}
+
+.home-record-item--active {
+  @include pressed;
+}
+
+.home-record-item__content {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+}
+
+.home-record-item__info {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.home-record-item__title {
+  font-size: $font-label;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.home-record-item__meta {
+  margin-top: 8px;
+  color: $color-text-secondary;
+  font-size: $font-caption;
+  line-height: 1.5;
+}
+
+.home-record-item__action {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.home-record-item__chevron {
+  color: $color-text-tertiary;
+  font-size: 44px;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.home-record-refresh {
+  @include pressable;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: $touch-target;
+  margin: 24px 0 0;
+  padding: 12px 28px;
+  border: 0;
+  border-radius: $control-radius;
+  background: $color-surface;
+  color: $color-warning-text;
+  font-size: $font-body;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.home-record-refresh::after {
+  border: 0;
+}
+
+.home-record-refresh--active {
+  @include pressed;
+}

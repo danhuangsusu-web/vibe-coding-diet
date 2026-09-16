@@ -1,6 +1,6 @@
 # 食刻 AI 当前架构
 
-> 基线日期：2026-09-16（已同步步骤 1 至步骤 15）
+> 基线日期：2026-09-16（已同步步骤 1 至步骤 16）
 > 记录原则：本文件描述当前仓库事实。尚未实现的目标只在“计划边界”中标注，不与现状混写。
 
 ## 1. 总览
@@ -98,8 +98,13 @@
 | `apps/miniprogram/config/index.ts` | 通过 Taro `defineConstants` 注入编译常量 `__API_BASE_URL__` |
 | `apps/miniprogram/types/global.d.ts` | 声明 `__API_BASE_URL__` 的全局类型 |
 | `apps/miniprogram/.env.example` | 说明 `TARO_APP_API_BASE_URL` 的用途与默认行为 |
+| `apps/miniprogram/.env` | 本地配置，写入 `TARO_APP_API_BASE_URL=http://127.0.0.1:3000`；Taro 会自动读取。该文件由根 `.gitignore` 排除，不入库 |
 
 接口地址是编译期常量，业务页面不得硬编码地址。生产构建的链路（HTTPS、域名配置）属于 P1。
+
+**构建方式会影响地址是否能注入**：`pnpm build:miniprogram` 走生产模式，未配置地址时注入空字符串，产物将无法调用接口；`pnpm dev:miniprogram` 走开发模式，会自动使用 `http://127.0.0.1:3000`。当前已用 `apps/miniprogram/.env` 固定本地地址，因此两种方式都可正常工作。
+
+**端到端验收只能在模拟器中进行**：`127.0.0.1` 在真机上指向手机自身，真机联调需要改为电脑的局域网地址，属于 P1。
 
 ### 3.5 运行代码
 
@@ -117,9 +122,17 @@
 | `apps/miniprogram/src/pages/meal-confirm/index.scss` | P03 菜品卡、可信度徽章、做法标签与选项、份量控件、空态与吸底确认区样式 |
 | `apps/miniprogram/src/pages/meal-confirm/meal-confirm-state.ts` | P03 的纯状态转换、三档可信度呈现、30 字菜名截断、受控做法与份量选项、可提交判断和写回草稿的解析结果构造 |
 | `apps/miniprogram/src/pages/meal-confirm/meal-confirm-state.test.ts` | 覆盖三档可信度与排序、改后标记、菜名截断、做法不能空选、增删与至少一个非空菜名、写回草稿 |
-| `apps/miniprogram/src/pages/{home,meal-result,history}/index.tsx` | P01、P04、P05 页面骨架：只接通导航，不含对应业务流程 |
+| `apps/miniprogram/src/pages/meal-result/index.tsx` | P04 评估结果页：进入即调接口评估，展示三灯、热量区间、参考额度、原因、不确定性、建议与保护性说明；支持保存、暂不保存与保存失败重试；带 `recordId` 参数时进入只读的记录详情 |
+| `apps/miniprogram/src/pages/meal-result/index.scss` | P04 评级主视觉、区间卡、原因卡、建议卡、加载态、错误态与保存失败浮层样式 |
+| `apps/miniprogram/src/pages/meal-result/meal-result-state.ts` | P04 的评级呈现、评估与保存请求构造、`clientRequestId` 生成、记录查找与结果状态机 |
+| `apps/miniprogram/src/pages/meal-result/meal-result-state.test.ts` | 覆盖请求构造、兜底开关、UUID 版本、三评级编码、保存失败保留结果与记录查找 |
+| `apps/miniprogram/src/pages/home/index.tsx` | P01 首页：用 `useDidShow` 拉取最近记录并在返回时刷新，展示当天汇总与入口；完整视觉规范属于步骤 17 |
+| `apps/miniprogram/src/pages/home/home-records.ts` | P01 的上海日期键、当天记录筛选与倒序、时间格式化与评级呈现 |
+| `apps/miniprogram/src/pages/home/home-records.test.ts` | 覆盖日期键不依赖设备时区、当天筛选与排序、不把历史记录当作今天、菜名取值与时间格式化 |
+| `apps/miniprogram/src/pages/history/index.tsx` | P05 历史与设置页面骨架：只接通导航，不含对应业务流程 |
 | `apps/miniprogram/src/pages/*/index.scss` | 各页局部样式 |
 | `apps/miniprogram/src/pages/*/index.config.ts` | 各页导航标题；按 D6 统一为应用名“食刻 AI” |
+| `apps/miniprogram/src/services/meal-api.ts` | 小程序请求层：用 `Taro.request` 调用 `__API_BASE_URL__`，统一映射为带 `code` 与 `retryable` 的 `MealApiError`；含评估、保存与读取记录的三个方法 |
 | `apps/miniprogram/src/services/meal-parser.ts` | 小程序统一 `parseMeal(input)` 门面；当前只含两个离线样例，页面不判断 offline/ai |
 | `apps/miniprogram/src/services/meal-parser.test.ts` | 覆盖两组文字样例、图片样例、未知文字，并与服务端步骤 10 样例逐项比对防漂移 |
 | `apps/miniprogram/src/services/meal-image-policy.ts` | 无平台依赖的图片尺寸、格式、大小、质量和错误分类规则 |
@@ -130,14 +143,14 @@
 
 当前限制：
 
-- P02、P03 已实现步骤 13、14 的离线行为；P01、P04、P05 仍是骨架，首页完整形态属于步骤 17，其余页面属于步骤 16、18；
+- P02、P03、P04 已实现步骤 13、14、16 的行为；P05 仍是骨架，属于步骤 18；P01 已接通记录读取并在返回时刷新，完整视觉规范属于步骤 17；
 - P02 图片只在本地选择、预览和压缩，不上传、不持久化；真实图片解析属于步骤 21；
 - P02 只识别两组离线样例：图片默认映射 `northeast-combo`，文字必须匹配两个样例之一；小程序与服务端样例目前由一致性测试锁定，但在步骤 20 建立真实解析接口前仍各自保存一份运行时数据；
-- P03 只在用户确认后写回草稿并前往 P04，**确认前不评估、不保存**；P04 尚未计算评级，属于步骤 15、16；
-- 尚无小程序请求层；`__API_BASE_URL__` 已定义但尚无消费方，接口调用在其后步骤引入；
+- P03 只在用户确认后写回草稿并前往 P04，**确认前不评估、不保存**；P04 已接入评估与保存接口，但 P0 不实现建议后重算；
+- 小程序请求层已建立（`services/meal-api.ts`），目前只被 P04 与 P01 使用；P05 尚未接入；
 - TDesign 尚未在业务源码中使用；Jotai 仅用于跨页草稿；
-- P02、P03 与视觉基础已完成代码、构建产物和 Token 层面核对，尚未在微信开发者工具或真机完成视觉人工验收；
-- 小程序测试只覆盖纯逻辑（草稿、接口地址、P02/P03 状态、离线解析一致性和图片策略），不含页面渲染与微信平台 API；Vitest 范围不包含小程序运行时。
+- 视觉基础、P02、P03 已完成人工验收，P04 只完成构建产物与接口层面核对；
+- 小程序测试只覆盖纯逻辑（草稿、接口地址、P02/P03/P04 状态、首页记录呈现、离线解析一致性和图片策略），不含页面渲染与微信平台 API；Vitest 范围不包含小程序运行时。
 
 按 D7，P03 的做法标签与选项中，高油高糖做法使用 danger 令牌（红），其余做法使用 success 令牌（绿）；做法始终保留文字标签，颜色不是唯一编码方式，未选中态保持中性底色。该配色与 P04 的红黄绿灯评级共用同一组颜色语义，这是用户知情后的有意选择，不得改回黄灯色。
 
@@ -447,13 +460,13 @@ MealRecord 当前字段：
 
 当前可运行的数据流有五条：
 
-1. 小程序可打开五个页面；P02 可收集单张本地图片或文字，调用小程序 `parseMeal` 离线门面，成功后写入跨页草稿并前往 P03；P03 可增删改菜品、做法与份量，确认后写回草稿并前往 P04；P01、P04、P05 仍只有导航骨架，不发起业务请求。
+1. 小程序可打开五个页面并形成完整离线闭环：P02 收集单张本地图片或文字并调用离线 `parseMeal`，P03 增删改菜品后确认，P04 调 `POST /api/assess-meal` 取得评估并可用 `POST /api/meal-records` 保存，保存后返回 P01 并自动刷新当天汇总；P05 仍只有导航骨架。
 2. 客户端或浏览器请求 `GET /api/health`，Next.js 返回固定 JSON。
 3. 客户端请求 `GET /api/profile`，服务端按固定 `DEMO_PROFILE_ID` 读取数据库并返回演示资料。
 4. 客户端请求 `PATCH /api/profile`，服务端用共享契约校验后更新资料并返回最新结果。
 5. 客户端 `POST /api/meal-records` 提交确认后的菜品，服务端重新评估后落库；`GET /api/meal-records` 返回最近 30 天按上海日期分组的记录与汇总；`DELETE /api/meal-records/{id}` 物理删除属于演示资料的记录。
 
-AI 工厂可以独立创建模型对象，但 ai 模式的解析器尚未实现，`MEAL_PARSER=ai` 会得到明确的配置错误。`parseMeal` 已可在服务端代码内调用并返回两个离线样例之一，但尚未被任何 Route Handler 暴露成 HTTP 接口；小程序另有同名门面供步骤 13 至 19 的纯离线页面调用，并以测试逐项比对服务端样例。根 Vitest 入口当前可运行 173 个测试（shared 19、nutrition 66、server 66、miniprogram 22），范围同时覆盖服务端与小程序纯逻辑，并能解析工作区 TypeScript 源码包。nutrition 已通过记录接口被真实调用；小程序 P02、P03 已完成本地输入、离线解析与确认编辑行为，但尚未调用任何接口；服务端已可对确认后的菜品返回完整评估。
+AI 工厂可以独立创建模型对象，但 ai 模式的解析器尚未实现，`MEAL_PARSER=ai` 会得到明确的配置错误。`parseMeal` 已可在服务端代码内调用并返回两个离线样例之一，但尚未被任何 Route Handler 暴露成 HTTP 接口；小程序另有同名门面供步骤 13 至 19 的纯离线页面调用，并以测试逐项比对服务端样例。根 Vitest 入口当前可运行 192 个测试（shared 19、nutrition 66、server 66、miniprogram 41），范围同时覆盖服务端与小程序纯逻辑，并能解析工作区 TypeScript 源码包。nutrition 已通过记录接口被真实调用；小程序 P02 至 P04 已完成本地输入、离线解析、确认编辑、评估展示与保存，并已真实调用评估与记录接口；P05 仍未接入。
 
 ## 9. 目标数据流边界
 
@@ -474,7 +487,7 @@ AI 工厂可以独立创建模型对象，但 ai 模式的解析器尚未实现�
 
 ## 10. 已知技术债与风险
 
-- 自动化测试目前是 173 个契约、规则、接口与小程序纯逻辑测试（用假数据库与假时钟），尚无针对真实数据库或微信运行时的集成测试；
+- 自动化测试目前是 192 个契约、规则、接口与小程序纯逻辑测试（用假数据库与假时钟），尚无针对真实数据库或微信运行时的集成测试；
 - 热量区间规则只覆盖 9 个已知食材标签、10 个已知做法和两个演示样例，扩展评测集前需同步递增规则版本并补测试；
 - offline 解析器只能识别两个演示样例的原文，任何其他输入都会抛出“未匹配到样例”，这是步骤 20 之前的有意限制；
 - 规则层已能返回“需要补充信息”，但界面上的“跳过补充”入口在步骤 15 才实现；
@@ -490,4 +503,4 @@ AI 工厂可以独立创建模型对象，但 ai 模式的解析器尚未实现�
 - `project.config.json` 使用**小程序测试号**提供的 AppID（`wx9c7d506cdb608201`）：相比原先的游客 AppID，它已支持真机预览与真机调试；但测试号没有上传能力，因此**体验版与上线仍需正式 AppID**。D5 的原前提（体验版需先换正式 AppID）经核实依然成立，仅方案 b 的括号措辞需修正。`project.private.config.json` 由开发者工具生成并已被 `.gitignore` 排除；
 - 高保真 HTML 原型与 Taro 代码仅对齐了视觉基础、P02 与 P03；P01、P04、P05 页面内容尚未实现；
 - `.workbuddy_html/` 未被 `.gitignore` 排除，且当前已纳入版本控制；后续原型变更会进入 Git 差异；
-- 当前 Git `main` 已包含步骤 1 至步骤 10 的提交（`01afa66`、`dcd640f`、`4f087d5`、`1d56406`、`2174d63`、`d043690`、`c7205ac`、`cde21b7`、`b7b6487`、`58d19a0`）、步骤 11 提交 `480d795`、两次文档提交 `db2c6ba` 与 `7c28422`、步骤 12 提交 `4e4e458`、步骤 13 提交 `038e5c0`、`.gitattributes` 提交 `1e6e39f` 与 D7 文档提交 `ebc3deb`；步骤 14 提交 `dae4a46`；步骤 15 的评估接口与本文档更新在同一提交中。
+- 当前 Git `main` 已包含步骤 1 至步骤 10 的提交（`01afa66`、`dcd640f`、`4f087d5`、`1d56406`、`2174d63`、`d043690`、`c7205ac`、`cde21b7`、`b7b6487`、`58d19a0`）、步骤 11 提交 `480d795`、两次文档提交 `db2c6ba` 与 `7c28422`、步骤 12 提交 `4e4e458`、步骤 13 提交 `038e5c0`、`.gitattributes` 提交 `1e6e39f` 与 D7 文档提交 `ebc3deb`；步骤 14 提交 `dae4a46`、步骤 15 提交 `07a9435`；步骤 16 的 P04 与 P01 接线、请求层及本文档更新在同一提交中。

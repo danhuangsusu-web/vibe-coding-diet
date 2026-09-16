@@ -11,11 +11,15 @@ export type MealInputSummary =
       sourceText: string
       displayLabel: string
       submittedAt: string
+      isDemo: boolean
+      modelVersion?: string
     }
   | {
       sourceType: Extract<InputType, 'IMAGE'>
       displayLabel: string
       submittedAt: string
+      isDemo: boolean
+      modelVersion?: string
     }
 
 export type MealFlowParsedItem = MealItem & {

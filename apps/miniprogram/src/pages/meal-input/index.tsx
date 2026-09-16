@@ -18,6 +18,7 @@ import {
 } from '../../services/meal-image'
 import {
   OfflineMealSampleNotFoundError,
+  OFFLINE_MEAL_PARSER_METADATA,
   OFFLINE_DEMO_TEXTS,
   parseMeal
 } from '../../services/meal-parser'
@@ -162,14 +163,16 @@ export default function MealInputPage() {
               sourceType: 'TEXT' as const,
               sourceText: input.sourceText,
               displayLabel: '文字输入',
-              submittedAt: new Date().toISOString()
+              submittedAt: new Date().toISOString(),
+              ...OFFLINE_MEAL_PARSER_METADATA
             }
           : {
               sourceType: 'IMAGE' as const,
               displayLabel: state.image
                 ? imageSourceLabel(state.image.source)
                 : '图片输入',
-              submittedAt: new Date().toISOString()
+              submittedAt: new Date().toISOString(),
+              ...OFFLINE_MEAL_PARSER_METADATA
             }
 
       setDraft((current) => ({
