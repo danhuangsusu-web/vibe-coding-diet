@@ -6,7 +6,8 @@ import type {
   DemoProfile,
   MealAssessment,
   MealRecord,
-  MealRecordsResponse
+  MealRecordsResponse,
+  UpdateDemoProfileRequest
 } from '@food-sense/shared'
 import Taro from '@tarojs/taro'
 
@@ -129,6 +130,76 @@ async function getJson<T>(path: string): Promise<T> {
   }
 }
 
+async function patchJson<T>(path: string, data: unknown): Promise<T> {
+  try {
+    const response = await Taro.request<T | ApiErrorResponse>({
+      url: apiUrl(path),
+      method: 'PATCH',
+      header: { 'content-type': 'application/json' },
+      data
+    })
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return response.data as T
+    }
+
+    if (isApiErrorResponse(response.data)) {
+      throw new MealApiError(
+        response.data.error.code,
+        response.data.error.message,
+        response.data.error.retryable
+      )
+    }
+
+    throw new MealApiError(
+      'NETWORK_ERROR',
+      '服务暂时没有返回可用结果，请稍后重试。',
+      true
+    )
+  } catch (error) {
+    if (error instanceof MealApiError) throw error
+
+    throw new MealApiError(
+      'NETWORK_ERROR',
+      '网络连接失败，你的设置仍然保留，可以稍后重试。',
+      true
+    )
+  }
+}
+
+async function deleteJson(path: string): Promise<void> {
+  try {
+    const response = await Taro.request<unknown | ApiErrorResponse>({
+      url: apiUrl(path),
+      method: 'DELETE'
+    })
+
+    if (response.statusCode >= 200 && response.statusCode < 300) return
+
+    if (isApiErrorResponse(response.data)) {
+      throw new MealApiError(
+        response.data.error.code,
+        response.data.error.message,
+        response.data.error.retryable
+      )
+    }
+
+    throw new MealApiError(
+      'NETWORK_ERROR',
+      '服务暂时没有返回可用结果，请稍后重试。',
+      true
+    )
+  } catch (error) {
+    if (error instanceof MealApiError) throw error
+
+    throw new MealApiError(
+      'NETWORK_ERROR',
+      '网络连接失败，记录没有从页面移除，请稍后重试。',
+      true
+    )
+  }
+}
+
 export function assessConfirmedMeal(
   request: AssessMealRequest
 ): Promise<MealAssessment> {
@@ -147,4 +218,14 @@ export function getMealRecords(): Promise<MealRecordsResponse> {
 
 export function getDemoProfile(): Promise<DemoProfile> {
   return getJson<DemoProfile>('/api/profile')
+}
+
+export function updateDemoProfile(
+  request: UpdateDemoProfileRequest
+): Promise<DemoProfile> {
+  return patchJson<DemoProfile>('/api/profile', request)
+}
+
+export function deleteMealRecord(recordId: string): Promise<void> {
+  return deleteJson(`/api/meal-records/${encodeURIComponent(recordId)}`)
 }
