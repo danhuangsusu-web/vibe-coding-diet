@@ -1,8 +1,8 @@
 # 食刻 AI 进度记录
 
-> 当前阶段：步骤 1–10 已完成并经用户确认；步骤 11 未开始
-> 下一步：开始步骤 11（建立小程序视觉基础）；D5 仍待确认，但不阻塞
-> 最后更新：2026-09-15
+> 当前阶段：步骤 1–11 已完成并经用户确认；步骤 12 未开始
+> 下一步：开始步骤 12（建立五页路由和主流程草稿状态）；D5 仍待确认，但其前提已受本步骤影响
+> 最后更新：2026-09-16
 
 ## 2026-09-14 工作流整理基线
 
@@ -455,8 +455,47 @@
 
 ### 当前停点
 
-- 步骤 10 已由用户验收确认，未开始步骤 11；
+- 步骤 10 已由用户验收确认，步骤 11 已在其后完成并验收；
 - 用户已确认两组演示数据；并已修正样例中“水煮鸡胸”的做法标签（由 `BLANCHED` 改为 `BOILED`，数值结果不受影响）。
+
+## 2026-09-16 步骤 11 建立小程序视觉基础（已验收）
+
+### 已完成
+
+- 新增 `apps/miniprogram/src/styles/_tokens.scss`：颜色、文字、间距、圆角、阴影和稳定尺寸的共享 Token；
+- 新增 `apps/miniprogram/src/styles/_mixins.scss`：`pressable`、`pressed` 与 `stable-text`（防文字溢出）；
+- 新增 `apps/miniprogram/src/components/ui/`：`primitives.tsx`、`primitives.scss` 与 `index.ts`，提供 `AppPage`、`IconButton`、`PageHeader`、`SurfaceCard`、`StatusBadge`、`SegmentedControl`、`PrimaryButton` 与 `BottomActionBar`；
+- `app.config.ts` 将导航栏背景由 `#ffffff` 对齐为奶油背景 `#FAF6EF`；
+- `app.scss` 改为引用 Token，统一页面背景、主文字色、中文字体栈、`letter-spacing: 0` 与字距重置，并暴露一组 CSS 变量；
+- `pages/home/index.tsx` 与 `index.scss` 改为视觉基础展示页，用静态数据陈列上述控件，不实现业务流程；
+- `project.config.json` 的 `appid` 由 `touristappid` 换为用户的正式 AppID，并由微信开发者工具补全默认设置。
+
+### 验证结果
+
+2026-09-16 实际执行：
+
+- `pnpm typecheck`：shared、nutrition、miniprogram、server 四个工作区全部通过；
+- `pnpm build:miniprogram`：构建成功，产物 `dist/app.json` 的导航栏背景确认为 `#FAF6EF`，`app.wxss` 含奶油背景与暖白卡片色，且不含改版前的 `#ffffff`、`#f6f7f8` 与 `#202124`；
+- Token 与 design-document.md 第 6.3 节逐项比对一致（21 个色值全部匹配）；阴影在 Taro 750 设计宽度下换算后与文档规范一致（普通卡片 6px/18px，主操作 10px/28px）；
+- 字号在 375px 逻辑宽度下换算：正文 14px、辅助文字 12px，均达到最小值要求；生产样式全局 `letter-spacing: 0`；
+- 热区在 375px 逻辑宽度下换算：所有可操作控件 44px，主操作高度 52px；
+- `StatusBadge` 同时提供颜色、图标与文字三种编码，颜色不是唯一的信息编码方式；
+- 底部安全区使用 `env(safe-area-inset-bottom)`，宽屏使用 `max-width` 约束，文字采用 `stable-text` 防止溢出；
+- 全量检索确认未混入高保真原型的手机外壳、固定状态栏、9:41、信号或电量元素；
+- 小程序构建产物 `dist/` 已由 `.gitignore` 排除。
+
+### 已知影响与后续衔接
+
+- 当前仅注册 `pages/home/index` 一个页面，且它是视觉基础展示页，不是最终首页；五页路由属于步骤 12，业务流程属于步骤 13 至 18；
+- 视觉基础尚未在真机上核对，目前只完成构建与 Token 层面的核对；
+- `project.config.json` 已换成正式 AppID，**D5（真机体验版措辞）的前提因此改变**：原先“需先换正式 AppID”的假设已不成立，需要在步骤 24 的作品包装前重新确认或关闭该决策；
+- `project.private.config.json` 由微信开发者工具生成，属个人本地设置，已加入 `.gitignore` 不入库；
+- TDesign 与 Jotai 仍已安装但未在业务源码中使用。
+
+### 当前停点
+
+- 步骤 11 已由用户验收确认，未开始步骤 12；
+- 用户已确认视觉基础与设计文档和五页原型一致。
 
 ## 决策状态
 

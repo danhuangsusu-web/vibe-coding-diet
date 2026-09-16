@@ -1,0 +1,43 @@
+$color-bg-cream: #faf6ef;
+$color-bg-oat: #f3ede2;
+$color-bg-butter: #fbf3dc;
+$color-surface: #fffdf9;
+
+$color-brand: #f0a65b;
+$color-brand-deep: #c97f33;
+$color-brand-soft: #fae3c7;
+$color-action-start: #f3ac62;
+$color-action-end: #e8964a;
+
+$color-text-primary: #3e3833;
+$color-text-secondary: #6e655b;
+$color-text-tertiary: #9a9086;
+
+$color-success-bg: #e3f1e6;
+$color-success-accent: #6fae87;
+$color-success-text: #3f7050;
+$color-warning-bg: #fbf0d3;
+$color-warning-accent: #d9ae4e;
+$color-warning-text: #8a6b28;
+$color-danger-bg: #f8e4dc;
+$color-danger-accent: #d68f73;
+$color-danger-text: #9c5238;
+
+$shadow-soft: 0 12px 36px rgba(196, 168, 128, 0.12);
+$shadow-action: 0 20px 56px rgba(217, 138, 61, 0.2);
+
+// Values are authored against Taro's 750 design width. They render at half
+// these CSS pixel values on the 375px logical reference viewport.
+$font-caption: 24px;
+$font-body: 28px;
+$font-label: 30px;
+$font-nav: 32px;
+$font-title: 40px;
+$font-display: 88px;
+
+$touch-target: 88px;
+$primary-action-height: 104px;
+$page-gutter: 40px;
+$card-radius: 40px;
+$control-radius: 28px;
+

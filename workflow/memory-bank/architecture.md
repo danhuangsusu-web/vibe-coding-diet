@@ -1,6 +1,6 @@
 # 食刻 AI 当前架构
 
-> 基线日期：2026-09-15（已同步步骤 1 至步骤 10）
+> 基线日期：2026-09-16（已同步步骤 1 至步骤 11）
 > 记录原则：本文件描述当前仓库事实。尚未实现的目标只在“计划边界”中标注，不与现状混写。
 
 ## 1. 总览
@@ -12,7 +12,7 @@
 - `packages/shared`：跨端 Zod Schema 与共享类型；
 - `packages/nutrition`：确定性营养评级与热量区间规则。
 
-当前代码已完成工程骨架、静态首页、健康接口、模型供应商工厂、最小评级函数、shared、nutrition、server 的 Vitest 自动化测试基线、完整的共享业务契约（资料、餐食、评估、记录、统一 API 错误）、按受控词表计算热量区间的最小规则（含 D1c 的两阶段未知处理）、动态餐次额度与红黄绿灯评级（含高油高糖最低黄灯）、由规则生成的原因与建议白名单、与共享契约对齐的数据库结构和已初始化的固定演示资料、演示资料的读取与更新接口、餐食记录的创建查询与删除接口，以及两个离线演示样例与统一的 `parseMeal` 解析契约。小程序端与 AI 解析实现尚不存在；服务端侧已可支撑完整离线闭环。
+当前代码已完成工程骨架、静态首页、健康接口、模型供应商工厂、最小评级函数、shared、nutrition、server 的 Vitest 自动化测试基线、完整的共享业务契约（资料、餐食、评估、记录、统一 API 错误）、按受控词表计算热量区间的最小规则（含 D1c 的两阶段未知处理）、动态餐次额度与红黄绿灯评级（含高油高糖最低黄灯）、由规则生成的原因与建议白名单、与共享契约对齐的数据库结构和已初始化的固定演示资料、演示资料的读取与更新接口、餐食记录的创建查询与删除接口、两个离线演示样例与统一的 `parseMeal` 解析契约，以及小程序的视觉基础（Token、基础控件、奶油背景导航栏）。小程序尚未实现五页路由与业务流程，AI 解析实现尚不存在；服务端侧已可支撑完整离线闭环。
 
 ## 2. 根目录职责
 
@@ -40,29 +40,50 @@
 | --- | --- |
 | `apps/miniprogram/package.json` | Taro、React、TDesign、Jotai、Sass、Webpack 和微信类型依赖及 dev/build/typecheck 脚本 |
 | `apps/miniprogram/config/index.ts` | 配置 Taro 项目、750 设计宽度、Webpack 5、源码和输出目录 |
-| `apps/miniprogram/project.config.json` | 微信开发者工具项目，使用 touristappid，输出根目录为 `dist/` |
+| `apps/miniprogram/project.config.json` | 微信开发者工具项目，使用正式 AppID，输出根目录为 `dist/` |
 | `apps/miniprogram/tsconfig.json` | 严格 TypeScript、Bundler 模块解析、`@/*` 路径别名 |
 | `apps/miniprogram/babel.config.js` | Taro React TypeScript Babel preset |
 | `apps/miniprogram/types/global.d.ts` | 小程序项目的全局类型声明入口 |
 
-### 3.2 运行代码
+`project.private.config.json` 由微信开发者工具在本地生成，存放个人设置，已由 `.gitignore` 排除。
+
+### 3.2 视觉基础
+
+| 路径 | 当前职责 |
+| --- | --- |
+| `apps/miniprogram/src/styles/_tokens.scss` | 颜色、文字、间距、圆角、阴影和稳定尺寸的共享 Token；数值按 Taro 750 设计宽度书写，在 375px 逻辑宽度上渲染为一半 |
+| `apps/miniprogram/src/styles/_mixins.scss` | `pressable`、`pressed` 与 `stable-text`（`overflow-wrap: anywhere` 加 `min-width: 0`，防止文字溢出） |
+| `apps/miniprogram/src/components/ui/primitives.tsx` | `AppPage`、`IconButton`、`PageHeader`、`SurfaceCard`、`StatusBadge`、`SegmentedControl`、`PrimaryButton`、`BottomActionBar` |
+| `apps/miniprogram/src/components/ui/primitives.scss` | 上述基础控件的样式，统一使用 Token |
+| `apps/miniprogram/src/components/ui/index.ts` | 基础控件的公开出口 |
+
+关键约束：
+
+- 所有色值与 design-document.md 第 6.3 节的色彩 Token 一致，共 21 个色值；
+- 字号在 375px 逻辑宽度下：正文 14px、辅助文字 12px；生产样式全局 `letter-spacing: 0`；
+- 可操作控件热区 44px，主操作高度 52px；
+- 状态信息不得只靠颜色编码：`StatusBadge` 同时提供颜色、图标（✓ / ! / ×）与文字；
+- 底部安全区使用 `env(safe-area-inset-bottom)`，宽屏使用 `max-width` 约束；
+- 不复制高保真原型的手机外壳、固定状态栏或展示用状态标签。
+
+### 3.3 运行代码
 
 | 路径 | 当前职责 |
 | --- | --- |
 | `apps/miniprogram/src/app.tsx` | 根组件，只原样渲染 children |
-| `apps/miniprogram/src/app.config.ts` | 当前仅注册 `pages/home/index`，配置导航栏标题和颜色 |
-| `apps/miniprogram/src/app.scss` | 定义页面背景、文字色和系统字体 |
-| `apps/miniprogram/src/pages/home/index.tsx` | 静态首页，展示标题、说明、上传图片和文字输入按钮 |
-| `apps/miniprogram/src/pages/home/index.scss` | 静态首页布局和按钮样式 |
+| `apps/miniprogram/src/app.config.ts` | 当前仅注册 `pages/home/index`；导航栏背景为奶油背景 `#FAF6EF`，标题为“食刻 AI” |
+| `apps/miniprogram/src/app.scss` | 引用 Token，统一页面背景、主文字色、中文字体栈与字距，并暴露一组 `--food-*` CSS 变量 |
+| `apps/miniprogram/src/pages/home/index.tsx` | 视觉基础展示页，用静态数据陈列 Token 与基础控件 |
+| `apps/miniprogram/src/pages/home/index.scss` | 展示页布局与局部样式 |
 | `apps/miniprogram/src/pages/home/index.config.ts` | 首页导航标题 |
 
 当前限制：
 
-- 只有一个页面；
-- 两个按钮没有事件；
+- 只注册了一个页面，且该页面是视觉基础展示页，不是最终首页；五页路由属于步骤 12，业务流程属于步骤 13 至 18；
+- 展示页的数据为静态硬编码，未接任何接口；
 - 没有请求层、路由流转、表单状态、全局状态或持久化；
 - TDesign 和 Jotai 已安装但尚未在业务源码中使用；
-- 导航栏背景色仍为 `#ffffff`，与设计 Token 的奶油背景 `#FAF6EF` 不一致，需在实施计划步骤 11 建立视觉基础时修正；
+- 视觉基础只完成构建与 Token 层面核对，尚未在真机核对；
 - 小程序暂无自动化测试；步骤 1 的 Vitest 范围不包含小程序运行时与页面交互。
 
 ## 4. 服务端
@@ -379,6 +400,9 @@ AI 工厂可以独立创建模型对象，但 ai 模式的解析器尚未实现�
 - 没有图片上传、压缩、请求体大小和超时处理；
 - 没有 AI 输出校验后的错误分型；
 - 没有评测集；
-- 高保真 HTML 原型与 Taro 代码尚未对齐；
+- 小程序的视觉基础只完成构建与 Token 层面核对，**尚未在真机上核对**；五页路由与业务流程均未实现；
+- 小程序暂无自动化测试；Vitest 范围不包含小程序运行时与页面交互；
+- `project.config.json` 已使用正式 AppID，`project.private.config.json` 由开发者工具生成并已被 `.gitignore` 排除；该 AppID 变更使 D5 的前提（原先假设需先更换正式 AppID）不再成立，需在步骤 24 前重新确认或关闭 D5；
+- 高保真 HTML 原型与 Taro 代码尚未对齐（视觉基础已对齐 Token，但五页尚未实现）；
 - `.workbuddy_html/` 未被 `.gitignore` 排除，且当前已纳入版本控制；后续原型变更会进入 Git 差异；
-- 当前 Git `main` 已包含步骤 1 至步骤 9 的提交（`01afa66`、`dcd640f`、`4f087d5`、`1d56406`、`2174d63`、`d043690`、`c7205ac`、`cde21b7`、`b7b6487`）；步骤 10 的演示样例与解析契约和本文档更新在同一提交中。
+- 当前 Git `main` 已包含步骤 1 至步骤 10 的提交（`01afa66`、`dcd640f`、`4f087d5`、`1d56406`、`2174d63`、`d043690`、`c7205ac`、`cde21b7`、`b7b6487`、`58d19a0`）；步骤 11 的视觉基础与本文档更新在同一提交中。

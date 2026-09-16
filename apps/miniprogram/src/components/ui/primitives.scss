@@ -1,0 +1,283 @@
+@use '../../styles/tokens' as *;
+@use '../../styles/mixins' as *;
+
+.ui-page {
+  @include stable-text;
+
+  min-height: 100vh;
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 32px $page-gutter 48px;
+  background: $color-bg-cream;
+  color: $color-text-primary;
+}
+
+.ui-page--with-bottom-action {
+  padding-bottom: calc(196px + env(safe-area-inset-bottom));
+}
+
+.ui-page-header {
+  width: 100%;
+  margin-bottom: 32px;
+}
+
+.ui-page-header__row {
+  display: flex;
+  align-items: center;
+  min-height: $touch-target;
+}
+
+.ui-page-header__side {
+  display: flex;
+  flex: 0 0 $touch-target;
+  align-items: center;
+  min-width: 0;
+}
+
+.ui-page-header__side--trailing {
+  justify-content: flex-end;
+}
+
+.ui-page-header__title,
+.ui-page-header__subtitle {
+  @include stable-text;
+
+  display: block;
+  letter-spacing: 0;
+  text-align: center;
+}
+
+.ui-page-header__title {
+  flex: 1 1 auto;
+  font-size: $font-nav;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.ui-page-header__subtitle {
+  margin-top: 8px;
+  color: $color-text-tertiary;
+  font-size: $font-caption;
+  line-height: 1.6;
+}
+
+.ui-page-header__back-glyph {
+  margin-top: -4px;
+  font-size: 52px;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.ui-icon-button {
+  @include pressable;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: $touch-target;
+  min-width: $touch-target;
+  height: $touch-target;
+  min-height: $touch-target;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: $color-surface;
+  box-shadow: $shadow-soft;
+  color: $color-text-primary;
+  font-size: $font-body;
+  line-height: 1;
+}
+
+.ui-icon-button::after,
+.ui-segmented-control__option::after,
+.ui-primary-button::after {
+  border: 0;
+}
+
+.ui-pressable--active {
+  @include pressed;
+}
+
+.ui-card {
+  @include stable-text;
+
+  width: 100%;
+  padding: 32px;
+  border-radius: $card-radius;
+  background: $color-surface;
+  box-shadow: $shadow-soft;
+}
+
+.ui-card--soft {
+  background: $color-bg-oat;
+  box-shadow: none;
+}
+
+.ui-card--warning {
+  background: $color-warning-bg;
+  box-shadow: none;
+}
+
+.ui-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 64px;
+  padding: 12px 24px;
+  border-radius: 999px;
+  font-size: $font-caption;
+  font-weight: 500;
+  line-height: 1.4;
+  vertical-align: middle;
+}
+
+.ui-status-badge--compact {
+  min-height: 52px;
+  padding: 8px 20px;
+}
+
+.ui-status-badge__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  color: $color-surface;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.ui-status-badge__label {
+  @include stable-text;
+}
+
+.ui-status-badge--success {
+  background: $color-success-bg;
+  color: $color-success-text;
+}
+
+.ui-status-badge--success .ui-status-badge__icon {
+  background: $color-success-accent;
+}
+
+.ui-status-badge--warning {
+  background: $color-warning-bg;
+  color: $color-warning-text;
+}
+
+.ui-status-badge--warning .ui-status-badge__icon {
+  background: $color-warning-accent;
+}
+
+.ui-status-badge--danger {
+  background: $color-danger-bg;
+  color: $color-danger-text;
+}
+
+.ui-status-badge--danger .ui-status-badge__icon {
+  background: $color-danger-accent;
+}
+
+.ui-segmented-control {
+  display: flex;
+  width: 100%;
+  min-height: calc($touch-target + 16px);
+  padding: 8px;
+  overflow: hidden;
+  border-radius: $control-radius;
+  background: $color-bg-oat;
+}
+
+.ui-segmented-control__option {
+  @include pressable;
+  @include stable-text;
+
+  display: flex;
+  flex: 1 1 0;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: $touch-target;
+  margin: 0;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 22px;
+  background: transparent;
+  color: $color-text-secondary;
+  font-size: $font-body;
+  font-weight: 500;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.ui-segmented-control__option--selected {
+  background: $color-surface;
+  box-shadow: 0 4px 16px rgba(196, 168, 128, 0.22);
+  color: $color-brand-deep;
+  font-weight: 600;
+}
+
+.ui-primary-button {
+  @include pressable;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: $primary-action-height;
+  min-height: $primary-action-height;
+  margin: 0;
+  padding: 0 32px;
+  border: 0;
+  border-radius: 32px;
+  background: linear-gradient(145deg, $color-action-start, $color-action-end);
+  box-shadow: $shadow-action;
+  color: #fff;
+  font-size: $font-nav;
+  font-weight: 600;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.ui-primary-button--active {
+  @include pressed;
+}
+
+.ui-primary-button[disabled] {
+  background: $color-bg-oat;
+  box-shadow: none;
+  color: $color-text-secondary;
+  opacity: 1;
+}
+
+.ui-bottom-action {
+  position: fixed;
+  z-index: 20;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  padding: 20px $page-gutter calc(24px + env(safe-area-inset-bottom));
+  background: rgba(250, 246, 239, 0.96);
+  box-shadow: 0 -12px 36px rgba(196, 168, 128, 0.1);
+}
+
+.ui-bottom-action__inner {
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.ui-bottom-action__hint {
+  @include stable-text;
+
+  display: block;
+  margin-bottom: 12px;
+  color: $color-text-tertiary;
+  font-size: $font-caption;
+  line-height: 1.5;
+  text-align: center;
+}

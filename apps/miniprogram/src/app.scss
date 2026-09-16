@@ -1,5 +1,46 @@
+@use './styles/tokens' as *;
+
 page {
-  background: #f6f7f8;
-  color: #202124;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --food-bg-cream: #{$color-bg-cream};
+  --food-bg-oat: #{$color-bg-oat};
+  --food-bg-butter: #{$color-bg-butter};
+  --food-surface: #{$color-surface};
+  --food-brand: #{$color-brand};
+  --food-brand-deep: #{$color-brand-deep};
+  --food-brand-soft: #{$color-brand-soft};
+  --food-text-primary: #{$color-text-primary};
+  --food-text-secondary: #{$color-text-secondary};
+  --food-text-tertiary: #{$color-text-tertiary};
+  --food-success-bg: #{$color-success-bg};
+  --food-success-accent: #{$color-success-accent};
+  --food-success-text: #{$color-success-text};
+  --food-warning-bg: #{$color-warning-bg};
+  --food-warning-accent: #{$color-warning-accent};
+  --food-warning-text: #{$color-warning-text};
+  --food-danger-bg: #{$color-danger-bg};
+  --food-danger-accent: #{$color-danger-accent};
+  --food-danger-text: #{$color-danger-text};
+  --food-safe-bottom: env(safe-area-inset-bottom);
+
+  min-height: 100%;
+  background: $color-bg-cream;
+  color: $color-text-primary;
+  font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  font-size: $font-body;
+  line-height: 1.5;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+view,
+text,
+button,
+input,
+textarea {
+  box-sizing: border-box;
+  letter-spacing: 0;
+}
+
+button {
+  font-family: inherit;
 }

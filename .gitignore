@@ -29,3 +29,6 @@ apps/server/.env.local
 
 # 内部审稿文档：含设计文档缺陷清单，不进公开仓库（本地仍保留供使用）
 workflow/docs-fix-prompt.md
+
+# 微信开发者工具的个人本地设置，由工具自动生成，不入库
+apps/miniprogram/project.private.config.json

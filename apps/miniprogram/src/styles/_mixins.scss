@@ -1,0 +1,18 @@
+@mixin pressable {
+  transition:
+    transform 120ms ease,
+    opacity 120ms ease,
+    box-shadow 120ms ease;
+}
+
+@mixin pressed {
+  opacity: 0.9;
+  transform: scale(0.98);
+}
+
+@mixin stable-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+

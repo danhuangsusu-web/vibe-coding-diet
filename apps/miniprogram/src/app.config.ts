@@ -4,7 +4,7 @@ export default defineAppConfig({
   ],
   window: {
     backgroundTextStyle: 'light',
-    navigationBarBackgroundColor: '#ffffff',
+    navigationBarBackgroundColor: '#FAF6EF',
     navigationBarTitleText: '食刻 AI',
     navigationBarTextStyle: 'black'
   }
