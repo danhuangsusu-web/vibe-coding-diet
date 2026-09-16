@@ -13,6 +13,7 @@
     "build:server": "pnpm --filter @food-sense/server build",
     "test": "vitest run",
     "test:watch": "vitest",
+    "verify:offline-loop": "vitest run --config vitest.offline.config.ts",
     "typecheck": "pnpm -r typecheck",
     "db:generate": "pnpm --filter @food-sense/server db:generate",
     "db:validate": "pnpm --filter @food-sense/server db:validate",
