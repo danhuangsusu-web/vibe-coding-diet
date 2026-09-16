@@ -1,0 +1,22 @@
+# 统一行尾：仓库内的文本文件一律以 LF 存入版本库。
+# 这样即使 Windows 上的编辑器或工具写入 CRLF，Git 也不会把它当作改动。
+* text=auto eol=lf
+
+# 二进制文件不做任何行尾转换
+*.docx binary
+*.pdf binary
+*.zip binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+
+# 微信开发者工具在 Windows 上会用 CRLF 重写小程序项目配置，
+# 单独声明为 LF，避免每次打开工具都产生无意义的整文件差异。
+apps/miniprogram/project.config.json text eol=lf
