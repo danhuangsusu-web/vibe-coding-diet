@@ -62,7 +62,8 @@ describe('meal flow draft', () => {
       inputSummary: {
         sourceType: 'TEXT',
         sourceText: '水煮鸡胸',
-        displayLabel: '文字输入'
+        displayLabel: '文字输入',
+        submittedAt: '2026-09-16T12:26:00+08:00'
       },
       parsedMeal,
       assessment
@@ -81,7 +82,8 @@ describe('meal flow draft', () => {
       ...createEmptyMealFlowDraft(),
       inputSummary: {
         sourceType: 'IMAGE',
-        displayLabel: '图片输入'
+        displayLabel: '图片输入',
+        submittedAt: '2026-09-16T12:26:00+08:00'
       }
     })
 

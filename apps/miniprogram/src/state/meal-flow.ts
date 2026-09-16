@@ -1,7 +1,7 @@
 import type {
   InputType,
   MealAssessment,
-  ParsedMeal
+  MealItem
 } from '@food-sense/shared'
 import { atom, createStore } from 'jotai'
 
@@ -10,15 +10,25 @@ export type MealInputSummary =
       sourceType: Extract<InputType, 'TEXT'>
       sourceText: string
       displayLabel: string
+      submittedAt: string
     }
   | {
       sourceType: Extract<InputType, 'IMAGE'>
       displayLabel: string
+      submittedAt: string
     }
+
+export type MealFlowParsedItem = MealItem & {
+  wasManuallyAdjusted?: boolean
+}
+
+export interface MealFlowParsedMeal {
+  items: MealFlowParsedItem[]
+}
 
 export interface MealFlowDraft {
   inputSummary: MealInputSummary | null
-  parsedMeal: ParsedMeal | null
+  parsedMeal: MealFlowParsedMeal | null
   assessment: MealAssessment | null
 }
 

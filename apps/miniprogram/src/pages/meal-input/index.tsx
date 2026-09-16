@@ -161,13 +161,15 @@ export default function MealInputPage() {
           ? {
               sourceType: 'TEXT' as const,
               sourceText: input.sourceText,
-              displayLabel: '文字输入'
+              displayLabel: '文字输入',
+              submittedAt: new Date().toISOString()
             }
           : {
               sourceType: 'IMAGE' as const,
               displayLabel: state.image
                 ? imageSourceLabel(state.image.source)
-                : '图片输入'
+                : '图片输入',
+              submittedAt: new Date().toISOString()
             }
 
       setDraft((current) => ({
