@@ -8,6 +8,10 @@ import {
 } from './meal-input-state'
 
 describe('meal input state', () => {
+  it('can start from the image entry selected on the home page', () => {
+    expect(createInitialMealInputState('IMAGE').activeMode).toBe('IMAGE')
+  })
+
   it('keeps empty and whitespace-only text disabled', () => {
     const initial = createInitialMealInputState()
     const whitespace = mealInputReducer(initial, {

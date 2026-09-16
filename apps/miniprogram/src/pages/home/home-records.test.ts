@@ -2,12 +2,26 @@ import type { MealRecord, MealRecordsResponse } from '@food-sense/shared'
 import { describe, expect, it } from 'vitest'
 
 import {
+  buildHomeDashboard,
   buildTodayRecordSummary,
+  formatShanghaiDate,
   formatShanghaiTime,
+  greetingForServerTime,
+  goalDirectionLabel,
   recordDisplayName,
   recordRatingPresentation,
   shanghaiDateKey
 } from './home-records'
+
+const PROFILE = {
+  id: 'demo-profile',
+  name: '小苏',
+  goalDirection: 'FAT_LOSS' as const,
+  dailyCalorieMin: 1400,
+  dailyCalorieMax: 1600,
+  createdAt: '2026-09-15T00:00:00.000Z',
+  updatedAt: '2026-09-15T00:00:00.000Z'
+}
 
 function record(
   overrides: Partial<MealRecord> = {}
@@ -73,6 +87,8 @@ describe('home saved-record presentation', () => {
       createdAt: '2026-09-16T11:00:00.000Z'
     })
     const response: MealRecordsResponse = {
+      todayDate: '2026-09-16',
+      serverTime: '2026-09-16T12:00:00.000Z',
       days: [
         {
           date: '2026-09-16',
@@ -87,9 +103,7 @@ describe('home saved-record presentation', () => {
       ]
     }
 
-    expect(
-      buildTodayRecordSummary(response, new Date('2026-09-16T12:00:00.000Z'))
-    ).toEqual({
+    expect(buildTodayRecordSummary(response)).toEqual({
       count: 2,
       records: [latest, earlier],
       calorieRange: { min: 620, max: 960 }
@@ -98,6 +112,8 @@ describe('home saved-record presentation', () => {
 
   it('returns null instead of showing a past record as today', () => {
     const response: MealRecordsResponse = {
+      todayDate: '2026-09-16',
+      serverTime: '2026-09-16T12:00:00.000Z',
       days: [
         {
           date: '2026-09-15',
@@ -107,9 +123,23 @@ describe('home saved-record presentation', () => {
       ]
     }
 
-    expect(
-      buildTodayRecordSummary(response, new Date('2026-09-16T12:00:00.000Z'))
-    ).toBeNull()
+    expect(buildTodayRecordSummary(response)).toBeNull()
+  })
+
+  it('uses the server-provided today date instead of the device clock', () => {
+    const response = {
+      todayDate: '2026-09-15',
+      serverTime: '2026-09-15T12:00:00.000Z',
+      days: [
+        {
+          date: '2026-09-15',
+          summary: { calorieMin: 310, calorieMax: 480 },
+          records: [record()]
+        }
+      ]
+    } as MealRecordsResponse
+
+    expect(buildTodayRecordSummary(response)?.count).toBe(1)
   })
 
   it('uses confirmed dish names rather than an input-mode placeholder', () => {
@@ -118,6 +148,23 @@ describe('home saved-record presentation', () => {
 
   it('formats saved time in Shanghai time', () => {
     expect(formatShanghaiTime('2026-09-16T11:47:27.170Z')).toBe('19:47')
+  })
+
+  it.each([
+    ['2026-09-15T21:00:00.000Z', '早上好'],
+    ['2026-09-16T02:59:59.000Z', '早上好'],
+    ['2026-09-16T03:00:00.000Z', '中午好'],
+    ['2026-09-16T05:59:59.000Z', '中午好'],
+    ['2026-09-16T06:00:00.000Z', '下午好'],
+    ['2026-09-16T09:59:59.000Z', '下午好'],
+    ['2026-09-16T10:00:00.000Z', '晚上好'],
+    ['2026-09-16T20:59:59.000Z', '晚上好']
+  ])('returns the Shanghai greeting for server time %s', (serverTime, greeting) => {
+    expect(greetingForServerTime(serverTime)).toBe(greeting)
+  })
+
+  it('falls back to a neutral greeting for an invalid server time', () => {
+    expect(greetingForServerTime('not-a-date')).toBe('你好')
   })
 
   it('describes every rating with text, icon, and tone', () => {
@@ -136,5 +183,92 @@ describe('home saved-record presentation', () => {
       label: '红灯',
       tone: 'danger'
     })
+  })
+
+  it('builds an empty dashboard without replacing ranges with a precise zero', () => {
+    expect(
+      buildHomeDashboard(
+        PROFILE,
+        {
+          todayDate: '2026-09-16',
+          serverTime: '2026-09-16T12:00:00.000Z',
+          days: []
+        }
+      )
+    ).toMatchObject({
+      consumedRange: { min: 0, max: 0 },
+      remainingRange: { min: 1400, max: 1600 },
+      progressPercent: 0,
+      isOverRange: false,
+      recordCount: 0,
+      recentRecords: []
+    })
+  })
+
+  it('calculates conservative remaining ranges and midpoint progress', () => {
+    const records = [
+      record({ id: 'one', createdAt: '2026-09-16T03:00:00.000Z' }),
+      record({ id: 'two', createdAt: '2026-09-16T04:00:00.000Z' }),
+      record({ id: 'three', createdAt: '2026-09-16T05:00:00.000Z' }),
+      record({ id: 'four', createdAt: '2026-09-16T06:00:00.000Z' })
+    ]
+
+    const dashboard = buildHomeDashboard(
+      PROFILE,
+      {
+        todayDate: '2026-09-16',
+        serverTime: '2026-09-16T12:00:00.000Z',
+        days: [
+          {
+            date: '2026-09-16',
+            summary: { calorieMin: 1150, calorieMax: 1450 },
+            records
+          }
+        ]
+      }
+    )
+
+    expect(dashboard).toMatchObject({
+      consumedRange: { min: 1150, max: 1450 },
+      remainingRange: { min: 0, max: 450 },
+      progressPercent: 81,
+      isOverRange: false,
+      recordCount: 4
+    })
+    expect(dashboard.recentRecords.map(({ id }) => id)).toEqual([
+      'four',
+      'three',
+      'two'
+    ])
+  })
+
+  it('caps progress and marks a zero remaining range as exceeded', () => {
+    const dashboard = buildHomeDashboard(
+      PROFILE,
+      {
+        todayDate: '2026-09-16',
+        serverTime: '2026-09-16T12:00:00.000Z',
+        days: [
+          {
+            date: '2026-09-16',
+            summary: { calorieMin: 1700, calorieMax: 1900 },
+            records: [record()]
+          }
+        ]
+      }
+    )
+
+    expect(dashboard.remainingRange).toEqual({ min: 0, max: 0 })
+    expect(dashboard.progressPercent).toBe(100)
+    expect(dashboard.isOverRange).toBe(true)
+  })
+
+  it('formats profile and date labels for the home header', () => {
+    expect(goalDirectionLabel('FAT_LOSS')).toBe('减脂目标')
+    expect(goalDirectionLabel('MAINTAIN')).toBe('维持目标')
+    expect(goalDirectionLabel('MUSCLE_GAIN')).toBe('增肌目标')
+    expect(
+      formatShanghaiDate('2026-09-16')
+    ).toBe('9月16日 · 周三')
   })
 })

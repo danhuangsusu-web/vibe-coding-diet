@@ -212,7 +212,11 @@ export async function getRecentMealRecords(
     days.set(date, day)
   }
 
-  return mealRecordsResponseSchema.parse({ days: [...days.values()] })
+  return mealRecordsResponseSchema.parse({
+    todayDate: getShanghaiDateKey(now),
+    serverTime: now.toISOString(),
+    days: [...days.values()]
+  })
 }
 
 export async function deleteMealRecord(

@@ -413,6 +413,8 @@ describe('meal record GET handler', () => {
 
     expect(response.status).toBe(200)
     expect(mealRecordsResponseSchema.safeParse(body).success).toBe(true)
+    expect(body.todayDate).toBe('2026-09-15')
+    expect(body.serverTime).toBe(NOW.toISOString())
     expect(body.days).toMatchObject([
       {
         date: '2026-09-15',

@@ -3,6 +3,7 @@ import type {
   ApiErrorResponse,
   AssessMealRequest,
   CreateMealRecordRequest,
+  DemoProfile,
   MealAssessment,
   MealRecord,
   MealRecordsResponse
@@ -142,4 +143,8 @@ export function saveMealRecord(
 
 export function getMealRecords(): Promise<MealRecordsResponse> {
   return getJson<MealRecordsResponse>('/api/meal-records')
+}
+
+export function getDemoProfile(): Promise<DemoProfile> {
+  return getJson<DemoProfile>('/api/profile')
 }

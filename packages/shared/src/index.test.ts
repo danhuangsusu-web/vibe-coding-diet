@@ -315,6 +315,8 @@ describe('assessment and record contracts', () => {
   it('parses grouped history and rejects reversed daily summaries', () => {
     expect(
       mealRecordsResponseSchema.safeParse({
+        todayDate: '2026-09-15',
+        serverTime: '2026-09-15T12:00:00.000Z',
         days: [
           {
             date: '2026-09-15',
@@ -326,6 +328,8 @@ describe('assessment and record contracts', () => {
     ).toBe(true)
     expect(
       mealRecordsResponseSchema.safeParse({
+        todayDate: '2026-09-15',
+        serverTime: '2026-09-15T12:00:00.000Z',
         days: [
           {
             date: '2026-09-15',
@@ -333,6 +337,20 @@ describe('assessment and record contracts', () => {
             records: [mealRecord]
           }
         ]
+      }).success
+    ).toBe(false)
+
+    expect(
+      mealRecordsResponseSchema.safeParse({
+        todayDate: '2026-09-15',
+        days: []
+      }).success
+    ).toBe(false)
+    expect(
+      mealRecordsResponseSchema.safeParse({
+        todayDate: '2026-09-15',
+        serverTime: 'not-a-date',
+        days: []
       }).success
     ).toBe(false)
   })
@@ -346,11 +364,15 @@ describe('assessment and record contracts', () => {
 
     expect(
       mealRecordsResponseSchema.safeParse({
+        todayDate: '2026-09-15',
+        serverTime: '2026-09-15T12:00:00.000Z',
         days: Array.from({ length: 31 }, () => day)
       }).success
     ).toBe(false)
     expect(
       mealRecordsResponseSchema.safeParse({
+        todayDate: '2026-09-15',
+        serverTime: '2026-09-15T12:00:00.000Z',
         days: [{ ...day, records: Array.from({ length: 51 }, () => mealRecord) }]
       }).success
     ).toBe(false)

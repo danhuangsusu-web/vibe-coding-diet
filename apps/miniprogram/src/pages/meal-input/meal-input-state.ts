@@ -32,9 +32,11 @@ export type MealInputAction =
   | { type: 'return-to-text' }
   | { type: 'return-to-input'; mode?: MealInputMode }
 
-export function createInitialMealInputState(): MealInputState {
+export function createInitialMealInputState(
+  initialMode: MealInputMode = 'TEXT'
+): MealInputState {
   return {
-    activeMode: 'TEXT',
+    activeMode: initialMode,
     text: '',
     image: null,
     phase: 'idle',

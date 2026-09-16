@@ -87,6 +87,8 @@ export const dailyMealRecordsSchema = z
 
 export const mealRecordsResponseSchema = z
   .object({
+    todayDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    serverTime: isoDateTimeSchema,
     days: z.array(dailyMealRecordsSchema).max(30)
   })
   .strict()

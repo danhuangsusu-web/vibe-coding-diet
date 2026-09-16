@@ -167,6 +167,8 @@ describe('meal result presentation and recovery state', () => {
     expect(
       findMealRecord(
         {
+          todayDate: '2026-09-16',
+          serverTime: '2026-09-16T12:00:00.000Z',
           days: [
             {
               date: '2026-09-16',
@@ -178,7 +180,16 @@ describe('meal result presentation and recovery state', () => {
         'saved-record'
       )
     ).toEqual(savedRecord)
-    expect(findMealRecord({ days: [] }, 'missing')).toBeNull()
+    expect(
+      findMealRecord(
+        {
+          todayDate: '2026-09-16',
+          serverTime: '2026-09-16T12:00:00.000Z',
+          days: []
+        },
+        'missing'
+      )
+    ).toBeNull()
   })
 
   it('uses icon, text, and tone for all three ratings', () => {

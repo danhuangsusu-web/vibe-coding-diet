@@ -1,5 +1,5 @@
 import { Button, Image, Text, Textarea, View } from '@tarojs/components'
-import Taro from '@tarojs/taro'
+import Taro, { useRouter } from '@tarojs/taro'
 import { useSetAtom } from 'jotai'
 import { useEffect, useReducer, useRef, useState } from 'react'
 
@@ -78,10 +78,12 @@ function readableImageError(error: MealImageError): string {
 }
 
 export default function MealInputPage() {
+  const router = useRouter()
+  const initialMode = router.params.mode === 'image' ? 'IMAGE' : 'TEXT'
   const setDraft = useSetAtom(mealFlowDraftAtom)
   const [state, dispatch] = useReducer(
     mealInputReducer,
-    undefined,
+    initialMode,
     createInitialMealInputState
   )
   const [showDetailedProgress, setShowDetailedProgress] = useState(false)
