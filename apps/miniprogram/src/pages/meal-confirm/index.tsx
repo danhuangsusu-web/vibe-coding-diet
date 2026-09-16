@@ -45,7 +45,7 @@ export default function MealConfirmPage() {
           <PrimaryButton onClick={continueToResult}>查看评估</PrimaryButton>
           <Button
             ariaLabel='取消本次记录'
-            className='flow-secondary-button'
+            className='flow-secondary-button flow-cancel-button'
             hoverClass='flow-secondary-button--active'
             onClick={cancel}
           >

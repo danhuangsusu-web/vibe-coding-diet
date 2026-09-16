@@ -1,1 +1,475 @@
-@use '../../styles/flow-page';
+@use '../../styles/tokens' as *;
+@use '../../styles/mixins' as *;
+
+.meal-input-page {
+  position: relative;
+}
+
+.meal-input-page .ui-page-header {
+  margin-bottom: 24px;
+}
+
+.meal-upload {
+  padding: 40px;
+}
+
+.meal-upload__title,
+.meal-upload__subtitle,
+.meal-upload__drop-main,
+.meal-upload__drop-sub,
+.meal-upload__selected-label,
+.meal-upload__selected-meta,
+.meal-text-input__count,
+.meal-examples__heading,
+.meal-examples__tip,
+.meal-state__title,
+.meal-state__description {
+  @include stable-text;
+  display: block;
+}
+
+.meal-upload__title {
+  font-size: $font-label;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.meal-upload__subtitle {
+  margin-top: 6px;
+  color: $color-text-tertiary;
+  font-size: $font-caption;
+  line-height: 1.6;
+}
+
+.meal-upload__drop-zone {
+  @include pressable;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 300px;
+  margin: 28px 0 0;
+  padding: 32px 28px;
+  overflow: hidden;
+  border: 4px dashed #d9b98a;
+  border-radius: 40px;
+  background: #f7efdf;
+  color: $color-text-primary;
+  line-height: 1.5;
+}
+
+.meal-upload__drop-zone::after,
+.meal-upload__source-button::after,
+.meal-examples__chip::after,
+.meal-state button::after {
+  border: 0;
+}
+
+.meal-upload__camera-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 104px;
+  height: 104px;
+  border-radius: 32px;
+  background: $color-brand;
+  box-shadow: $shadow-action;
+  color: #fff;
+  font-size: $font-label;
+  font-weight: 600;
+}
+
+.meal-upload__drop-main {
+  margin-top: 18px;
+  font-size: $font-body;
+  font-weight: 600;
+}
+
+.meal-upload__drop-sub {
+  margin-top: 8px;
+  color: $color-text-secondary;
+  font-size: $font-caption;
+  line-height: 1.7;
+  text-align: center;
+}
+
+.meal-upload__preview {
+  width: 100%;
+  height: 196px;
+  border-radius: 28px;
+}
+
+.meal-upload__selected-copy {
+  width: 100%;
+  margin-top: 18px;
+  text-align: left;
+}
+
+.meal-upload__selected-label {
+  color: $color-brand-deep;
+  font-size: $font-body;
+  font-weight: 600;
+}
+
+.meal-upload__selected-meta {
+  margin-top: 6px;
+  color: $color-text-tertiary;
+  font-size: $font-caption;
+}
+
+.meal-upload__sources {
+  display: flex;
+  gap: 20px;
+  margin-top: 24px;
+}
+
+.meal-upload__source-button {
+  @include pressable;
+  @include stable-text;
+
+  display: flex;
+  flex: 1 1 0;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-width: 0;
+  min-height: $touch-target;
+  margin: 0;
+  padding: 12px 16px;
+  border: 0;
+  border-radius: 44px;
+  background: $color-brand-soft;
+  color: $color-brand-deep;
+  font-size: $font-body;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.meal-upload__source-button--album {
+  background: $color-bg-butter;
+  color: $color-warning-text;
+}
+
+.meal-upload__source-symbol {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.meal-text-input {
+  margin-top: 32px;
+}
+
+.meal-text-input__heading {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 40px;
+}
+
+.meal-text-input__label {
+  font-size: $font-body;
+  font-weight: 600;
+}
+
+.meal-text-input__or,
+.meal-text-input__active {
+  color: $color-text-tertiary;
+  font-size: $font-caption;
+}
+
+.meal-text-input__active {
+  margin-left: auto;
+  color: $color-brand-deep;
+}
+
+.meal-text-input__control {
+  @include stable-text;
+
+  width: 100%;
+  min-height: 152px;
+  margin-top: 16px;
+  padding: 28px 32px;
+  border-radius: 40px;
+  background: $color-surface;
+  box-shadow: $shadow-soft;
+  color: $color-text-primary;
+  font-size: $font-body;
+  line-height: 1.7;
+}
+
+.meal-text-input__placeholder {
+  color: $color-text-tertiary;
+}
+
+.meal-text-input__count {
+  margin-top: 10px;
+  padding-right: 4px;
+  color: $color-text-tertiary;
+  font-size: $font-caption;
+  text-align: right;
+}
+
+.meal-examples {
+  margin-top: 24px;
+}
+
+.meal-examples__heading {
+  margin-bottom: 14px;
+  padding-left: 4px;
+  color: $color-text-tertiary;
+  font-size: $font-caption;
+}
+
+.meal-examples__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.meal-examples__chip {
+  @include pressable;
+  @include stable-text;
+
+  display: flex;
+  align-items: center;
+  width: auto;
+  max-width: 100%;
+  min-height: $touch-target;
+  margin: 0;
+  padding: 14px 24px;
+  border: 0;
+  border-radius: 44px;
+  background: $color-bg-butter;
+  color: $color-warning-text;
+  font-size: $font-caption;
+  font-weight: 500;
+  line-height: 1.5;
+  text-align: left;
+}
+
+.meal-examples__tip {
+  margin-top: 18px;
+  padding: 0 4px;
+  color: $color-text-tertiary;
+  font-size: $font-caption;
+  line-height: 1.7;
+}
+
+.meal-pressable--active {
+  @include pressed;
+}
+
+.meal-state {
+  position: fixed;
+  z-index: 60;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 72px calc(48px + env(safe-area-inset-bottom));
+  overflow-y: auto;
+  background: $color-bg-cream;
+  text-align: center;
+}
+
+.meal-state__visual {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 176px;
+  min-height: 176px;
+  border-radius: 56px;
+  font-size: 68px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.meal-state__visual--loading {
+  background: $color-brand;
+  box-shadow: $shadow-action;
+  color: #fff;
+  animation: meal-breathe 2.2s ease-in-out infinite;
+}
+
+.meal-state__visual--warning {
+  background: $color-warning-bg;
+  color: $color-warning-text;
+}
+
+.meal-state__visual--danger {
+  background: $color-danger-bg;
+  color: $color-danger-text;
+}
+
+.meal-state__title {
+  margin-top: 44px;
+  font-size: 34px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.meal-state__description {
+  max-width: 540px;
+  margin-top: 18px;
+  color: $color-text-secondary;
+  font-size: $font-caption;
+  line-height: 1.9;
+}
+
+.meal-state__description--wide {
+  margin-top: 42px;
+}
+
+.meal-state__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+  max-width: 500px;
+  margin-top: 52px;
+}
+
+.meal-state__primary,
+.meal-state__secondary {
+  @include pressable;
+  @include stable-text;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 96px;
+  margin: 0;
+  padding: 16px 28px;
+  border: 0;
+  border-radius: 48px;
+  color: $color-text-primary;
+  font-size: $font-label;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.meal-state__primary {
+  background: linear-gradient(145deg, $color-action-start, $color-action-end);
+  box-shadow: $shadow-action;
+  color: #fff;
+  font-weight: 600;
+}
+
+.meal-state__secondary {
+  background: $color-surface;
+  box-shadow: $shadow-soft;
+}
+
+.meal-state__secondary--muted {
+  width: auto;
+  min-width: 360px;
+  margin-top: 40px;
+  padding-right: 40px;
+  padding-left: 40px;
+  background: $color-bg-oat;
+  box-shadow: none;
+  color: $color-text-secondary;
+  font-size: $font-body;
+}
+
+.meal-progress {
+  width: 420px;
+  max-width: 100%;
+  height: 16px;
+  margin-top: 40px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: $color-bg-oat;
+}
+
+.meal-progress__fill {
+  width: 36%;
+  height: 100%;
+  border-radius: inherit;
+  background: $color-brand;
+  animation: meal-progress-flow 1.8s ease-in-out infinite;
+}
+
+.meal-progress-steps {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  width: 100%;
+  max-width: 500px;
+  margin-top: 36px;
+}
+
+.meal-progress-step {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  color: $color-text-tertiary;
+  font-size: $font-caption;
+  line-height: 1.4;
+}
+
+.meal-progress-step__dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #e8dfce;
+}
+
+.meal-progress-step--done {
+  color: $color-success-text;
+}
+
+.meal-progress-step--done .meal-progress-step__dot {
+  background: $color-success-accent;
+}
+
+.meal-progress-step--active {
+  color: $color-brand-deep;
+}
+
+.meal-progress-step--active .meal-progress-step__dot {
+  background: $color-brand;
+  animation: meal-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes meal-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+@keyframes meal-progress-flow {
+  0% { margin-left: 0; }
+  50% { width: 62%; margin-left: 12%; }
+  100% { width: 18%; margin-left: 82%; }
+}
+
+@keyframes meal-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(240, 166, 91, 0.35); }
+  50% { box-shadow: 0 0 0 12px rgba(240, 166, 91, 0); }
+}
+
+@media (min-width: 900px) {
+  .meal-state {
+    padding-right: 160px;
+    padding-left: 160px;
+  }
+}

@@ -77,3 +77,13 @@
   background: transparent;
   box-shadow: none;
 }
+
+.flow-bottom-actions .flow-cancel-button {
+  min-height: $touch-target;
+  padding: 8px 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: $color-brand-deep;
+  font-weight: 600;
+}
