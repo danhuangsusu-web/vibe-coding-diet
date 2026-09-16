@@ -1,0 +1,26 @@
+我想做一个给【正在身材管理、追求健康生活的人群】用的工具（最好是小程序）
+帮他们解决【食物不知道热量、每天不知道吃什么、什么食物对他们来说是好的】问题
+请帮我拆解出3个最核心功能，按照MVP优先级排序
+告诉我每个功能的关键技术难点
+
+```
+UI设计prompt
+核心用户界面元素：1. P01 今日首页 (Today's Home)这个页面是用户查看当天状态和发起输入的核心起点。  用户信息模块： 展示演示用户的目标和今日建议热量区间。  今日数据汇总： 显示当天已记录的热量汇总与状态。  快捷输入入口（核心强引导）： 包含拍照/相册上传按钮和文字输入入口。  最近记录概览： 简要展示用户当天的最近餐食记录。  2. P02 餐食输入页 (Meal Input)用于提交餐食信息，设计需强调“低门槛输入”。  图片上传区： 提供调用微信相机拍照和相册选择的按钮。  文字输入框： 提供输入“我准备吃青椒肉丝盖饭”的文本框，作为备用或直接输入方式。  示例提示语： 帮助用户理解应该如何输入（图片或文字示例）。  提交/分析按钮： 触发 AI 识别的动作按钮。  状态提示UI： 处理超过 4 秒时显示的明确分析进度条或加载动画。  3. P03 识别确认页 (Recognition Confirmation)在计算热量前，让用户修正大模型识别结果的交互页面。  菜品列表卡片： 结构化展示 AI 识别出的多个菜品。  菜品属性标签/选择器： 每个菜品需包含“烹饪方式”和“份量档位（小份、正常份、大份）”。  可信度指示器： 显示“较确定、可能、不确定”三档识别置信度。  编辑控制区： 提供删除错误菜品、添加漏识别菜品和修改做法的交互控件。  确认提交按钮： 用户确认无误后进入下一步规则计算的按钮。  4. P04 评估结果页 (Assessment Result)“先给决定，再给数据”，这是帮助用户做决策的核心页面。  红黄绿灯视觉模块： 核心视觉焦点，必须同时显示颜色（红/黄/绿）、对应图标和文字。  热量区间展示： 醒目展示类似“约 650 至 850 千卡”的范围数据，而非精确单一数值。  判定原因文本块： 解释导致区间变宽或当前评级的主要原因（如“无法确认实际用油量”）。  行动建议卡片： 提供 1 至 2 条现实可执行的建议（如“把米饭减半”、“去皮”）。  保存记录按钮： 用户接受或阅览后，将该顿饭记入当天的操作按钮。  5. P05 历史与设置页 (History & Settings)将记录管理与简单的 Demo 变量设置结合的页面。  历史记录列表： 展示用户最近保存的餐食记录（包含菜品、热量区间、评级、时间）。  删除操作控件： 允许用户删除单条历史记录的按钮或滑动交互。  Demo 参数设置区： 允许用户调整每日建议热量范围等少量演示资料参数。  免责声明文本： 底部固定的保护性文案，声明产品不构成专业营养建议。
+设计风格为
+整体气质：清爽、温柔、克制
+色彩：鹅黄色和奶油色
+排版设计：数据优先与层级分明
+字体对比度： 采用现代无衬线字体。核心数据使用极大的字号配合较细的字重（Light/Regular），显得精致且现代；而辅助信息则非常克制，字号极小。
+隐形网格： 抛弃了传统的实线分割线（Divider），完全依靠大面积的留白（Whitespace）和极浅的底色块来划分不同的信息区块，让页面显得非常干净。
+避免使用带有强烈压迫感的鲜艳大红色或过度复杂的硬核数据图表，多使用圆角和柔和的红黄绿指示色。组件库层面，产品计划使用的是 TDesign MiniProgram，风格可以向大厂开源规范靠拢。
+Subject & Reference: UI/UX design of a [你的项目类型，例如：web-based Vibe Coding IDE / AI developer dashboard], keep the core layout and structural composition of the attached reference image, but redesign it with a [你要的整体视觉风格，例如：dark mode, glassmorphism / futuristic cyberpunk] aesthetic.
+
+Aesthetic & Mood: The overall vibe should feel [情绪/氛围词，例如：immersive, highly technical, clean and minimalist].
+
+Color Palette: Use a [主背景色，例如：deep space black / matte dark gray] background, paired with [点缀色，例如：neon purple and cyan / subtle electric orange] for active states, buttons, and syntax highlighting.
+
+Core UI Elements: Based on the reference image's layout, clearly define these key elements: [核心组件1，例如：a central transparent code editor with syntax coloring], [核心组件2，例如：a floating AI assistant chat panel], and [核心组件3，例如：a sleek side navigation bar].
+
+Typography & Details: Use [字体风格，例如：modern Sans-serif for UI and Monospace for code]. Apply [UI细节，例如：16px rounded corners, soft drop shadows, glowing 1px semi-transparent borders].
+
+Quality Tags: High resolution, clean UI/UX layout, Dribbble winner, modern SaaS design, highly detailed, crisp, 8k.
