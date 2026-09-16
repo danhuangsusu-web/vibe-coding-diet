@@ -1,7 +1,7 @@
 # 食刻 AI 进度记录
 
-> 当前阶段：步骤 1–11 已完成并经用户确认；步骤 12 未开始
-> 下一步：开始步骤 12（建立五页路由和主流程草稿状态）；D5 仍待确认，其原前提（体验版需正式 AppID）经核实依然成立
+> 当前阶段：步骤 1–12 已完成并经用户确认；步骤 13 未开始
+> 下一步：开始步骤 13（实现 P02 餐食输入页的离线行为）；D5 仍待确认，其原前提（体验版需正式 AppID）经核实依然成立
 > 最后更新：2026-09-16
 
 ## 2026-09-14 工作流整理基线
@@ -520,8 +520,49 @@ D5 保持待确认，最终措辞在步骤 24 前定稿。
 
 ### 当前停点
 
-- 步骤 11 已由用户验收确认，未开始步骤 12；
+- 步骤 11 已由用户验收确认，步骤 12 已在其后完成并验收；
 - 用户已确认视觉基础与设计文档和五页原型一致。
+
+## 2026-09-16 步骤 12 建立五页路由和主流程草稿状态（已验收）
+
+### 已完成
+
+- `app.config.ts` 注册五页：`pages/home/index`、`pages/meal-input/index`、`pages/meal-confirm/index`、`pages/meal-result/index`、`pages/history/index`；不引入 tabBar；
+- 新增 `src/navigation/routes.ts`：集中定义 `ROUTES` 常量与 `AppRoute` 类型，页面跳转不写散落的字符串路径；
+- 新增 `src/state/meal-flow.ts`：跨页草稿 `MealFlowDraft` 只含 `inputSummary`、`parsedMeal`、`assessment` 三个字段，并提供空草稿工厂、读写 atom、重置 atom 和内存 store；
+- `app.tsx` 用 Jotai `Provider` 包裹子节点，向五页提供同一个草稿 store；
+- 新增 `src/styles/_flow-page.scss`：流程页共用的卡片文案与次要按钮样式；
+- 新增 `config/api-base-url.ts`：`resolveApiBaseUrl` 按 `NODE_ENV` 与 `TARO_APP_API_BASE_URL` 解析接口地址（开发默认 `http://127.0.0.1:3000`，生产返回空值待配置，配置值优先并去除尾部斜杠）；
+- `config/index.ts` 通过 Taro `defineConstants` 注入编译常量 `__API_BASE_URL__`，并在 `types/global.d.ts` 声明类型；业务页面不硬编码地址；
+- 新增 `apps/miniprogram/.env.example` 说明 `TARO_APP_API_BASE_URL`；
+- `vitest.config.ts` 把 `apps/miniprogram/config/**` 与 `apps/miniprogram/src/**` 纳入测试范围；
+- 新增 `src/state/meal-flow.test.ts` 与 `config/api-base-url.test.ts`；
+- 五页改为带真实导航的骨架：首页提供“记录一餐”和“历史与设置”入口，输入页可继续到确认页，确认页可继续到结果页，结果页可完成并返回首页，输入页与确认页均提供取消记录。
+
+### 验证结果
+
+2026-09-16 实际执行：
+
+- 测试全部通过（147 个，其中新增 6 个：草稿 3 个、接口地址 3 个）；
+- `pnpm typecheck`：四个工作区全部通过；
+- `pnpm build:miniprogram`：构建成功，产物 `app.json` 注册五个页面且无 tabBar，五页各自生成 `index.js/json/wxml/wxss`；
+- 草稿只包含计划允许的三个字段，且不使用任何持久化存储，因此小程序重启后不会恢复未保存草稿；
+- 页面局部状态未进入全局草稿；
+- 全量检索确认未混入高保真原型的手机外壳、固定状态栏、9:41、信号或电量元素；
+- 底部使用 `env(safe-area-inset-bottom)`；顶部使用微信原生导航栏，不重复绘制展示外壳；
+- `urlCheck` 为 false，满足本地联调关闭合法域名校验的要求。
+
+### 已知影响与后续衔接
+
+- 五页目前都是骨架，只有导航，没有业务流程；首页仍是临时形态，P01 完整形态属于步骤 17；
+- `__API_BASE_URL__` 已定义但尚无消费方，请求层在其后步骤引入，因此当前构建产物中不出现该地址；
+- 生产构建的接口地址为空值，HTTPS 与域名配置属于 P1；
+- 五页都使用微信原生导航栏作为标题栏，D6 已确认保留该行为。
+
+### 当前停点
+
+- 步骤 12 已由用户验收确认，未开始步骤 13；
+- 用户已确认五页导航路径，并确认保留原生导航栏标题与页内标题并存的呈现（D6 方案 B）。
 
 ## 决策状态
 
@@ -529,6 +570,7 @@ D5 保持待确认，最终措辞在步骤 24 前定稿。
 - **D2 已确认 a**：`MealRecord` 加 `isDemo` 字段并在历史页打标。
 - **D3 已确认 b**：餐别不进入 P0，从 P01/P05 视觉规范和共享契约中移除。
 - **D4 已确认 a**：使用 `clientRequestId` + 唯一索引，由服务端保证幂等。
+- **D6 已确认 b**：保留原生导航栏的应用名“食刻 AI”，页面内标题继续作为各页标题，两行标题并存。
 - **D5 真机体验版措辞**：(a) 保留但注明需先换正式 AppID；(b) 全文改为“真机调试（需正式 AppID）”。
 
 完整影响范围与后续决策记录格式见 `decisions.md`。在用户确认前，相关设计、契约和计划保持中性。

@@ -1,5 +1,12 @@
 import { defineConfig, type UserConfigExport } from '@tarojs/cli'
 
+import { resolveApiBaseUrl } from './api-base-url'
+
+const apiBaseUrl = resolveApiBaseUrl(
+  process.env.NODE_ENV,
+  process.env.TARO_APP_API_BASE_URL
+)
+
 const config: UserConfigExport = {
   projectName: 'food-sense',
   date: '2026-09-09',
@@ -15,7 +22,9 @@ const config: UserConfigExport = {
   framework: 'react',
   compiler: 'webpack5',
   plugins: [],
-  defineConstants: {},
+  defineConstants: {
+    __API_BASE_URL__: JSON.stringify(apiBaseUrl)
+  },
   copy: {
     patterns: [],
     options: {}

@@ -1,0 +1,79 @@
+@use 'tokens' as *;
+@use 'mixins' as *;
+
+.flow-card__eyebrow,
+.flow-card__title,
+.flow-card__body {
+  @include stable-text;
+
+  display: block;
+}
+
+.flow-card__eyebrow {
+  color: $color-brand-deep;
+  font-size: $font-caption;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.flow-card__title {
+  margin-top: 12px;
+  font-size: $font-title;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.flow-card__body {
+  margin-top: 12px;
+  color: $color-text-secondary;
+  font-size: $font-body;
+  line-height: 1.7;
+}
+
+.flow-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-top: 32px;
+}
+
+.flow-secondary-button {
+  @include pressable;
+  @include stable-text;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: $touch-target;
+  margin: 0;
+  padding: 12px 32px;
+  border: 0;
+  border-radius: 32px;
+  background: $color-surface;
+  box-shadow: $shadow-soft;
+  color: $color-brand-deep;
+  font-size: $font-body;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.flow-secondary-button::after {
+  border: 0;
+}
+
+.flow-secondary-button--active {
+  @include pressed;
+}
+
+.flow-bottom-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.flow-bottom-actions .flow-secondary-button {
+  min-height: 72px;
+  background: transparent;
+  box-shadow: none;
+}

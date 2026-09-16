@@ -1,6 +1,10 @@
 export default defineAppConfig({
   pages: [
-    'pages/home/index'
+    'pages/home/index',
+    'pages/meal-input/index',
+    'pages/meal-confirm/index',
+    'pages/meal-result/index',
+    'pages/history/index'
   ],
   window: {
     backgroundTextStyle: 'light',
