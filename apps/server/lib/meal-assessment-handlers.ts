@@ -1,16 +1,15 @@
 import {
-  createMealRecordRequestSchema,
+  assessMealRequestSchema,
   type ApiError,
   type ApiErrorResponse
 } from '@food-sense/shared'
 import { NextResponse } from 'next/server'
 
-import { UnknownDishError } from './meal-assessment-service'
 import {
-  createMealRecord,
-  getRecentMealRecords,
-  type MealRecordDatabase
-} from './meal-record-service'
+  assessConfirmedMeal,
+  UnknownDishError,
+  type MealAssessmentDatabase
+} from './meal-assessment-service'
 import { DemoProfileNotFoundError } from './profile-service'
 
 const VALIDATION_ERROR: ApiError = {
@@ -27,7 +26,7 @@ const PROFILE_MISSING_ERROR: ApiError = {
 
 const DATABASE_ERROR: ApiError = {
   code: 'DB_UNAVAILABLE',
-  message: '数据暂时无法读取或保存，请稍后重试。',
+  message: '数据暂时无法读取，请稍后重试。',
   retryable: true
 }
 
@@ -41,24 +40,11 @@ function errorResponse(error: ApiError, status: number) {
   return NextResponse.json<ApiErrorResponse>({ error }, { status })
 }
 
-export function createMealRecordHandlers(
-  database: MealRecordDatabase,
+export function createMealAssessmentHandlers(
+  database: MealAssessmentDatabase,
   nowProvider: () => Date = () => new Date()
 ) {
   return {
-    async GET() {
-      try {
-        const records = await getRecentMealRecords(database, nowProvider())
-        return NextResponse.json(records)
-      } catch (error) {
-        if (error instanceof DemoProfileNotFoundError) {
-          return errorResponse(PROFILE_MISSING_ERROR, 503)
-        }
-
-        return errorResponse(DATABASE_ERROR, 503)
-      }
-    },
-
     async POST(request: Request) {
       let body: unknown
 
@@ -68,22 +54,19 @@ export function createMealRecordHandlers(
         return errorResponse(VALIDATION_ERROR, 400)
       }
 
-      const parsed = createMealRecordRequestSchema.safeParse(body)
+      const parsed = assessMealRequestSchema.safeParse(body)
 
       if (!parsed.success) {
         return errorResponse(VALIDATION_ERROR, 400)
       }
 
       try {
-        const result = await createMealRecord(
+        const assessment = await assessConfirmedMeal(
           database,
           parsed.data,
           nowProvider()
         )
-
-        return NextResponse.json(result.record, {
-          status: result.created ? 201 : 200
-        })
+        return NextResponse.json(assessment)
       } catch (error) {
         if (error instanceof DemoProfileNotFoundError) {
           return errorResponse(PROFILE_MISSING_ERROR, 503)

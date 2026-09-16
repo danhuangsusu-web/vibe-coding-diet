@@ -4,6 +4,7 @@ import {
   apiErrorCodeSchema,
   apiErrorResponseSchema,
   apiErrorSchema,
+  assessMealRequestSchema,
   calorieRangeSchema,
   confirmedMealSchema,
   createMealRecordRequestSchema,
@@ -189,6 +190,25 @@ describe('profile and calorie contracts', () => {
 })
 
 describe('assessment and record contracts', () => {
+  it('accepts confirmed items and defaults unknown handling to prompt', () => {
+    const result = assessMealRequestSchema.parse({ items: [confirmedItem] })
+
+    expect(result.unknownHandling).toBe('PROMPT')
+    expect(result.items[0]).not.toHaveProperty('confidence')
+  })
+
+  it('rejects unconfirmed items and unsupported unknown handling', () => {
+    expect(
+      assessMealRequestSchema.safeParse({ items: [parsedItem] }).success
+    ).toBe(false)
+    expect(
+      assessMealRequestSchema.safeParse({
+        items: [confirmedItem],
+        unknownHandling: 'GUESS'
+      }).success
+    ).toBe(false)
+  })
+
   it('parses an assessment with stable advice and a required rule version', () => {
     const result = mealAssessmentSchema.parse(assessment)
 

@@ -1,6 +1,6 @@
 # 食刻 AI 当前架构
 
-> 基线日期：2026-09-16（已同步步骤 1 至步骤 14）
+> 基线日期：2026-09-16（已同步步骤 1 至步骤 15）
 > 记录原则：本文件描述当前仓库事实。尚未实现的目标只在“计划边界”中标注，不与现状混写。
 
 ## 1. 总览
@@ -155,7 +155,9 @@
 | `apps/server/app/page.tsx` | 简单服务启动说明页 |
 | `apps/server/app/api/health/route.ts` | 已实现 GET 健康检查，返回服务名与 ok 状态 |
 
-演示资料接口位于 `apps/server/app/api/profile/route.ts`（见 4.4 节），餐食记录接口位于 `apps/server/app/api/meal-records/route.ts` 与 `apps/server/app/api/meal-records/[id]/route.ts`（见 4.5 节）。
+演示资料接口位于 `apps/server/app/api/profile/route.ts`（见 4.4 节），餐食记录接口位于 `apps/server/app/api/meal-records/route.ts` 与 `apps/server/app/api/meal-records/[id]/route.ts`（见 4.5 节），餐食评估接口位于 `apps/server/app/api/assess-meal/route.ts`（见 4.7 节）。
+
+`apps/server/public/assess-demo.html` 是本地核对接口用的演示页，与接口同源，用于避开浏览器的跨域限制；它不是产品页面。
 
 ### 4.2 AI
 
@@ -302,6 +304,33 @@ MealRecord 当前字段：
 
 页面只需调用 `parseMeal`，无需感知数据来源，因此步骤 20 切换到 AI 时不用分叉页面逻辑，offline 仍可作为降级与演示入口。
 
+### 4.7 餐食评估接口
+
+| 路径 | 当前职责 |
+| --- | --- |
+| `apps/server/app/api/assess-meal/route.ts` | 薄封装：注入 `prisma` 后导出 POST，并标记 `dynamic = 'force-dynamic'` |
+| `apps/server/lib/meal-assessment-service.ts` | `assessConfirmedMeal(database, request, now)`：读取演示资料与当天记录，调用 nutrition 纯规则；另导出 `UnknownDishError` |
+| `apps/server/lib/meal-assessment-handlers.ts` | `createMealAssessmentHandlers(database, nowProvider)`，负责请求校验、调用服务与错误码映射 |
+| `packages/shared/src/assessment.ts` | 新增 `assessMealRequestSchema` 与 `AssessMealRequest` 类型 |
+
+请求契约：
+
+- `items`：至少一项的确认后菜品；
+- `unknownHandling`：`PROMPT`（默认）或 `CONSERVATIVE_FALLBACK`，对应 D1c 的两阶段行为；
+- `modelVersion`：可选；
+- 使用严格模式，出现多余字段即判定为非法输入。
+
+`POST /api/assess-meal` 的行为：
+
+- 按 Asia/Shanghai 计算“当天”范围，只统计当天已保存记录；当前时间由 handler 显式注入，nutrition 内部不读取系统时钟；
+- 返回热量区间、动态餐次额度、评级、原因、建议、不确定性与规则版本；
+- 非法输入返回 400 `VALIDATION_FAILED`；
+- `PROMPT` 模式下遇到未覆盖的食材或做法返回 422 `UNKNOWN_DISH`，**不返回任何热量数字**；显式传入 `CONSERVATIVE_FALLBACK` 后才返回宽范围保守区间并附不确定性说明；
+- 演示资料缺失或数据库异常返回 503 `DB_UNAVAILABLE`，不泄漏内部细节；
+- 该接口只评估，不保存记录；保存属于步骤 16。
+
+参考额度随当前时间变化：上海时间剩余 1 餐时，整日额度全部计入本餐；剩余 2 餐时取一半。因此同一份菜品在中午与傍晚得到的额度不同，两者都正确。
+
 ## 5. 共享包
 
 ### 5.1 packages/shared
@@ -424,7 +453,7 @@ MealRecord 当前字段：
 4. 客户端请求 `PATCH /api/profile`，服务端用共享契约校验后更新资料并返回最新结果。
 5. 客户端 `POST /api/meal-records` 提交确认后的菜品，服务端重新评估后落库；`GET /api/meal-records` 返回最近 30 天按上海日期分组的记录与汇总；`DELETE /api/meal-records/{id}` 物理删除属于演示资料的记录。
 
-AI 工厂可以独立创建模型对象，但 ai 模式的解析器尚未实现，`MEAL_PARSER=ai` 会得到明确的配置错误。`parseMeal` 已可在服务端代码内调用并返回两个离线样例之一，但尚未被任何 Route Handler 暴露成 HTTP 接口；小程序另有同名门面供步骤 13 至 19 的纯离线页面调用，并以测试逐项比对服务端样例。根 Vitest 入口当前可运行 163 个测试（shared 17、nutrition 66、server 58、miniprogram 22），范围同时覆盖服务端与小程序纯逻辑，并能解析工作区 TypeScript 源码包。nutrition 已通过记录接口被真实调用；小程序 P02、P03 已完成本地输入、离线解析与确认编辑行为，但尚未调用任何接口。
+AI 工厂可以独立创建模型对象，但 ai 模式的解析器尚未实现，`MEAL_PARSER=ai` 会得到明确的配置错误。`parseMeal` 已可在服务端代码内调用并返回两个离线样例之一，但尚未被任何 Route Handler 暴露成 HTTP 接口；小程序另有同名门面供步骤 13 至 19 的纯离线页面调用，并以测试逐项比对服务端样例。根 Vitest 入口当前可运行 173 个测试（shared 19、nutrition 66、server 66、miniprogram 22），范围同时覆盖服务端与小程序纯逻辑，并能解析工作区 TypeScript 源码包。nutrition 已通过记录接口被真实调用；小程序 P02、P03 已完成本地输入、离线解析与确认编辑行为，但尚未调用任何接口；服务端已可对确认后的菜品返回完整评估。
 
 ## 9. 目标数据流边界
 
@@ -439,13 +468,13 @@ AI 工厂可以独立创建模型对象，但 ai 模式的解析器尚未实现�
 7. Prisma 保存用户确认后的 MealRecord；
 8. 小程序刷新首页和历史。
 
-目标链路已实现第 6 与第 7 步的服务端部分：nutrition 规则会读取资料与当天记录执行计算，服务端随后保存 MealRecord。第 8 步的读取侧（查询记录与汇总）也已就绪。第 1 至 5 步中，第 1 步的 P02 页面已能收集单张本地图片或文字并进入离线解析，第 5 步的 P03 确认界面已能增删改并确认菜品；第 2 步的输入校验已实现、第 3 步的模型调用已就绪但 ai 解析器未实现、第 4 步的结构化输出校验已就绪；P03 确认后仍不评估也不保存，评级与落库属于步骤 15、16；第 8 步的小程序刷新仍未实现。
+目标链路已实现第 6 与第 7 步的服务端部分：nutrition 规则会读取资料与当天记录执行计算，服务端随后保存 MealRecord。第 8 步的读取侧（查询记录与汇总）也已就绪。第 1 至 5 步中，第 1 步的 P02 页面已能收集单张本地图片或文字并进入离线解析，第 5 步的 P03 确认界面已能增删改并确认菜品；第 2 步的输入校验已实现、第 3 步的模型调用已就绪但 ai 解析器未实现、第 4 步的结构化输出校验已就绪；P03 确认后仍不评估也不保存；评估接口已在步骤 15 就绪，小程序接入与保存属于步骤 16；第 8 步的小程序刷新仍未实现。
 
 每完成一个计划步骤，必须更新本文件，把对应职责从“目标”改为“当前”。
 
 ## 10. 已知技术债与风险
 
-- 自动化测试目前是 163 个契约、规则、接口与小程序纯逻辑测试（用假数据库与假时钟），尚无针对真实数据库或微信运行时的集成测试；
+- 自动化测试目前是 173 个契约、规则、接口与小程序纯逻辑测试（用假数据库与假时钟），尚无针对真实数据库或微信运行时的集成测试；
 - 热量区间规则只覆盖 9 个已知食材标签、10 个已知做法和两个演示样例，扩展评测集前需同步递增规则版本并补测试；
 - offline 解析器只能识别两个演示样例的原文，任何其他输入都会抛出“未匹配到样例”，这是步骤 20 之前的有意限制；
 - 规则层已能返回“需要补充信息”，但界面上的“跳过补充”入口在步骤 15 才实现；
@@ -461,4 +490,4 @@ AI 工厂可以独立创建模型对象，但 ai 模式的解析器尚未实现�
 - `project.config.json` 使用**小程序测试号**提供的 AppID（`wx9c7d506cdb608201`）：相比原先的游客 AppID，它已支持真机预览与真机调试；但测试号没有上传能力，因此**体验版与上线仍需正式 AppID**。D5 的原前提（体验版需先换正式 AppID）经核实依然成立，仅方案 b 的括号措辞需修正。`project.private.config.json` 由开发者工具生成并已被 `.gitignore` 排除；
 - 高保真 HTML 原型与 Taro 代码仅对齐了视觉基础、P02 与 P03；P01、P04、P05 页面内容尚未实现；
 - `.workbuddy_html/` 未被 `.gitignore` 排除，且当前已纳入版本控制；后续原型变更会进入 Git 差异；
-- 当前 Git `main` 已包含步骤 1 至步骤 10 的提交（`01afa66`、`dcd640f`、`4f087d5`、`1d56406`、`2174d63`、`d043690`、`c7205ac`、`cde21b7`、`b7b6487`、`58d19a0`）、步骤 11 提交 `480d795`、两次文档提交 `db2c6ba` 与 `7c28422`、步骤 12 提交 `4e4e458`、步骤 13 提交 `038e5c0`、`.gitattributes` 提交 `1e6e39f` 与 D7 文档提交 `ebc3deb`；步骤 14 的 P03 行为及 D7 配色实现与本文档更新在同一提交中。
+- 当前 Git `main` 已包含步骤 1 至步骤 10 的提交（`01afa66`、`dcd640f`、`4f087d5`、`1d56406`、`2174d63`、`d043690`、`c7205ac`、`cde21b7`、`b7b6487`、`58d19a0`）、步骤 11 提交 `480d795`、两次文档提交 `db2c6ba` 与 `7c28422`、步骤 12 提交 `4e4e458`、步骤 13 提交 `038e5c0`、`.gitattributes` 提交 `1e6e39f` 与 D7 文档提交 `ebc3deb`；步骤 14 提交 `dae4a46`；步骤 15 的评估接口与本文档更新在同一提交中。

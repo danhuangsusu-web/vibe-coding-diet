@@ -8,6 +8,19 @@ import {
 } from './common'
 import { confirmedMealItemSchema } from './meal'
 
+export const unknownHandlingSchema = z.enum([
+  'PROMPT',
+  'CONSERVATIVE_FALLBACK'
+])
+
+export const assessMealRequestSchema = z
+  .object({
+    items: z.array(confirmedMealItemSchema).min(1),
+    unknownHandling: unknownHandlingSchema.default('PROMPT'),
+    modelVersion: nonEmptyTextSchema.optional()
+  })
+  .strict()
+
 export const mealAdviceSchema = z
   .object({
     id: adviceIdSchema,
@@ -41,3 +54,5 @@ export const mealAssessmentSchema = z
 
 export type MealAdvice = z.infer<typeof mealAdviceSchema>
 export type MealAssessment = z.infer<typeof mealAssessmentSchema>
+export type UnknownHandling = z.infer<typeof unknownHandlingSchema>
+export type AssessMealRequest = z.infer<typeof assessMealRequestSchema>

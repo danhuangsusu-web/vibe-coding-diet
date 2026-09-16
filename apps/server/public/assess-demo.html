@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>餐食评估接口 · 演示</title>
+<style>
+  body {
+    margin: 0;
+    padding: 32px 20px 64px;
+    background: #faf6ef;
+    color: #3e3833;
+    font-family: 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+    line-height: 1.6;
+  }
+  main { max-width: 760px; margin: 0 auto; }
+  h1 { font-size: 20px; margin: 0 0 8px; }
+  p.lead { margin: 0 0 24px; color: #6e655b; font-size: 14px; }
+  .buttons { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 24px; }
+  button {
+    padding: 12px 20px;
+    border: 0;
+    border-radius: 999px;
+    background: #f3ede2;
+    color: #3e3833;
+    font-family: inherit;
+    font-size: 15px;
+    cursor: pointer;
+  }
+  button:hover { background: #fae3c7; }
+  button.primary {
+    background: linear-gradient(145deg, #f3ac62, #e8964a);
+    color: #fff;
+  }
+  .card {
+    background: #fffdf9;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 6px 18px rgba(196,168,128,0.12);
+  }
+  .status { font-size: 13px; color: #9a9086; margin-bottom: 16px; }
+  .rating {
+    display: inline-block;
+    padding: 6px 16px;
+    border-radius: 999px;
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .rating.GREEN { background: #e3f1e6; color: #3f7050; }
+  .rating.YELLOW { background: #fbf0d3; color: #8a6b28; }
+  .rating.RED { background: #f8e4dc; color: #9c5238; }
+  .rating.NONE { background: #f3ede2; color: #6e655b; }
+  dl { display: grid; grid-template-columns: 92px 1fr; gap: 10px 16px; margin: 20px 0 0; }
+  dt { color: #9a9086; font-size: 13px; }
+  dd { margin: 0; font-size: 15px; }
+  ul { margin: 6px 0 0; padding-left: 20px; font-size: 15px; }
+  .error { color: #9c5238; font-size: 15px; }
+  pre {
+    margin: 24px 0 0;
+    padding: 16px;
+    background: #f3ede2;
+    border-radius: 12px;
+    overflow-x: auto;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<main>
+  <h1>餐食评估接口演示</h1>
+  <p class="lead">点一个按钮，调用 <code>POST /api/assess-meal</code>，下面显示真实响应。</p>
+
+  <div class="buttons">
+    <button class="primary" data-sample="northeast">干煸芸豆、溜肉段和米饭</button>
+    <button class="primary" data-sample="light">白灼时蔬、水煮鸡胸和小份米饭</button>
+    <button data-sample="unknown">未知菜品（看它怎么拒绝）</button>
+  </div>
+
+  <div class="card hidden" id="result">
+    <div class="status" id="status"></div>
+    <div id="summary"></div>
+    <pre id="raw"></pre>
+  </div>
+</main>
+
+<script>
+const SAMPLES = {
+  northeast: {
+    label: '干煸芸豆、溜肉段和米饭',
+    body: {
+      items: [
+        { displayName: '干煸芸豆', ingredients: ['GREEN_BEAN'], otherIngredients: [], cookingMethods: ['DRY_STIR_FRIED'], otherCookingMethods: [], portionLevel: 'regular', uncertainties: [], wasManuallyAdjusted: false },
+        { displayName: '溜肉段', ingredients: ['PORK', 'SAUCE'], otherIngredients: [], cookingMethods: ['DEEP_FRIED', 'SWEET_AND_SOUR'], otherCookingMethods: [], portionLevel: 'regular', uncertainties: ['实际用油量无法确认'], wasManuallyAdjusted: false },
+        { displayName: '米饭', ingredients: ['RICE'], otherIngredients: [], cookingMethods: ['STEAMED'], otherCookingMethods: [], portionLevel: 'regular', uncertainties: [], wasManuallyAdjusted: false }
+      ],
+      modelVersion: 'offline-demo-v1'
+    }
+  },
+  light: {
+    label: '白灼时蔬、水煮鸡胸和小份米饭',
+    body: {
+      items: [
+        { displayName: '白灼时蔬', ingredients: ['LEAFY_VEGETABLE'], otherIngredients: [], cookingMethods: ['BLANCHED'], otherCookingMethods: [], portionLevel: 'regular', uncertainties: [], wasManuallyAdjusted: false },
+        { displayName: '水煮鸡胸', ingredients: ['CHICKEN_WITHOUT_SKIN'], otherIngredients: [], cookingMethods: ['BOILED'], otherCookingMethods: [], portionLevel: 'regular', uncertainties: ['鸡胸肉实际份量无法从描述中确认'], wasManuallyAdjusted: false },
+        { displayName: '小份米饭', ingredients: ['RICE'], otherIngredients: [], cookingMethods: ['STEAMED'], otherCookingMethods: [], portionLevel: 'small', uncertainties: [], wasManuallyAdjusted: false }
+      ],
+      modelVersion: 'offline-demo-v1'
+    }
+  },
+  unknown: {
+    label: '未知菜品',
+    body: {
+      items: [
+        { displayName: '奇怪的东西', ingredients: ['OTHER'], otherIngredients: ['外星食材'], cookingMethods: ['OTHER'], otherCookingMethods: ['未知做法'], portionLevel: 'regular', uncertainties: [], wasManuallyAdjusted: false }
+      ]
+    }
+  }
+};
+
+const result = document.getElementById('result');
+const statusEl = document.getElementById('status');
+const summaryEl = document.getElementById('summary');
+const rawEl = document.getElementById('raw');
+
+function row(term, value) {
+  return '<dt>' + term + '</dt><dd>' + value + '</dd>';
+}
+
+function renderAssessment(data) {
+  let html = '<span class="rating ' + data.rating + '">' + data.ratingLabel + '</span>';
+  html += '<dl>';
+  html += row('热量区间', data.calorieRange.min + ' – ' + data.calorieRange.max + ' 千卡');
+  html += row('参考额度', data.mealBudget + ' 千卡');
+  html += row('原因', data.reason);
+  html += row('建议', '<ul>' + data.advice.map(function (a) { return '<li>' + a.text + '</li>'; }).join('') + '</ul>');
+  if (data.uncertainties && data.uncertainties.length) {
+    html += row('不确定性', '<ul>' + data.uncertainties.map(function (u) { return '<li>' + u + '</li>'; }).join('') + '</ul>');
+  }
+  html += row('规则版本', data.ruleVersion);
+  html += '</dl>';
+  return html;
+}
+
+function renderError(data) {
+  let html = '<span class="rating NONE">未返回评估结果</span>';
+  html += '<dl>';
+  html += row('错误码', '<span class="error">' + data.error.code + '</span>');
+  html += row('提示', data.error.message);
+  html += row('可重试', data.error.retryable ? '是' : '否');
+  html += '</dl>';
+  return html;
+}
+
+document.querySelectorAll('button[data-sample]').forEach(function (button) {
+  button.addEventListener('click', async function () {
+    const sample = SAMPLES[button.dataset.sample];
+    result.classList.remove('hidden');
+    statusEl.textContent = '正在调用 ' + sample.label + ' …';
+    summaryEl.innerHTML = '';
+    rawEl.textContent = '';
+
+    try {
+      const response = await fetch('/api/assess-meal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(sample.body)
+      });
+      const data = await response.json();
+      statusEl.textContent = 'HTTP ' + response.status + ' · ' + sample.label;
+      summaryEl.innerHTML = data.error ? renderError(data) : renderAssessment(data);
+      rawEl.textContent = JSON.stringify(data, null, 2);
+    } catch (error) {
+      statusEl.textContent = '调用失败：' + error.message;
+    }
+  });
+});
+</script>
+</body>
+</html>

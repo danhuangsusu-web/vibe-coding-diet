@@ -6,9 +6,9 @@ import {
   type MealRecord,
   type MealRecordsResponse
 } from '@food-sense/shared'
-import { assessMeal } from '@food-sense/nutrition'
 
 import { DEMO_PROFILE_ID } from './demo-profile.mjs'
+import { assessConfirmedMeal } from './meal-assessment-service'
 import {
   DemoProfileNotFoundError,
   getDemoProfile
@@ -49,13 +49,6 @@ export type MealRecordDatabase = Pick<
   PrismaClient,
   'demoProfile' | 'mealRecord'
 >
-
-export class UnknownDishError extends Error {
-  constructor() {
-    super('Confirmed meal still contains unknown ingredients or methods')
-    this.name = 'UnknownDishError'
-  }
-}
 
 function isUniqueConstraintError(error: unknown): boolean {
   return (
@@ -119,39 +112,17 @@ export async function createMealRecord(
     return { record: existing, created: false }
   }
 
-  const profile = await getDemoProfile(database)
-
-  if (!profile) {
-    throw new DemoProfileNotFoundError()
-  }
-
-  const today = getShanghaiDayRange(now)
-  const todayRows = await database.mealRecord.findMany({
-    where: {
-      profileId: DEMO_PROFILE_ID,
-      createdAt: { gte: today.start, lt: today.end }
+  const assessment = await assessConfirmedMeal(
+    database,
+    {
+      items: request.items,
+      unknownHandling: 'PROMPT',
+      ...(request.modelVersion
+        ? { modelVersion: request.modelVersion }
+        : {})
     },
-    select: { calorieMin: true, calorieMax: true }
-  })
-  const assessmentResult = assessMeal({
-    items: request.items,
-    dailyCalorieRange: {
-      min: profile.dailyCalorieMin,
-      max: profile.dailyCalorieMax
-    },
-    todayMealRanges: todayRows.map(({ calorieMin, calorieMax }) => ({
-      min: calorieMin,
-      max: calorieMax
-    })),
-    now,
-    ...(request.modelVersion ? { modelVersion: request.modelVersion } : {})
-  })
-
-  if (assessmentResult.status === 'NEEDS_MORE_INFO') {
-    throw new UnknownDishError()
-  }
-
-  const assessment = assessmentResult.assessment
+    now
+  )
 
   try {
     const row = await database.mealRecord.create({
