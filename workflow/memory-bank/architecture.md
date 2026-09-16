@@ -40,7 +40,7 @@
 | --- | --- |
 | `apps/miniprogram/package.json` | Taro、React、TDesign、Jotai、Sass、Webpack 和微信类型依赖及 dev/build/typecheck 脚本 |
 | `apps/miniprogram/config/index.ts` | 配置 Taro 项目、750 设计宽度、Webpack 5、源码和输出目录 |
-| `apps/miniprogram/project.config.json` | 微信开发者工具项目，使用正式 AppID，输出根目录为 `dist/` |
+| `apps/miniprogram/project.config.json` | 微信开发者工具项目，使用小程序测试号提供的 AppID，输出根目录为 `dist/` |
 | `apps/miniprogram/tsconfig.json` | 严格 TypeScript、Bundler 模块解析、`@/*` 路径别名 |
 | `apps/miniprogram/babel.config.js` | Taro React TypeScript Babel preset |
 | `apps/miniprogram/types/global.d.ts` | 小程序项目的全局类型声明入口 |
@@ -402,7 +402,7 @@ AI 工厂可以独立创建模型对象，但 ai 模式的解析器尚未实现�
 - 没有评测集；
 - 小程序的视觉基础只完成构建与 Token 层面核对，**尚未在真机上核对**；五页路由与业务流程均未实现；
 - 小程序暂无自动化测试；Vitest 范围不包含小程序运行时与页面交互；
-- `project.config.json` 已使用正式 AppID，`project.private.config.json` 由开发者工具生成并已被 `.gitignore` 排除；该 AppID 变更使 D5 的前提（原先假设需先更换正式 AppID）不再成立，需在步骤 24 前重新确认或关闭 D5；
+- `project.config.json` 使用**小程序测试号**提供的 AppID（`wx9c7d506cdb608201`）：相比原先的游客 AppID，它已支持真机预览与真机调试；但测试号没有上传能力，因此**体验版与上线仍需正式 AppID**。D5 的原前提（体验版需先换正式 AppID）经核实依然成立，仅方案 b 的括号措辞需修正。`project.private.config.json` 由开发者工具生成并已被 `.gitignore` 排除；
 - 高保真 HTML 原型与 Taro 代码尚未对齐（视觉基础已对齐 Token，但五页尚未实现）；
 - `.workbuddy_html/` 未被 `.gitignore` 排除，且当前已纳入版本控制；后续原型变更会进入 Git 差异；
 - 当前 Git `main` 已包含步骤 1 至步骤 10 的提交（`01afa66`、`dcd640f`、`4f087d5`、`1d56406`、`2174d63`、`d043690`、`c7205ac`、`cde21b7`、`b7b6487`、`58d19a0`）；步骤 11 的视觉基础与本文档更新在同一提交中。
