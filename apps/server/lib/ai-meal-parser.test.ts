@@ -290,6 +290,30 @@ describe('AI text meal parser', () => {
     ).rejects.toBeInstanceOf(AiMealTimeoutError)
   })
 
+  it('aborts model generation when the calling request is cancelled', async () => {
+    const metrics: AiMealCallMetrics[] = []
+    const caller = new AbortController()
+    const parser = createAiMealParser({
+      getModelConfiguration: modelProvider,
+      generate: ({ abortSignal }) =>
+        new Promise((_resolve, reject) => {
+          abortSignal.addEventListener('abort', () => reject(new Error('aborted')))
+        }),
+      logger: (metric) => metrics.push(metric)
+    })
+
+    const result = parser(
+      { sourceType: 'TEXT', sourceText: '番茄炒蛋' },
+      { signal: caller.signal }
+    )
+    caller.abort()
+
+    await expect(result).rejects.toMatchObject({ name: 'AiMealCancelledError' })
+    expect(metrics).toEqual([
+      expect.objectContaining({ status: 'cancelled' })
+    ])
+  })
+
   it('preserves only sanitized provider error classification', async () => {
     const parser = createAiMealParser({
       getModelConfiguration: modelProvider,

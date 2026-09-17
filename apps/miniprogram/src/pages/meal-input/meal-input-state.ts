@@ -18,6 +18,8 @@ export interface MealInputState {
   image: SelectedMealImage | null
   phase: MealInputPhase
   errorMessage: string | null
+  errorRetryable: boolean
+  manualRetryCount: number
 }
 
 export type MealInputAction =
@@ -25,10 +27,10 @@ export type MealInputAction =
   | { type: 'text-activated' }
   | { type: 'mode-changed'; mode: MealInputMode }
   | { type: 'image-selected'; image: SelectedMealImage }
-  | { type: 'analysis-started' }
+  | { type: 'analysis-started'; manualRetry?: boolean }
   | { type: 'analysis-cancelled' }
   | { type: 'permission-denied' }
-  | { type: 'analysis-failed'; message: string }
+  | { type: 'analysis-failed'; message: string; retryable: boolean }
   | { type: 'no-meal-detected' }
   | { type: 'return-to-text' }
   | { type: 'return-to-input'; mode?: MealInputMode }
@@ -41,7 +43,9 @@ export function createInitialMealInputState(
     text: '',
     image: null,
     phase: 'idle',
-    errorMessage: null
+    errorMessage: null,
+    errorRetryable: false,
+    manualRetryCount: 0
   }
 }
 
@@ -57,7 +61,9 @@ export function mealInputReducer(
         text: action.text,
         image: null,
         phase: 'idle',
-        errorMessage: null
+        errorMessage: null,
+        errorRetryable: false,
+        manualRetryCount: 0
       }
     case 'text-activated':
       return {
@@ -65,7 +71,9 @@ export function mealInputReducer(
         activeMode: 'TEXT',
         image: null,
         phase: 'idle',
-        errorMessage: null
+        errorMessage: null,
+        errorRetryable: false,
+        manualRetryCount: 0
       }
     case 'mode-changed':
       return {
@@ -74,7 +82,9 @@ export function mealInputReducer(
         text: action.mode === 'IMAGE' ? '' : state.text,
         image: action.mode === 'TEXT' ? null : state.image,
         phase: 'idle',
-        errorMessage: null
+        errorMessage: null,
+        errorRetryable: false,
+        manualRetryCount: 0
       }
     case 'image-selected':
       return {
@@ -83,19 +93,34 @@ export function mealInputReducer(
         text: '',
         image: action.image,
         phase: 'idle',
-        errorMessage: null
+        errorMessage: null,
+        errorRetryable: false,
+        manualRetryCount: 0
       }
     case 'analysis-started':
-      return { ...state, phase: 'analyzing', errorMessage: null }
+      return {
+        ...state,
+        phase: 'analyzing',
+        errorMessage: null,
+        errorRetryable: false,
+        manualRetryCount:
+          state.manualRetryCount + (action.manualRetry ? 1 : 0)
+      }
     case 'analysis-cancelled':
-      return { ...state, phase: 'idle', errorMessage: null }
+      return {
+        ...state,
+        phase: 'idle',
+        errorMessage: null,
+        errorRetryable: false
+      }
     case 'permission-denied':
       return { ...state, phase: 'permission-denied', errorMessage: null }
     case 'analysis-failed':
       return {
         ...state,
         phase: 'failure',
-        errorMessage: action.message
+        errorMessage: action.message,
+        errorRetryable: action.retryable
       }
     case 'no-meal-detected':
       return { ...state, phase: 'no-meal', errorMessage: null }
@@ -105,7 +130,9 @@ export function mealInputReducer(
         activeMode: 'TEXT',
         image: null,
         phase: 'idle',
-        errorMessage: null
+        errorMessage: null,
+        errorRetryable: false,
+        manualRetryCount: 0
       }
     case 'return-to-input':
       const activeMode = action.mode ?? state.activeMode
@@ -115,7 +142,9 @@ export function mealInputReducer(
         text: activeMode === 'IMAGE' ? '' : state.text,
         image: activeMode === 'TEXT' ? null : state.image,
         phase: 'idle',
-        errorMessage: null
+        errorMessage: null,
+        errorRetryable: false,
+        manualRetryCount: 0
       }
   }
 }
@@ -157,6 +186,14 @@ export function shouldConfirmMealInputModeChange(
     nextMode === 'IMAGE' &&
     state.activeMode !== 'IMAGE' &&
     state.text.trim().length > 0
+  )
+}
+
+export function shouldPromoteTextRecovery(state: MealInputState): boolean {
+  return (
+    state.phase === 'failure' &&
+    state.activeMode === 'IMAGE' &&
+    state.manualRetryCount >= 1
   )
 }
 

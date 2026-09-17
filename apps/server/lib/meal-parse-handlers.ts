@@ -9,6 +9,7 @@ import { NextResponse } from 'next/server'
 import {
   AI_IMAGE_MEAL_PROMPT_VERSION,
   AI_MEAL_PROMPT_VERSION,
+  AiMealCancelledError,
   AiMealInvalidOutputError,
   AiMealProviderError,
   AiMealTimeoutError,
@@ -248,7 +249,10 @@ export function createMealParseHandlers(
 
       try {
         const mode = resolveMode()
-        const meal = await parse(parsedRequest, { mode })
+        const meal = await parse(parsedRequest, {
+          mode,
+          signal: request.signal
+        })
         const headers: Record<string, string> = {
           'x-food-sense-parser-mode': mode,
           'x-food-sense-is-demo': mode === 'offline' ? 'true' : 'false',
@@ -281,6 +285,10 @@ export function createMealParseHandlers(
 
         if (error instanceof AiMealTimeoutError) {
           return errorResponse(ERRORS.timeout, 504)
+        }
+
+        if (error instanceof AiMealCancelledError) {
+          return errorResponse(ERRORS.timeout, 499)
         }
 
         if (error instanceof AiMealInvalidOutputError) {

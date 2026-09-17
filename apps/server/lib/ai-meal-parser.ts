@@ -24,6 +24,7 @@ import type { MealParser } from './meal-parser'
 export const AI_MEAL_PROMPT_VERSION = 'text-meal-v2'
 export const AI_IMAGE_MEAL_PROMPT_VERSION = 'image-meal-v1'
 export const AI_MEAL_TIMEOUT_MS = 20_000
+export const AI_MEAL_MAX_RETRIES = 1
 
 const modelTextSchema = z.string().trim().min(1).max(100)
 const modelVocabularySchema = z.string().trim().min(1).max(40)
@@ -123,6 +124,7 @@ export type AiMealCallStatus =
   | 'success'
   | 'not_configured'
   | 'timeout'
+  | 'cancelled'
   | 'invalid_output'
   | 'no_meal'
   | 'provider_error'
@@ -171,6 +173,13 @@ export class AiMealTimeoutError extends Error {
   constructor() {
     super('AI meal parsing timed out')
     this.name = 'AiMealTimeoutError'
+  }
+}
+
+export class AiMealCancelledError extends Error {
+  constructor() {
+    super('AI meal parsing was cancelled by the caller')
+    this.name = 'AiMealCancelledError'
   }
 }
 
@@ -235,7 +244,7 @@ async function generateStructuredMeal({
     model,
     instructions,
     prompt,
-    maxRetries: 1,
+    maxRetries: AI_MEAL_MAX_RETRIES,
     abortSignal
   })
 
@@ -533,11 +542,12 @@ export function createAiMealParser(
   const now = options.now ?? Date.now
   const timeoutMs = options.timeoutMs ?? AI_MEAL_TIMEOUT_MS
 
-  return async (input): Promise<ParsedMeal> => {
+  return async (input, context = {}): Promise<ParsedMeal> => {
     const startedAt = now()
     let modelVersion = 'unconfigured'
     let usage: StructuredMealUsage = {}
     let timeoutReached = false
+    let callerCancelled = false
     const controller = new AbortController()
     const promptVersion =
       input.sourceType === 'TEXT'
@@ -547,6 +557,17 @@ export function createAiMealParser(
       timeoutReached = true
       controller.abort()
     }, timeoutMs)
+    const cancelFromCaller = () => {
+      callerCancelled = true
+      controller.abort()
+    }
+    if (context.signal?.aborted) {
+      cancelFromCaller()
+    } else {
+      context.signal?.addEventListener('abort', cancelFromCaller, {
+        once: true
+      })
+    }
 
     const log = (status: AiMealCallStatus, error?: unknown) => {
       const costCny = calculateAiMealCostCny(modelVersion, usage)
@@ -633,6 +654,11 @@ export function createAiMealParser(
       log('success')
       return parsedMeal.data
     } catch (error) {
+      if (callerCancelled) {
+        log('cancelled')
+        throw new AiMealCancelledError()
+      }
+
       if (timeoutReached) {
         log('timeout', error)
         throw new AiMealTimeoutError()
@@ -659,6 +685,7 @@ export function createAiMealParser(
       throw new AiMealProviderError(providerErrorDetails(error))
     } finally {
       clearTimeout(timeoutId)
+      context.signal?.removeEventListener('abort', cancelFromCaller)
     }
   }
 }

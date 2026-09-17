@@ -21,11 +21,19 @@ export type MealParseInput =
       demoSampleId?: DemoMealSampleId
     }
 
-export type MealParser = (input: MealParseInput) => Promise<ParsedMeal>
+export interface MealParserContext {
+  signal?: AbortSignal
+}
+
+export type MealParser = (
+  input: MealParseInput,
+  context?: MealParserContext
+) => Promise<ParsedMeal>
 
 export interface ParseMealOptions {
   mode?: MealParserMode
   aiParser?: MealParser
+  signal?: AbortSignal
 }
 
 export class MealParserConfigurationError extends Error {
@@ -91,5 +99,9 @@ export async function parseMeal(
   const parser =
     mode === 'offline' ? offlineMealParser : (options.aiParser ?? aiMealParser)
 
-  return parsedMealSchema.parse(await parser(input))
+  const result = options.signal
+    ? await parser(input, { signal: options.signal })
+    : await parser(input)
+
+  return parsedMealSchema.parse(result)
 }

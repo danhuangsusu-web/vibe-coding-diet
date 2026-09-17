@@ -19,9 +19,13 @@ import {
 } from '../../services/meal-image'
 import {
   OFFLINE_DEMO_TEXTS,
-  parseMealWithMetadata
+  startMealParseWithTimeout
 } from '../../services/meal-parser'
-import { MealApiError } from '../../services/meal-api'
+import {
+  type CancellableTask,
+  type MealParseResult
+} from '../../services/meal-api'
+import { mealErrorPresentation } from '../../services/meal-error-presentation'
 import { mealFlowDraftAtom } from '../../state/meal-flow'
 import {
   buildMealParseInput,
@@ -30,6 +34,7 @@ import {
   imageSourceLabel,
   mealInputReducer,
   shouldConfirmMealInputModeChange,
+  shouldPromoteTextRecovery,
   type MealInputMode
 } from './meal-input-state'
 
@@ -41,33 +46,6 @@ const INPUT_MODE_OPTIONS = [
   { label: '图片', value: 'IMAGE' },
   { label: '文字', value: 'TEXT' }
 ] as const
-
-class MealParseTimeoutError extends Error {
-  constructor() {
-    super('Meal parsing timed out')
-    this.name = 'MealParseTimeoutError'
-  }
-}
-
-async function parseMealWithTimeout(
-  input: Parameters<typeof parseMealWithMetadata>[0]
-): Promise<Awaited<ReturnType<typeof parseMealWithMetadata>>> {
-  let timeoutId: ReturnType<typeof setTimeout> | undefined
-
-  try {
-    return await Promise.race([
-      parseMealWithMetadata(input),
-      new Promise<never>((_resolve, reject) => {
-        timeoutId = setTimeout(
-          () => reject(new MealParseTimeoutError()),
-          PARSE_TIMEOUT_MS
-        )
-      })
-    ])
-  } finally {
-    if (timeoutId) clearTimeout(timeoutId)
-  }
-}
 
 function readableImageError(error: MealImageError): string {
   switch (error.code) {
@@ -96,10 +74,12 @@ export default function MealInputPage() {
   const submitLockedRef = useRef(false)
   const requestVersionRef = useRef(0)
   const progressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const activeTaskRef = useRef<CancellableTask<MealParseResult> | null>(null)
 
   useEffect(() => {
     return () => {
       if (progressTimerRef.current) clearTimeout(progressTimerRef.current)
+      activeTaskRef.current?.cancel()
       requestVersionRef.current += 1
     }
   }, [])
@@ -124,7 +104,8 @@ export default function MealInputPage() {
       if (!(error instanceof MealImageError)) {
         dispatch({
           type: 'analysis-failed',
-          message: '图片处理失败，请重试，或改用文字描述。'
+          message: '图片处理失败，请重试，或改用文字描述。',
+          retryable: true
         })
         return
       }
@@ -138,12 +119,13 @@ export default function MealInputPage() {
 
       dispatch({
         type: 'analysis-failed',
-        message: readableImageError(error)
+        message: readableImageError(error),
+        retryable: error.code === 'IMAGE_COMPRESS_FAILED'
       })
     }
   }
 
-  const submit = async () => {
+  const submit = async (manualRetry = false) => {
     if (submitLockedRef.current) return
 
     const input = buildMealParseInput(state)
@@ -153,15 +135,18 @@ export default function MealInputPage() {
     const requestVersion = requestVersionRef.current + 1
     requestVersionRef.current = requestVersion
     setShowDetailedProgress(false)
-    dispatch({ type: 'analysis-started' })
+    dispatch({ type: 'analysis-started', manualRetry })
     progressTimerRef.current = setTimeout(() => {
       if (requestVersionRef.current === requestVersion) {
         setShowDetailedProgress(true)
       }
     }, DETAILED_PROGRESS_DELAY_MS)
 
+    const task = startMealParseWithTimeout(input, PARSE_TIMEOUT_MS)
+    activeTaskRef.current = task
+
     try {
-      const result = await parseMealWithTimeout(input)
+      const result = await task.promise
 
       if (requestVersionRef.current !== requestVersion) return
 
@@ -200,24 +185,20 @@ export default function MealInputPage() {
     } catch (error) {
       if (requestVersionRef.current !== requestVersion) return
 
-      if (error instanceof MealApiError && error.code === 'NO_MEAL_DETECTED') {
+      const presentation = mealErrorPresentation(error)
+      if (presentation.code === 'NO_MEAL_DETECTED') {
         dispatch({ type: 'no-meal-detected' })
-      } else if (error instanceof MealParseTimeoutError) {
-        dispatch({
-          type: 'analysis-failed',
-          message: '分析时间较长，已经停止等待。你的内容仍然保留，可以重新尝试。'
-        })
-      } else if (error instanceof MealApiError) {
-        dispatch({ type: 'analysis-failed', message: error.message })
       } else {
         dispatch({
           type: 'analysis-failed',
-          message: '这次没有成功。你的内容仍然保留，可以重新尝试。'
+          message: presentation.message,
+          retryable: presentation.retryable
         })
       }
     } finally {
       if (requestVersionRef.current === requestVersion) {
         clearProgressTimer()
+        if (activeTaskRef.current === task) activeTaskRef.current = null
         setShowDetailedProgress(false)
         submitLockedRef.current = false
       }
@@ -225,6 +206,8 @@ export default function MealInputPage() {
   }
 
   const cancelAnalysis = () => {
+    activeTaskRef.current?.cancel()
+    activeTaskRef.current = null
     requestVersionRef.current += 1
     submitLockedRef.current = false
     clearProgressTimer()
@@ -241,8 +224,8 @@ export default function MealInputPage() {
   }
 
   const retryAfterFailure = () => {
-    if (buildMealParseInput(state)) {
-      void submit()
+    if (state.errorRetryable && buildMealParseInput(state)) {
+      void submit(true)
       return
     }
 
@@ -267,6 +250,7 @@ export default function MealInputPage() {
 
   const canSubmit = canSubmitMealInput(state)
   const isAnalyzing = state.phase === 'analyzing'
+  const promoteTextRecovery = shouldPromoteTextRecovery(state)
   const submitHint = canSubmit
     ? '识别后先给你确认，再计算保存'
     : isAnalyzing
@@ -496,20 +480,45 @@ export default function MealInputPage() {
             {state.errorMessage ?? '你的内容没有丢失，可以重新尝试。'}
           </Text>
           <View className='meal-state__actions'>
-            <Button
-              className='meal-state__primary'
-              hoverClass='meal-pressable--active'
-              onClick={retryAfterFailure}
-            >
-              重新尝试
-            </Button>
-            <Button
-              className='meal-state__secondary'
-              hoverClass='meal-pressable--active'
-              onClick={() => dispatch({ type: 'return-to-text' })}
-            >
-              改用文字输入
-            </Button>
+            {promoteTextRecovery ? (
+              <>
+                <Button
+                  className='meal-state__primary'
+                  hoverClass='meal-pressable--active'
+                  onClick={() => dispatch({ type: 'return-to-text' })}
+                >
+                  改用文字输入
+                </Button>
+                {state.errorRetryable ? (
+                  <Button
+                    className='meal-state__secondary'
+                    hoverClass='meal-pressable--active'
+                    onClick={retryAfterFailure}
+                  >
+                    再试一次
+                  </Button>
+                ) : null}
+              </>
+            ) : (
+              <>
+                <Button
+                  className='meal-state__primary'
+                  hoverClass='meal-pressable--active'
+                  onClick={retryAfterFailure}
+                >
+                  {state.errorRetryable ? '重新尝试' : '修改当前输入'}
+                </Button>
+                {state.activeMode === 'IMAGE' ? (
+                  <Button
+                    className='meal-state__secondary'
+                    hoverClass='meal-pressable--active'
+                    onClick={() => dispatch({ type: 'return-to-text' })}
+                  >
+                    改用文字输入
+                  </Button>
+                ) : null}
+              </>
+            )}
           </View>
         </View>
       ) : null}

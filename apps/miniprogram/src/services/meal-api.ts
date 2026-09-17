@@ -16,6 +16,20 @@ export type MealApiErrorCode =
   | ApiErrorCode
   | 'NETWORK_ERROR'
   | 'API_NOT_CONFIGURED'
+  | 'REQUEST_ABORTED'
+
+export interface CancellableTask<T> {
+  promise: Promise<T>
+  cancel: () => void
+}
+
+interface JsonResponse<T> {
+  data: T
+  statusCode: number
+  header: Record<string, unknown>
+}
+
+type AbortableRequest<T> = Promise<JsonResponse<T>> & { abort: () => void }
 
 export class MealApiError extends Error {
   code: MealApiErrorCode
@@ -29,22 +43,81 @@ export class MealApiError extends Error {
   }
 }
 
-function isApiErrorResponse(value: unknown): value is ApiErrorResponse {
+function parseApiErrorResponse(value: unknown) {
   if (typeof value !== 'object' || value === null || !('error' in value)) {
-    return false
+    return null
   }
 
   const error = value.error
-  return (
+  if (
+    Object.keys(value).length !== 1 ||
+    typeof error !== 'object' ||
+    error === null ||
+    Object.keys(error).length !== 3 ||
+    !('code' in error) ||
+    typeof error.code !== 'string' ||
+    !(error.code in API_ERROR_RETRYABILITY) ||
+    !('message' in error) ||
+    typeof error.message !== 'string' ||
+    error.message.trim().length === 0 ||
+    !('retryable' in error) ||
+    typeof error.retryable !== 'boolean'
+  ) {
+    return null
+  }
+
+  const code = error.code as ApiErrorCode
+  if (error.retryable !== API_ERROR_RETRYABILITY[code]) return null
+
+  return {
+    error: {
+      code,
+      message: error.message,
+      retryable: error.retryable
+    }
+  }
+}
+
+const API_ERROR_RETRYABILITY = {
+  AI_NOT_CONFIGURED: false,
+  AI_TIMEOUT: true,
+  AI_INVALID_OUTPUT: false,
+  NO_MEAL_DETECTED: false,
+  IMAGE_TOO_LARGE: false,
+  IMAGE_UNSUPPORTED: false,
+  IMAGE_COMPRESS_FAILED: true,
+  PROFILE_INVALID_RANGE: false,
+  DB_UNAVAILABLE: true,
+  MEAL_NOT_FOUND: false,
+  VALIDATION_FAILED: false,
+  UNKNOWN_DISH: false
+} as const satisfies Record<ApiErrorCode, boolean>
+
+function transportFailure(
+  error: unknown,
+  fallbackMessage: string
+): MealApiError {
+  const errMsg =
     typeof error === 'object' &&
     error !== null &&
-    'code' in error &&
-    typeof error.code === 'string' &&
-    'message' in error &&
-    typeof error.message === 'string' &&
-    'retryable' in error &&
-    typeof error.retryable === 'boolean'
-  )
+    'errMsg' in error &&
+    typeof error.errMsg === 'string'
+      ? error.errMsg.toLowerCase()
+      : ''
+
+  if (errMsg.includes('timeout')) {
+    return new MealApiError(
+      'AI_TIMEOUT',
+      '分析时间较长，已经停止等待。你的内容仍然保留，可以重新尝试。',
+      true
+    )
+  }
+
+  if (errMsg.includes('abort')) {
+    return new MealApiError('REQUEST_ABORTED', '请求已取消。', false)
+  }
+
+  return new MealApiError('NETWORK_ERROR', fallbackMessage, true)
 }
 
 function apiUrl(path: string): string {
@@ -59,46 +132,73 @@ function apiUrl(path: string): string {
   return `${__API_BASE_URL__}${path}`
 }
 
-async function postJsonResponse<T>(
+function postJsonResponseTask<T>(
   path: string,
   data: unknown,
   timeout?: number
-) {
+): CancellableTask<JsonResponse<T>> {
+  let requestTask: AbortableRequest<T | unknown>
+
   try {
-    const response = await Taro.request<T | ApiErrorResponse>({
+    requestTask = Taro.request({
       url: apiUrl(path),
       method: 'POST',
       header: { 'content-type': 'application/json' },
       data,
       ...(timeout ? { timeout } : {})
+    }) as unknown as AbortableRequest<T | unknown>
+  } catch (error) {
+    const failure =
+      error instanceof MealApiError
+        ? error
+        : transportFailure(
+            error,
+            '网络连接失败，你的内容仍然保留，可以稍后重试。'
+          )
+    return { promise: Promise.reject(failure), cancel: () => undefined }
+  }
+
+  const promise = requestTask
+    .then((response) => {
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return response as JsonResponse<T>
+      }
+
+      const apiError = parseApiErrorResponse(response.data)
+      if (apiError) {
+        throw new MealApiError(
+          apiError.error.code,
+          apiError.error.message,
+          apiError.error.retryable
+        )
+      }
+
+      throw new MealApiError(
+        'NETWORK_ERROR',
+        '服务暂时没有返回可用结果，请稍后重试。',
+        true
+      )
+    })
+    .catch((error: unknown) => {
+      if (error instanceof MealApiError) throw error
+      throw transportFailure(
+        error,
+        '网络连接失败，你的内容仍然保留，可以稍后重试。'
+      )
     })
 
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      return response
-    }
-
-    if (isApiErrorResponse(response.data)) {
-      throw new MealApiError(
-        response.data.error.code,
-        response.data.error.message,
-        response.data.error.retryable
-      )
-    }
-
-    throw new MealApiError(
-      'NETWORK_ERROR',
-      '服务暂时没有返回可用结果，请稍后重试。',
-      true
-    )
-  } catch (error) {
-    if (error instanceof MealApiError) throw error
-
-    throw new MealApiError(
-      'NETWORK_ERROR',
-      '网络连接失败，你的内容仍然保留，可以稍后重试。',
-      true
-    )
+  return {
+    promise,
+    cancel: () => requestTask.abort()
   }
+}
+
+async function postJsonResponse<T>(
+  path: string,
+  data: unknown,
+  timeout?: number
+) {
+  return postJsonResponseTask<T>(path, data, timeout).promise
 }
 
 async function postJson<T>(path: string, data: unknown): Promise<T> {
@@ -126,14 +226,9 @@ export interface MealParseResult {
   }
 }
 
-export async function parseTextMeal(
-  sourceText: string
-): Promise<MealParseResult> {
-  const response = await postJsonResponse<ParsedMeal>(
-    '/api/parse-meal',
-    { sourceType: 'TEXT', sourceText },
-    20_000
-  )
+function mealParseResultFromResponse(
+  response: JsonResponse<ParsedMeal>
+): MealParseResult {
   const modelVersion = responseHeader(
     response.header,
     'x-food-sense-model-version'
@@ -144,7 +239,7 @@ export async function parseTextMeal(
   )
 
   return {
-    parsedMeal: response.data as ParsedMeal,
+    parsedMeal: response.data,
     metadata: {
       isDemo:
         responseHeader(response.header, 'x-food-sense-is-demo') === 'true',
@@ -152,6 +247,25 @@ export async function parseTextMeal(
       ...(promptVersion ? { promptVersion } : {})
     }
   }
+}
+
+export function startTextMealParse(
+  sourceText: string
+): CancellableTask<MealParseResult> {
+  const task = postJsonResponseTask<ParsedMeal>(
+    '/api/parse-meal',
+    { sourceType: 'TEXT', sourceText },
+    20_000
+  )
+
+  return {
+    promise: task.promise.then(mealParseResultFromResponse),
+    cancel: task.cancel
+  }
+}
+
+export function parseTextMeal(sourceText: string): Promise<MealParseResult> {
+  return startTextMealParse(sourceText).promise
 }
 
 function parseUploadResponseBody(value: string): unknown {
@@ -162,72 +276,87 @@ function parseUploadResponseBody(value: string): unknown {
   }
 }
 
-export async function parseImageMeal(
+export function startImageMealParse(
   localPath: string
-): Promise<MealParseResult> {
+): CancellableTask<MealParseResult> {
+  let uploadTask: ReturnType<typeof Taro.uploadFile>
+
   try {
-    const response = await Taro.uploadFile({
+    uploadTask = Taro.uploadFile({
       url: apiUrl('/api/parse-meal'),
       filePath: localPath,
       name: 'image',
       timeout: 20_000
     })
-    const body = parseUploadResponseBody(response.data)
+  } catch (error) {
+    const failure =
+      error instanceof MealApiError
+        ? error
+        : transportFailure(
+            error,
+            '图片上传失败，你的图片仍然保留，可以稍后重试。'
+          )
+    return { promise: Promise.reject(failure), cancel: () => undefined }
+  }
 
-    if (
-      response.statusCode < 200 ||
-      response.statusCode >= 300
-    ) {
-      if (isApiErrorResponse(body)) {
+  const promise = uploadTask
+    .then((response) => {
+      const body = parseUploadResponseBody(response.data)
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        const apiError = parseApiErrorResponse(body)
+        if (apiError) {
+          throw new MealApiError(
+            apiError.error.code,
+            apiError.error.message,
+            apiError.error.retryable
+          )
+        }
         throw new MealApiError(
-          body.error.code,
-          body.error.message,
-          body.error.retryable
+          'NETWORK_ERROR',
+          '服务暂时没有返回可用结果，请稍后重试。',
+          true
         )
       }
-      throw new MealApiError(
-        'NETWORK_ERROR',
-        '服务暂时没有返回可用结果，请稍后重试。',
-        true
-      )
-    }
 
-    if (typeof body !== 'object' || body === null || !('items' in body)) {
-      throw new MealApiError(
-        'NETWORK_ERROR',
-        '服务暂时没有返回可用结果，请稍后重试。',
-        true
-      )
-    }
-
-    const headers = response.header ?? {}
-    const modelVersion = responseHeader(
-      headers,
-      'x-food-sense-model-version'
-    )
-    const promptVersion = responseHeader(
-      headers,
-      'x-food-sense-prompt-version'
-    )
-
-    return {
-      parsedMeal: body as ParsedMeal,
-      metadata: {
-        isDemo:
-          responseHeader(headers, 'x-food-sense-is-demo') === 'true',
-        ...(modelVersion ? { modelVersion } : {}),
-        ...(promptVersion ? { promptVersion } : {})
+      if (typeof body !== 'object' || body === null || !('items' in body)) {
+        throw new MealApiError(
+          'NETWORK_ERROR',
+          '服务暂时没有返回可用结果，请稍后重试。',
+          true
+        )
       }
-    }
-  } catch (error) {
-    if (error instanceof MealApiError) throw error
 
-    throw new MealApiError(
-      'NETWORK_ERROR',
-      '图片上传失败，你的图片和文字仍然保留，可以稍后重试。',
-      true
-    )
-  }
+      const headers = response.header ?? {}
+      const modelVersion = responseHeader(
+        headers,
+        'x-food-sense-model-version'
+      )
+      const promptVersion = responseHeader(
+        headers,
+        'x-food-sense-prompt-version'
+      )
+      return {
+        parsedMeal: body as ParsedMeal,
+        metadata: {
+          isDemo: responseHeader(headers, 'x-food-sense-is-demo') === 'true',
+          ...(modelVersion ? { modelVersion } : {}),
+          ...(promptVersion ? { promptVersion } : {})
+        }
+      }
+    })
+    .catch((error: unknown) => {
+      if (error instanceof MealApiError) throw error
+      throw transportFailure(
+        error,
+        '图片上传失败，你的图片仍然保留，可以稍后重试。'
+      )
+    })
+
+  return { promise, cancel: () => uploadTask.abort() }
+}
+
+export function parseImageMeal(localPath: string): Promise<MealParseResult> {
+  return startImageMealParse(localPath).promise
 }
 
 async function getJson<T>(path: string): Promise<T> {
@@ -241,11 +370,12 @@ async function getJson<T>(path: string): Promise<T> {
       return response.data as T
     }
 
-    if (isApiErrorResponse(response.data)) {
+    const apiError = parseApiErrorResponse(response.data)
+    if (apiError) {
       throw new MealApiError(
-        response.data.error.code,
-        response.data.error.message,
-        response.data.error.retryable
+        apiError.error.code,
+        apiError.error.message,
+        apiError.error.retryable
       )
     }
 
@@ -278,11 +408,12 @@ async function patchJson<T>(path: string, data: unknown): Promise<T> {
       return response.data as T
     }
 
-    if (isApiErrorResponse(response.data)) {
+    const apiError = parseApiErrorResponse(response.data)
+    if (apiError) {
       throw new MealApiError(
-        response.data.error.code,
-        response.data.error.message,
-        response.data.error.retryable
+        apiError.error.code,
+        apiError.error.message,
+        apiError.error.retryable
       )
     }
 
@@ -311,11 +442,12 @@ async function deleteJson(path: string): Promise<void> {
 
     if (response.statusCode >= 200 && response.statusCode < 300) return
 
-    if (isApiErrorResponse(response.data)) {
+    const apiError = parseApiErrorResponse(response.data)
+    if (apiError) {
       throw new MealApiError(
-        response.data.error.code,
-        response.data.error.message,
-        response.data.error.retryable
+        apiError.error.code,
+        apiError.error.message,
+        apiError.error.retryable
       )
     }
 

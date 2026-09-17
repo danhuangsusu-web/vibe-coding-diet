@@ -5,7 +5,8 @@ import {
   canSubmitMealInput,
   createInitialMealInputState,
   mealInputReducer,
-  shouldConfirmMealInputModeChange
+  shouldConfirmMealInputModeChange,
+  shouldPromoteTextRecovery
 } from './meal-input-state'
 
 describe('meal input state', () => {
@@ -118,7 +119,8 @@ describe('meal input state', () => {
     })
     const failed = mealInputReducer(recovered, {
       type: 'analysis-failed',
-      message: '图片处理失败'
+      message: '图片处理失败',
+      retryable: true
     })
 
     expect(recovered.text).toBe(withText.text)
@@ -128,6 +130,58 @@ describe('meal input state', () => {
     expect(buildMealParseInput(failed)).toEqual({
       sourceType: 'TEXT',
       sourceText: '干煸芸豆、溜肉段和米饭'
+    })
+  })
+
+  it('counts manual retries and promotes text recovery from the second retry', () => {
+    const withImage = mealInputReducer(createInitialMealInputState('IMAGE'), {
+      type: 'image-selected',
+      image: {
+        localPath: 'wxfile://compressed-meal.jpg',
+        size: 512_000,
+        source: 'album'
+      }
+    })
+    const initialFailure = mealInputReducer(withImage, {
+      type: 'analysis-failed',
+      message: '网络连接失败',
+      retryable: true
+    })
+    const firstRetry = mealInputReducer(initialFailure, {
+      type: 'analysis-started',
+      manualRetry: true
+    })
+    const secondFailure = mealInputReducer(firstRetry, {
+      type: 'analysis-failed',
+      message: '仍然失败',
+      retryable: true
+    })
+    const secondRetry = mealInputReducer(secondFailure, {
+      type: 'analysis-started',
+      manualRetry: true
+    })
+
+    expect(initialFailure.manualRetryCount).toBe(0)
+    expect(firstRetry.manualRetryCount).toBe(1)
+    expect(shouldPromoteTextRecovery(secondFailure)).toBe(true)
+    expect(secondRetry.manualRetryCount).toBe(2)
+  })
+
+  it('keeps non-retryable failures editable without enabling retry', () => {
+    const withText = mealInputReducer(createInitialMealInputState(), {
+      type: 'text-changed',
+      text: '番茄炒蛋'
+    })
+    const failed = mealInputReducer(withText, {
+      type: 'analysis-failed',
+      message: '请修改描述',
+      retryable: false
+    })
+
+    expect(failed).toMatchObject({
+      phase: 'failure',
+      errorRetryable: false,
+      text: '番茄炒蛋'
     })
   })
 })

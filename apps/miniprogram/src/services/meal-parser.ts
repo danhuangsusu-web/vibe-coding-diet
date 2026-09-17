@@ -1,8 +1,10 @@
 import type { ParsedMeal } from '@food-sense/shared'
 
 import {
-  parseImageMeal,
-  parseTextMeal,
+  MealApiError,
+  startImageMealParse,
+  startTextMealParse,
+  type CancellableTask,
   type MealParseResult
 } from './meal-api'
 
@@ -31,6 +33,8 @@ export const OFFLINE_MEAL_PARSER_METADATA = {
 export interface ParseMealOptions {
   parseText?: (sourceText: string) => Promise<MealParseResult>
   parseImage?: (localPath: string) => Promise<MealParseResult>
+  startText?: (sourceText: string) => CancellableTask<MealParseResult>
+  startImage?: (localPath: string) => CancellableTask<MealParseResult>
 }
 
 const OFFLINE_PARSED_MEALS: Record<OfflineDemoMealId, ParsedMeal> = {
@@ -139,20 +143,75 @@ export async function parseMealWithMetadata(
   input: MealParseInput,
   options: ParseMealOptions = {}
 ): Promise<MealParseResult> {
+  return startMealParseWithMetadata(input, options).promise
+}
+
+export function startMealParseWithMetadata(
+  input: MealParseInput,
+  options: ParseMealOptions = {}
+): CancellableTask<MealParseResult> {
   if (input.sourceType === 'TEXT') {
     const sample = findTextSample(input.sourceText)
 
     if (sample) {
       return {
-        parsedMeal: cloneParsedMeal(sample),
-        metadata: OFFLINE_MEAL_PARSER_METADATA
+        promise: Promise.resolve({
+          parsedMeal: cloneParsedMeal(sample),
+          metadata: OFFLINE_MEAL_PARSER_METADATA
+        }),
+        cancel: () => undefined
       }
     }
 
-    return (options.parseText ?? parseTextMeal)(input.sourceText)
+    if (options.startText) return options.startText(input.sourceText)
+    if (options.parseText) {
+      return {
+        promise: options.parseText(input.sourceText),
+        cancel: () => undefined
+      }
+    }
+    return startTextMealParse(input.sourceText)
   }
 
-  return (options.parseImage ?? parseImageMeal)(input.localPath)
+  if (options.startImage) return options.startImage(input.localPath)
+  if (options.parseImage) {
+    return {
+      promise: options.parseImage(input.localPath),
+      cancel: () => undefined
+    }
+  }
+  return startImageMealParse(input.localPath)
+}
+
+export function startMealParseWithTimeout(
+  input: MealParseInput,
+  timeoutMs: number,
+  options: ParseMealOptions = {}
+): CancellableTask<MealParseResult> {
+  const task = startMealParseWithMetadata(input, options)
+  let timeoutId: ReturnType<typeof setTimeout> | undefined
+  const timeout = new Promise<never>((_resolve, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(
+        new MealApiError(
+          'AI_TIMEOUT',
+          '分析时间较长，已经停止等待。',
+          true
+        )
+      )
+      task.cancel()
+    }, timeoutMs)
+  })
+
+  return {
+    promise: Promise.race([task.promise, timeout]).finally(() => {
+      if (timeoutId) clearTimeout(timeoutId)
+    }),
+    cancel: () => {
+      if (timeoutId) clearTimeout(timeoutId)
+      task.cancel()
+    }
+  }
 }
 
 export async function parseMeal(

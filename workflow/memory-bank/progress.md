@@ -1,7 +1,7 @@
 # 食刻 AI 进度记录
 
-> 当前阶段：步骤 1–21 已完成并经用户确认；步骤 21 于 2026-09-17 由用户验收通过，阶段四（真实 AI 与降级）的文字与图片路径均已完成
-> 下一步：开始步骤 22（完成真实链路错误与降级状态）。D5 仍待确认，其原前提（体验版需正式 AppID）经核实依然成立
+> 当前阶段：步骤 1–22 已完成并经用户确认；步骤 22 于 2026-09-17 由用户验收通过，阶段四（真实 AI 与降级）全部完成
+> 下一步：开始步骤 23（建立并运行 AI 评测集）。D5 仍待确认，其原前提（体验版需正式 AppID）经核实依然成立
 > 最后更新：2026-09-17
 
 ## 2026-09-14 工作流整理基线
@@ -945,6 +945,39 @@ D5 保持待确认，最终措辞在步骤 24 前定稿。
 
 - 步骤 21 已由用户验收确认，阶段四（真实 AI 与降级）的文字与图片两条路径均已完成；
 - 未开始步骤 22（完成真实链路错误与降级状态）；图片仍不接入对象存储，也不持久化。
+
+## 2026-09-17 步骤 22 完成真实链路错误与降级状态（已由用户验收通过）
+
+### 已实现
+
+- 共享契约固定 12 个错误码及其 `retryable` 取值：`AI_NOT_CONFIGURED`、`AI_TIMEOUT`、`AI_INVALID_OUTPUT`、`NO_MEAL_DETECTED`、`IMAGE_TOO_LARGE`、`IMAGE_UNSUPPORTED`、`IMAGE_COMPRESS_FAILED`、`PROFILE_INVALID_RANGE`、`DB_UNAVAILABLE`、`MEAL_NOT_FOUND`、`VALIDATION_FAILED`、`UNKNOWN_DISH`；其中只有 `AI_TIMEOUT`、`IMAGE_COMPRESS_FAILED`、`DB_UNAVAILABLE` 可重试；
+- 新增 `apps/miniprogram/src/services/meal-error-presentation.ts`：客户端只接受通过共享 Zod Schema 的错误响应，统一映射到本地稳定文案与恢复动作（`USE_OFFLINE_SAMPLE`、`RETRY_OR_USE_TEXT`、`EDIT_INPUT`、`RESELECT_IMAGE`、`EDIT_PROFILE`、`RETRY_LATER`、`REFRESH_RECORDS`、`CONFIRM_FALLBACK`）；未知响应、异常对象、堆栈、连接串和供应商正文都不会直接显示；
+- 交互阈值保持 4 秒显示详细进度、20 秒停止等待；客户端对文字请求和图片上传都暴露 `cancel()`，用户取消、20 秒到时和页面卸载都会调用底层 `Taro.request.abort()` 或 `Taro.uploadFile.abort()`；
+- 服务端把 `request.signal` 传入解析器，客户端断开时 `AbortController` 中止模型调用，日志只记录脱敏状态 `cancelled`；模型侧 `maxRetries` 固定为 1，用户手动重试不设上限；
+- 图片模式下第一次手动重试仍失败后，下一次操作开始前把“改用文字输入”提升为主按钮（`shouldPromoteTextRecovery`：图片模式且 `manualRetryCount >= 1`）；
+- 三态恢复：`parsing` 失败回到可修改、可重试的输入状态；`assessing` 失败不生成结果，仅可重试错误显示原样重新评估，`UNKNOWN_DISH` 仍需用户明确选择宽范围兜底；`saving` 失败保留完整 `assessment` 与同一个 `clientRequestId`，仅可重试错误显示重试；
+- 保存幂等由客户端锁、服务端 `clientRequestId` 查询和数据库唯一索引共同保证；两个明确离线文字样例在请求任务创建前命中本地数据，不依赖服务地址或模型网络；
+- `AI_INVALID_OUTPUT` 的脱敏日志增加 `invalidOutputStage` 与 `invalidOutputPaths`，便于区分 `json_parse`、`transport_schema`、`normalization` 三种失败位置。
+
+### 验证结果
+
+- 全仓 29 个测试文件、282 个测试通过（步骤 21 为 260）；三个工作区类型检查、小程序构建与服务端构建均通过；
+- 真实接口冒烟：相同 `clientRequestId` 连续保存两次分别返回 201 与 200，且两次返回同一条记录（相同 `id` 与 `createdAt`），数据库没有第二条；非图片文件返回 415 `IMAGE_UNSUPPORTED`、空文字返回 400 `VALIDATION_FAILED`；
+- 错误脱敏核对：上述错误响应中对 `sk-`、`DASHSCOPE`、`apiKey`、`stack`、`prisma`、`postgres`、`file:///` 的检索全部为空；
+- 真实解析冒烟：文字“番茄炒蛋配一小碗米饭”约 12.07 秒返回 200，响应头 `parser-mode: ai`；
+- 延迟复核：汇总步骤 20、21 与本步骤共 11 个可比较观测值，指示性 P50 约 14 秒、P90 约 20 秒，客户端与服务端上限继续保持 20 秒；样本混合了不同类型与结果类别，只用于复核交互阈值，不作为生产性能统计。
+
+### 用户验收（2026-09-17）
+
+- 用户在微信开发者工具按验收清单完成失败恢复体验验收并确认通过；
+- 验收中发现两个真实场景，用户确认接受现状：
+  - 微信开发者工具切 Offline 后，请求不会立刻失败而是挂起，直到客户端 20 秒上限才停止等待，因此显示的是超时文案“分析时间较长，已经停止等待”而不是“网络连接失败”。两种文案都满足“内容保留、可重试、不显示技术细节”的要求，不额外增加提交前的网络预检；
+  - 极简输入“茄子豆角”（只有菜名、没有做法）在真实环境稳定失败，服务端日志显示失败位置均为 `items.0.cookingMethods`（`transport_schema` 或 `normalization`），另有 1 次 `json_parse` 失败，客户端显示“本次结果无法可靠解析”。对照输入“一份烧茄子和清炒豆角”成功返回（烧茄子 `BRAISED`、清炒豆角 `STIR_FRIED`，“茄子”经 `OTHER` + `otherIngredients` 承接），说明这是“无做法的极简输入”与严格校验共同作用的结果，不是词表外食材导致。该案例作为真实失败案例留给步骤 23 的评测集与有限 Prompt 迭代处理。
+
+### 当前停点
+
+- 步骤 22 已由用户验收确认，阶段四全部完成；
+- 未开始步骤 23（建立并运行 AI 评测集）；极简输入与无做法输入的识别成功率、以及 20 秒上限是否调整，都由步骤 23 的正式评测数据决定，本步骤不修改 Prompt 或阈值。
 
 ## 决策状态
 

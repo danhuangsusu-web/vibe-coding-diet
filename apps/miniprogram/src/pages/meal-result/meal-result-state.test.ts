@@ -223,13 +223,30 @@ describe('meal result presentation and recovery state', () => {
     const saving = mealResultReducer(initial, { type: 'save-started' })
     const failed = mealResultReducer(saving, {
       type: 'save-failed',
-      message: '网络异常，内容还留在本页'
+      message: '网络异常，内容还留在本页',
+      retryable: true
     })
 
     expect(failed).toEqual({
       phase: 'save-error',
       assessment,
-      errorMessage: '网络异常，内容还留在本页'
+      errorMessage: '网络异常，内容还留在本页',
+      retryable: true
+    })
+  })
+
+  it('returns assessment failures to a confirming recovery action', () => {
+    const failed = mealResultReducer(createMealResultState(null), {
+      type: 'assessment-failed',
+      code: 'DB_UNAVAILABLE',
+      message: '数据暂时无法读取',
+      retryable: true
+    })
+
+    expect(failed).toMatchObject({
+      phase: 'assessment-error',
+      assessment: null,
+      retryable: true
     })
   })
 })

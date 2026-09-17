@@ -1,18 +1,56 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { getDemoMealSample } from '../../../server/lib/demo-meals'
 
 vi.mock('./meal-api', () => ({
-  parseImageMeal: vi.fn(),
-  parseTextMeal: vi.fn()
+  MealApiError: class MealApiError extends Error {
+    constructor(
+      readonly code: string,
+      message: string,
+      readonly retryable: boolean
+    ) {
+      super(message)
+    }
+  },
+  startImageMealParse: vi.fn(),
+  startTextMealParse: vi.fn()
 }))
 
 import {
   parseMeal,
-  parseMealWithMetadata
+  parseMealWithMetadata,
+  startMealParseWithTimeout
 } from './meal-parser'
 
+afterEach(() => {
+  vi.useRealTimers()
+})
+
 describe('miniprogram meal parser facade', () => {
+  it('aborts the active transport when the client limit is reached', async () => {
+    vi.useFakeTimers()
+    const cancel = vi.fn()
+    const task = startMealParseWithTimeout(
+      { sourceType: 'TEXT', sourceText: '番茄炒蛋' },
+      20_000,
+      {
+        startText: () => ({
+          promise: new Promise(() => undefined),
+          cancel
+        })
+      }
+    )
+
+    const rejection = expect(task.promise).rejects.toMatchObject({
+      code: 'AI_TIMEOUT',
+      retryable: true
+    })
+    await vi.advanceTimersByTimeAsync(20_000)
+
+    await rejection
+    expect(cancel).toHaveBeenCalledOnce()
+  })
+
   it('returns the same northeast text sample as the server parser', async () => {
     await expect(
       parseMeal({

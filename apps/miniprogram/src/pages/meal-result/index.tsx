@@ -14,9 +14,9 @@ import { ROUTES } from '../../navigation/routes'
 import {
   assessConfirmedMeal,
   getMealRecords,
-  MealApiError,
   saveMealRecord
 } from '../../services/meal-api'
+import { mealErrorPresentation } from '../../services/meal-error-presentation'
 import {
   mealFlowDraftAtom,
   resetMealFlowDraftAtom
@@ -39,13 +39,13 @@ function classes(...values: Array<string | false | null | undefined>) {
 }
 
 function errorDetails(error: unknown) {
-  if (error instanceof MealApiError) {
-    return { code: error.code, message: error.message }
-  }
-
+  const presentation = mealErrorPresentation(error)
   return {
-    code: 'NETWORK_ERROR' as const,
-    message: '服务暂时不可用，你的内容仍然保留，可以稍后重试。'
+    ...presentation,
+    code:
+      presentation.code === 'REQUEST_ABORTED'
+        ? ('NETWORK_ERROR' as const)
+        : presentation.code
   }
 }
 
@@ -177,6 +177,7 @@ export default function MealResultPage() {
     createMealResultState
   )
   const assessmentStarted = useRef(Boolean(draft.assessment))
+  const assessmentLocked = useRef(false)
   const saveLocked = useRef(false)
   const clientRequestId = useRef(createClientRequestId())
   const assessedUnknownHandling = useRef<
@@ -215,9 +216,11 @@ export default function MealResultPage() {
   const assess = async (
     unknownHandling: 'PROMPT' | 'CONSERVATIVE_FALLBACK' = 'PROMPT'
   ) => {
+    if (assessmentLocked.current) return
     const request = buildAssessMealRequest(draft, unknownHandling)
     if (!request) return
 
+    assessmentLocked.current = true
     dispatch({ type: 'assessment-started' })
     try {
       const assessment = await assessConfirmedMeal(request)
@@ -229,8 +232,11 @@ export default function MealResultPage() {
       dispatch({
         type: 'assessment-failed',
         code: details.code,
-        message: details.message
+        message: details.message,
+        retryable: details.retryable
       })
+    } finally {
+      assessmentLocked.current = false
     }
   }
 
@@ -285,7 +291,11 @@ export default function MealResultPage() {
       }, 1500)
     } catch (error) {
       const details = errorDetails(error)
-      dispatch({ type: 'save-failed', message: details.message })
+      dispatch({
+        type: 'save-failed',
+        message: details.message,
+        retryable: details.retryable
+      })
       saveLocked.current = false
     }
   }
@@ -444,15 +454,17 @@ export default function MealResultPage() {
             >
               返回补充
             </Button>
-            <Button
-              className='meal-result-message__action meal-result-message__action--primary'
-              hoverClass='meal-result-pressable--active'
-              onClick={() =>
-                void assess(isUnknownDish ? 'CONSERVATIVE_FALLBACK' : 'PROMPT')
-              }
-            >
-              {isUnknownDish ? '仍按宽范围估算' : '重新评估'}
-            </Button>
+            {isUnknownDish || state.retryable ? (
+              <Button
+                className='meal-result-message__action meal-result-message__action--primary'
+                hoverClass='meal-result-pressable--active'
+                onClick={() =>
+                  void assess(isUnknownDish ? 'CONSERVATIVE_FALLBACK' : 'PROMPT')
+                }
+              >
+                {isUnknownDish ? '仍按宽范围估算' : '重新评估'}
+              </Button>
+            ) : null}
           </View>
         </View>
       </AppPage>
@@ -462,6 +474,8 @@ export default function MealResultPage() {
   if (!assessment) return null
 
   const saving = state.phase === 'saving' || state.phase === 'saved'
+  const saveRetryBlocked =
+    state.phase === 'save-error' && !state.retryable
 
   return (
     <AppPage className='meal-result-page' hasBottomAction>
@@ -471,7 +485,11 @@ export default function MealResultPage() {
 
       <BottomActionBar hint='保存后可在首页和历史记录中查看'>
         <View className='flow-bottom-actions'>
-          <PrimaryButton loading={saving} onClick={() => void save()}>
+          <PrimaryButton
+            disabled={saveRetryBlocked}
+            loading={saving}
+            onClick={() => void save()}
+          >
             {saving ? '正在保存' : '保存这顿饭'}
           </PrimaryButton>
           <Button
@@ -493,13 +511,15 @@ export default function MealResultPage() {
             <Text className='meal-save-error__title'>保存没有成功</Text>
             <Text className='meal-save-error__body'>{state.errorMessage}</Text>
           </View>
-          <Button
-            className='meal-save-error__retry'
-            hoverClass='meal-result-pressable--active'
-            onClick={() => void save()}
-          >
-            重试
-          </Button>
+          {state.retryable ? (
+            <Button
+              className='meal-save-error__retry'
+              hoverClass='meal-result-pressable--active'
+              onClick={() => void save()}
+            >
+              重试
+            </Button>
+          ) : null}
         </View>
       ) : null}
     </AppPage>

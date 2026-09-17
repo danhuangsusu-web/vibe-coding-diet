@@ -1,15 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+const request = vi.hoisted(() => vi.fn())
 const uploadFile = vi.hoisted(() => vi.fn())
 
 vi.mock('@tarojs/taro', () => ({
   default: {
-    request: vi.fn(),
+    request,
     uploadFile
   }
 }))
 
-import { MealApiError, parseImageMeal } from './meal-api'
+import {
+  MealApiError,
+  parseImageMeal,
+  startImageMealParse,
+  startTextMealParse
+} from './meal-api'
 
 const PARSED_MEAL = {
   items: [
@@ -28,6 +34,7 @@ const PARSED_MEAL = {
 
 describe('miniprogram image meal API', () => {
   beforeEach(() => {
+    request.mockReset()
     uploadFile.mockReset()
   })
 
@@ -61,6 +68,34 @@ describe('miniprogram image meal API', () => {
     })
   })
 
+  it('aborts the underlying upload when an image parse is cancelled', async () => {
+    const abort = vi.fn()
+    const uploadTask = new Promise(() => undefined) as Promise<never> & {
+      abort: () => void
+    }
+    uploadTask.abort = abort
+    uploadFile.mockReturnValue(uploadTask)
+
+    const task = startImageMealParse('wxfile://compressed-meal.jpg')
+    task.cancel()
+
+    expect(abort).toHaveBeenCalledOnce()
+  })
+
+  it('aborts the underlying request when a text parse is cancelled', async () => {
+    const abort = vi.fn()
+    const requestTask = new Promise(() => undefined) as Promise<never> & {
+      abort: () => void
+    }
+    requestTask.abort = abort
+    request.mockReturnValue(requestTask)
+
+    const task = startTextMealParse('番茄炒蛋')
+    task.cancel()
+
+    expect(abort).toHaveBeenCalledOnce()
+  })
+
   it('preserves stable server image errors for the page recovery state', async () => {
     uploadFile.mockResolvedValue({
       statusCode: 415,
@@ -83,6 +118,31 @@ describe('miniprogram image meal API', () => {
       expect(error).toMatchObject({
         code: 'IMAGE_UNSUPPORTED',
         retryable: false
+      })
+    }
+  })
+
+  it('rejects unrecognized or inconsistent server errors as a safe network failure', async () => {
+    for (const error of [
+      { code: 'PRIVATE_PROVIDER_ERROR', message: 'secret body', retryable: true },
+      { code: 'AI_TIMEOUT', message: 'secret body', retryable: false },
+      {
+        code: 'AI_TIMEOUT',
+        message: 'secret body',
+        retryable: true,
+        providerResponse: 'private'
+      }
+    ]) {
+      uploadFile.mockResolvedValueOnce({
+        statusCode: 502,
+        data: JSON.stringify({ error }),
+        header: {},
+        errMsg: 'uploadFile:ok'
+      })
+
+      await expect(parseImageMeal('wxfile://meal.jpg')).rejects.toMatchObject({
+        code: 'NETWORK_ERROR',
+        retryable: true
       })
     }
   })

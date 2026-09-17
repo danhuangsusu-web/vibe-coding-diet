@@ -135,12 +135,14 @@ export type MealResultState =
       assessment: null
       errorCode: ApiErrorCode | 'NETWORK_ERROR' | 'API_NOT_CONFIGURED'
       errorMessage: string
+      retryable: boolean
     }
   | { phase: 'saving'; assessment: MealAssessment }
   | {
       phase: 'save-error'
       assessment: MealAssessment
       errorMessage: string
+      retryable: boolean
     }
   | { phase: 'saved'; assessment: MealAssessment }
 
@@ -151,9 +153,10 @@ export type MealResultAction =
       type: 'assessment-failed'
       code: ApiErrorCode | 'NETWORK_ERROR' | 'API_NOT_CONFIGURED'
       message: string
+      retryable: boolean
     }
   | { type: 'save-started' }
-  | { type: 'save-failed'; message: string }
+  | { type: 'save-failed'; message: string; retryable: boolean }
   | { type: 'save-succeeded' }
 
 export function createMealResultState(
@@ -178,7 +181,8 @@ export function mealResultReducer(
         phase: 'assessment-error',
         assessment: null,
         errorCode: action.code,
-        errorMessage: action.message
+        errorMessage: action.message,
+        retryable: action.retryable
       }
     case 'save-started':
       return state.assessment
@@ -189,7 +193,8 @@ export function mealResultReducer(
         ? {
             phase: 'save-error',
             assessment: state.assessment,
-            errorMessage: action.message
+            errorMessage: action.message,
+            retryable: action.retryable
           }
         : state
     case 'save-succeeded':

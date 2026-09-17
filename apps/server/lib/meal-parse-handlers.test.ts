@@ -8,6 +8,7 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   AI_IMAGE_MEAL_PROMPT_VERSION,
   AI_MEAL_PROMPT_VERSION,
+  AiMealCancelledError,
   AiMealInvalidOutputError,
   AiMealProviderError,
   AiMealTimeoutError,
@@ -67,7 +68,7 @@ describe('meal parse POST handler', () => {
     )
     expect(parse).toHaveBeenCalledWith(
       { sourceType: 'TEXT', sourceText: '白灼时蔬和鸡胸肉' },
-      { mode: 'ai' }
+      { mode: 'ai', signal: expect.any(AbortSignal) }
     )
   })
 
@@ -108,7 +109,7 @@ describe('meal parse POST handler', () => {
         image: bytes,
         mediaType: 'image/jpeg'
       },
-      { mode: 'ai' }
+      { mode: 'ai', signal: expect.any(AbortSignal) }
     )
   })
 
@@ -132,7 +133,7 @@ describe('meal parse POST handler', () => {
         image: bytes,
         mediaType: 'image/jpeg'
       }),
-      { mode: 'ai' }
+      { mode: 'ai', signal: expect.any(AbortSignal) }
     )
   })
 
@@ -238,6 +239,7 @@ describe('meal parse POST handler', () => {
   it.each([
     [new AIProviderConfigurationError(), 'AI_NOT_CONFIGURED', 503],
     [new AiMealTimeoutError(), 'AI_TIMEOUT', 504],
+    [new AiMealCancelledError(), 'AI_TIMEOUT', 499],
     [new AiMealInvalidOutputError(), 'AI_INVALID_OUTPUT', 502],
     [new NoMealDetectedError(), 'NO_MEAL_DETECTED', 422]
   ] as const)('maps %s to %s without leaking internals', async (error, code, status) => {
