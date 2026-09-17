@@ -143,7 +143,7 @@ workflow/memory-bank/ 产品与工程文档（PRD、设计、实施计划、架�
 ```bash
 pnpm install
 cp apps/server/.env.example apps/server/.env   # Windows 用 Copy-Item
-# 编辑 .env，填入 DATABASE_URL 与 AI 配置
+# 编辑 .env，填入 DATABASE_URL 与 AI 配置；文字 AI 验收时设置 MEAL_PARSER="ai"
 pnpm db:generate
 pnpm db:push
 pnpm db:check
@@ -168,7 +168,7 @@ pnpm db:validate        # Prisma Schema 校验
 pnpm db:check           # 数据库连通性
 ```
 
-> 没有配置数据库和模型 Key 时，健康检查接口仍可运行；餐食解析与持久化需要接入后才可用。
+> 没有配置模型 Key 时，健康检查接口仍可运行，两条离线样例也可继续体验；普通文字解析需要完整 AI 配置并设置 `MEAL_PARSER="ai"`。图片真实解析属于步骤 21，当前仍为离线演示。
 
 **关于密钥**：`.env` 已被 `.gitignore` 排除，且仓库装有 pre-commit 钩子，会拦截 `.env` 及疑似密钥进入提交。请勿使用 `--no-verify` 绕过。
 
@@ -176,24 +176,21 @@ pnpm db:check           # 数据库连通性
 
 ## 当前进度
 
-这是一个**进行中的项目**，目前处于「工程与文档基线完成、核心闭环待实现」的阶段。
+这是一个**进行中的项目**。步骤 1–19 的五页离线闭环已经验收，步骤 20 的真实文字 AI 解析已实现并等待人工验收。
 
 **已完成**
 
 - pnpm monorepo 与四个工作区
-- 五页高保真浏览器原型（作为视觉验收基准）
-- 跨端共享的 `MealItem` / `ParsedMeal` Zod Schema
-- 最小评级函数与 Prisma 数据模型
-- 健康检查接口、AI 供应商工厂
+- 五页 Taro 页面、离线演示、确认、规则评估、保存、首页、历史与设置闭环
+- 跨端共享的 `MealItem` / `ParsedMeal` Zod Schema 与统一 API 错误契约
+- 确定性热量区间、动态额度、评级和建议规则，以及 Prisma 数据模型与接口
+- 健康检查、AI 供应商工厂和真实文字解析接口
 - 提交前的密钥拦截钩子
 - 完整的产品与工程文档
 
 **待实现**（按 24 步实施计划推进，见 `workflow/memory-bank/implementation-plan.md`）
 
-- AI 餐食解析（文字 / 图片）
-- 用户确认流程与评估接口
-- 热量区间规则、动态额度、建议白名单
-- 五页 Taro 实现与前后端串联
+- 真实图片餐食解析、降级验证与延迟复核
 - 30–50 个样本的 AI 评测与失败案例复盘
 
 ## 边界与非目标

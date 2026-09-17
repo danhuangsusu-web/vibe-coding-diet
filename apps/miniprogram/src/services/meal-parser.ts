@@ -1,5 +1,7 @@
 import type { ParsedMeal } from '@food-sense/shared'
 
+import { parseTextMeal, type TextMealParseResult } from './meal-api'
+
 export type OfflineDemoMealId = 'northeast-combo' | 'light-chicken-set'
 
 export type MealParseInput =
@@ -29,6 +31,10 @@ export const OFFLINE_MEAL_PARSER_METADATA = {
   isDemo: true,
   modelVersion: 'offline-demo-v1'
 } as const
+
+export interface ParseMealOptions {
+  parseText?: (sourceText: string) => Promise<TextMealParseResult>
+}
 
 const OFFLINE_PARSED_MEALS: Record<OfflineDemoMealId, ParsedMeal> = {
   'northeast-combo': {
@@ -132,15 +138,40 @@ function findTextSample(sourceText: string): ParsedMeal | undefined {
   return undefined
 }
 
-export async function parseMeal(input: MealParseInput): Promise<ParsedMeal> {
-  const sample =
-    input.sourceType === 'TEXT'
-      ? findTextSample(input.sourceText)
-      : OFFLINE_PARSED_MEALS[input.demoSampleId ?? 'northeast-combo']
+export async function parseMealWithMetadata(
+  input: MealParseInput,
+  options: ParseMealOptions = {}
+): Promise<TextMealParseResult> {
+  if (input.sourceType === 'TEXT') {
+    const sample = findTextSample(input.sourceText)
+
+    if (sample) {
+      return {
+        parsedMeal: cloneParsedMeal(sample),
+        metadata: OFFLINE_MEAL_PARSER_METADATA
+      }
+    }
+
+    return (options.parseText ?? parseTextMeal)(input.sourceText)
+  }
+
+  const sample = OFFLINE_PARSED_MEALS[
+    input.demoSampleId ?? 'northeast-combo'
+  ]
 
   if (!sample) {
     throw new OfflineMealSampleNotFoundError()
   }
 
-  return cloneParsedMeal(sample)
+  return {
+    parsedMeal: cloneParsedMeal(sample),
+    metadata: OFFLINE_MEAL_PARSER_METADATA
+  }
+}
+
+export async function parseMeal(
+  input: MealParseInput,
+  options: ParseMealOptions = {}
+): Promise<ParsedMeal> {
+  return (await parseMealWithMetadata(input, options)).parsedMeal
 }

@@ -42,8 +42,8 @@
 | --- | --- | --- | --- |
 | Web 与 API 框架 | Next.js | 15.5.25 | 已有 App Router、展示页和健康接口 |
 | UI 运行时 | React / React DOM | 18.3.1 | 仅用于 Next.js 页面 |
-| AI 编排 | Vercel AI SDK `ai` | 7.0.94 | 已安装，尚无餐食解析调用 |
-| 模型适配 | `@ai-sdk/openai-compatible` | 3.0.45 | 已有供应商工厂 |
+| AI 编排 | Vercel AI SDK `ai` | 7.0.94 | 已用于文字餐食解析，自动重试最多 1 次 |
+| 模型适配 | `@ai-sdk/openai-compatible` | 3.0.45 | 接入阿里云百炼北京地域的 OpenAI 兼容接口，当前模型 `qwen3.8-flash` |
 | 校验 | Zod | ^4.1.8 | 已用于共享餐食 Schema |
 | ORM | Prisma Client | 6.19.3 | 已生成并可连接数据库 |
 | ORM 工具 | Prisma | 6.19.3 | Schema 校验通过 |
@@ -51,6 +51,10 @@
 服务端继续使用 Next.js Route Handlers。MVP 不拆独立 Express/Fastify 服务，也不引入队列、缓存、RPC 或微服务。
 
 模型接入只保留一个 OpenAI 兼容供应商，通过 `AI_BASE_URL`、`AI_API_KEY` 和 `AI_MODEL` 配置。密钥只存在于服务端环境，不进入小程序包。
+
+文字解析采用普通 JSON 文本生成，不使用供应商不兼容的 JSON Schema 输出参数。服务端依次执行 `JSON.parse`、受限运输结构校验、确定性规范化和共享 Zod Schema 终检；Prompt 版本为 `text-meal-v2`，包含“番茄炒鸡蛋”的 `OTHER + EGG` 显式示例。模型只负责结构化菜品，不输出热量、评级或健康建议。当前服务端和客户端统一 20 秒超时，小程序 4 秒后展示详细进度。
+
+`qwen3.8-flash` 的北京地域[官方公开标价](https://help.aliyun.com/zh/model-studio/model-pricing)（2026-09-17 查询，输入不超过 100 万 token）为输入 0.8 元/百万 token、输出 2.7 元/百万 token。服务端按返回的输入/输出 token 计算标价成本；未知模型或 token 缺失时只记录 token 可用性，不猜测价格。免费额度存在时实际账单可能为 0，但预算仍按公开标价计算。
 
 ## 4. 数据与存储
 

@@ -8,6 +8,10 @@ import {
 } from '../packages/shared/src'
 import { describe, expect, it, vi } from 'vitest'
 
+vi.mock('../apps/miniprogram/src/services/meal-api', () => ({
+  parseTextMeal: vi.fn()
+}))
+
 import {
   formatHistoryDate,
   removeHistoryRecord,

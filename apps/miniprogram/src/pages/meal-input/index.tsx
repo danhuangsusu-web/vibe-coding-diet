@@ -18,10 +18,10 @@ import {
 } from '../../services/meal-image'
 import {
   OfflineMealSampleNotFoundError,
-  OFFLINE_MEAL_PARSER_METADATA,
   OFFLINE_DEMO_TEXTS,
-  parseMeal
+  parseMealWithMetadata
 } from '../../services/meal-parser'
+import { MealApiError } from '../../services/meal-api'
 import { mealFlowDraftAtom } from '../../state/meal-flow'
 import {
   buildMealParseInput,
@@ -34,7 +34,7 @@ import {
 import './index.scss'
 
 const DETAILED_PROGRESS_DELAY_MS = 4000
-const PARSE_TIMEOUT_MS = 12000
+const PARSE_TIMEOUT_MS = 20000
 
 class MealParseTimeoutError extends Error {
   constructor() {
@@ -44,13 +44,13 @@ class MealParseTimeoutError extends Error {
 }
 
 async function parseMealWithTimeout(
-  input: Parameters<typeof parseMeal>[0]
-): Promise<Awaited<ReturnType<typeof parseMeal>>> {
+  input: Parameters<typeof parseMealWithMetadata>[0]
+): Promise<Awaited<ReturnType<typeof parseMealWithMetadata>>> {
   let timeoutId: ReturnType<typeof setTimeout> | undefined
 
   try {
     return await Promise.race([
-      parseMeal(input),
+      parseMealWithMetadata(input),
       new Promise<never>((_resolve, reject) => {
         timeoutId = setTimeout(
           () => reject(new MealParseTimeoutError()),
@@ -155,7 +155,7 @@ export default function MealInputPage() {
     }, DETAILED_PROGRESS_DELAY_MS)
 
     try {
-      const parsedMeal = await parseMealWithTimeout(input)
+      const result = await parseMealWithTimeout(input)
 
       if (requestVersionRef.current !== requestVersion) return
 
@@ -166,7 +166,10 @@ export default function MealInputPage() {
               sourceText: input.sourceText,
               displayLabel: '文字输入',
               submittedAt: new Date().toISOString(),
-              ...OFFLINE_MEAL_PARSER_METADATA
+              isDemo: result.metadata.isDemo,
+              ...(result.metadata.modelVersion
+                ? { modelVersion: result.metadata.modelVersion }
+                : {})
             }
           : {
               sourceType: 'IMAGE' as const,
@@ -174,13 +177,16 @@ export default function MealInputPage() {
                 ? imageSourceLabel(state.image.source)
                 : '图片输入',
               submittedAt: new Date().toISOString(),
-              ...OFFLINE_MEAL_PARSER_METADATA
+              isDemo: result.metadata.isDemo,
+              ...(result.metadata.modelVersion
+                ? { modelVersion: result.metadata.modelVersion }
+                : {})
             }
 
       setDraft((current) => ({
         ...current,
         inputSummary,
-        parsedMeal,
+        parsedMeal: result.parsedMeal,
         assessment: null
       }))
       dispatch({ type: 'analysis-cancelled' })
@@ -188,13 +194,18 @@ export default function MealInputPage() {
     } catch (error) {
       if (requestVersionRef.current !== requestVersion) return
 
-      if (error instanceof OfflineMealSampleNotFoundError) {
+      if (
+        error instanceof OfflineMealSampleNotFoundError ||
+        (error instanceof MealApiError && error.code === 'NO_MEAL_DETECTED')
+      ) {
         dispatch({ type: 'no-meal-detected' })
       } else if (error instanceof MealParseTimeoutError) {
         dispatch({
           type: 'analysis-failed',
           message: '分析时间较长，已经停止等待。你的内容仍然保留，可以重新尝试。'
         })
+      } else if (error instanceof MealApiError) {
+        dispatch({ type: 'analysis-failed', message: error.message })
       } else {
         dispatch({
           type: 'analysis-failed',
@@ -478,7 +489,7 @@ export default function MealInputPage() {
           </View>
           <Text className='meal-state__title'>没有认出这是一顿饭</Text>
           <Text className='meal-state__description'>
-            当前离线模式只识别两个演示样例。请选择样例，或换一张更清楚的照片。
+            请补充更明确的菜品、做法或份量，也可以选择一个离线样例继续体验。
           </Text>
           <View className='meal-state__actions'>
             <Button

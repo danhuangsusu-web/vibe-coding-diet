@@ -1,5 +1,6 @@
 import { parsedMealSchema, type ParsedMeal } from '@food-sense/shared'
 
+import { aiMealParser } from './ai-meal-parser'
 import {
   DEMO_MEAL_SAMPLES,
   getDemoMealSample,
@@ -87,13 +88,8 @@ export async function parseMeal(
   options: ParseMealOptions = {}
 ): Promise<ParsedMeal> {
   const mode = options.mode ?? resolveMealParserMode()
-  const parser = mode === 'offline' ? offlineMealParser : options.aiParser
-
-  if (!parser) {
-    throw new MealParserConfigurationError(
-      'The AI meal parser is not available yet; use MEAL_PARSER=offline'
-    )
-  }
+  const parser =
+    mode === 'offline' ? offlineMealParser : (options.aiParser ?? aiMealParser)
 
   return parsedMealSchema.parse(await parser(input))
 }

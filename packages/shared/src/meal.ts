@@ -31,6 +31,13 @@ export const cookingMethodSchema = z.enum([
 
 export const portionLevelSchema = z.enum(['small', 'regular', 'large'])
 
+export const textMealParseRequestSchema = z
+  .object({
+    sourceType: z.literal('TEXT'),
+    sourceText: z.string().trim().min(1).max(100)
+  })
+  .strict()
+
 const mealItemFields = {
   displayName: z.string().trim().min(1).max(30),
   ingredients: z.array(ingredientTagSchema).min(1),
@@ -120,6 +127,7 @@ export const confirmedMealSchema = z
 export type IngredientTag = z.infer<typeof ingredientTagSchema>
 export type CookingMethod = z.infer<typeof cookingMethodSchema>
 export type PortionLevel = z.infer<typeof portionLevelSchema>
+export type TextMealParseRequest = z.infer<typeof textMealParseRequestSchema>
 export type MealItem = z.infer<typeof mealItemSchema>
 export type ParsedMeal = z.infer<typeof parsedMealSchema>
 export type ConfirmedMealItem = z.infer<typeof confirmedMealItemSchema>

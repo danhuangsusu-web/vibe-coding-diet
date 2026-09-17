@@ -1,9 +1,15 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { getDemoMealSample } from '../../../server/lib/demo-meals'
+
+vi.mock('./meal-api', () => ({
+  parseTextMeal: vi.fn()
+}))
+
 import {
   OfflineMealSampleNotFoundError,
-  parseMeal
+  parseMeal,
+  parseMealWithMetadata
 } from './meal-parser'
 
 describe('miniprogram meal parser facade', () => {
@@ -35,9 +41,53 @@ describe('miniprogram meal parser facade', () => {
     ).resolves.toEqual(getDemoMealSample('light-chicken-set').parsedMeal)
   })
 
-  it('rejects text outside the two explicit offline samples', async () => {
+  it('sends non-demo text to the server parser and preserves its metadata', async () => {
+    const parseText = vi.fn(async () => ({
+      parsedMeal: getDemoMealSample('light-chicken-set').parsedMeal,
+      metadata: {
+        isDemo: false,
+        modelVersion: 'test-model',
+        promptVersion: 'text-meal-v2'
+      }
+    }))
+
     await expect(
-      parseMeal({ sourceType: 'TEXT', sourceText: '一份未知餐食' })
+      parseMealWithMetadata(
+        { sourceType: 'TEXT', sourceText: '一份番茄炒蛋' },
+        { parseText }
+      )
+    ).resolves.toEqual({
+      parsedMeal: getDemoMealSample('light-chicken-set').parsedMeal,
+      metadata: {
+        isDemo: false,
+        modelVersion: 'test-model',
+        promptVersion: 'text-meal-v2'
+      }
+    })
+    expect(parseText).toHaveBeenCalledWith('一份番茄炒蛋')
+  })
+
+  it('does not send explicit offline demo text to the server', async () => {
+    const parseText = vi.fn()
+    const result = await parseMealWithMetadata(
+      { sourceType: 'TEXT', sourceText: '干煸芸豆 + 溜肉段 + 米饭' },
+      { parseText }
+    )
+
+    expect(result.metadata).toMatchObject({
+      isDemo: true,
+      modelVersion: 'offline-demo-v1'
+    })
+    expect(parseText).not.toHaveBeenCalled()
+  })
+
+  it('still rejects an invalid local image sample', async () => {
+    await expect(
+      parseMeal({
+        sourceType: 'IMAGE',
+        localPath: 'wxfile://compressed-meal.jpg',
+        demoSampleId: 'missing' as never
+      })
     ).rejects.toBeInstanceOf(OfflineMealSampleNotFoundError)
   })
 })

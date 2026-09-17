@@ -7,6 +7,7 @@ import type {
   MealAssessment,
   MealRecord,
   MealRecordsResponse,
+  ParsedMeal,
   UpdateDemoProfileRequest
 } from '@food-sense/shared'
 import Taro from '@tarojs/taro'
@@ -58,17 +59,22 @@ function apiUrl(path: string): string {
   return `${__API_BASE_URL__}${path}`
 }
 
-async function postJson<T>(path: string, data: unknown): Promise<T> {
+async function postJsonResponse<T>(
+  path: string,
+  data: unknown,
+  timeout?: number
+) {
   try {
     const response = await Taro.request<T | ApiErrorResponse>({
       url: apiUrl(path),
       method: 'POST',
       header: { 'content-type': 'application/json' },
-      data
+      data,
+      ...(timeout ? { timeout } : {})
     })
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
-      return response.data as T
+      return response
     }
 
     if (isApiErrorResponse(response.data)) {
@@ -92,6 +98,59 @@ async function postJson<T>(path: string, data: unknown): Promise<T> {
       '网络连接失败，你的内容仍然保留，可以稍后重试。',
       true
     )
+  }
+}
+
+async function postJson<T>(path: string, data: unknown): Promise<T> {
+  const response = await postJsonResponse<T>(path, data)
+  return response.data as T
+}
+
+function responseHeader(
+  headers: Record<string, string>,
+  expectedName: string
+): string | undefined {
+  const entry = Object.entries(headers).find(
+    ([name]) => name.toLowerCase() === expectedName.toLowerCase()
+  )
+  const value = entry?.[1]?.trim()
+  return value || undefined
+}
+
+export interface TextMealParseResult {
+  parsedMeal: ParsedMeal
+  metadata: {
+    isDemo: boolean
+    modelVersion?: string
+    promptVersion?: string
+  }
+}
+
+export async function parseTextMeal(
+  sourceText: string
+): Promise<TextMealParseResult> {
+  const response = await postJsonResponse<ParsedMeal>(
+    '/api/parse-meal',
+    { sourceType: 'TEXT', sourceText },
+    20_000
+  )
+  const modelVersion = responseHeader(
+    response.header,
+    'x-food-sense-model-version'
+  )
+  const promptVersion = responseHeader(
+    response.header,
+    'x-food-sense-prompt-version'
+  )
+
+  return {
+    parsedMeal: response.data as ParsedMeal,
+    metadata: {
+      isDemo:
+        responseHeader(response.header, 'x-food-sense-is-demo') === 'true',
+      ...(modelVersion ? { modelVersion } : {}),
+      ...(promptVersion ? { promptVersion } : {})
+    }
   }
 }
 

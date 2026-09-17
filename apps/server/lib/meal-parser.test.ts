@@ -2,6 +2,7 @@ import { parsedMealSchema, type ParsedMeal } from '@food-sense/shared'
 import { describe, expect, it, vi } from 'vitest'
 
 import { DEMO_MEAL_SAMPLES } from './demo-meals'
+import { AIProviderConfigurationError } from './ai-provider'
 import {
   MealParserConfigurationError,
   OfflineMealSampleNotFoundError,
@@ -93,14 +94,20 @@ describe('parseMeal', () => {
     expect(aiParser).toHaveBeenCalledWith(sample.input)
   })
 
-  it('rejects ai mode until an adapter is supplied', async () => {
+  it('uses the default AI adapter and reports missing provider configuration', async () => {
     const sample = DEMO_MEAL_SAMPLES[0]
 
     if (!sample) throw new Error('Expected the first demo sample')
 
-    await expect(parseMeal(sample.input, { mode: 'ai' })).rejects.toBeInstanceOf(
-      MealParserConfigurationError
-    )
+    const log = vi.spyOn(console, 'info').mockImplementation(() => undefined)
+
+    try {
+      await expect(
+        parseMeal(sample.input, { mode: 'ai' })
+      ).rejects.toBeInstanceOf(AIProviderConfigurationError)
+    } finally {
+      log.mockRestore()
+    }
   })
 
   it('validates every adapter result with the shared schema', async () => {
