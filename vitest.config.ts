@@ -12,6 +12,7 @@ export default defineConfig({
       'apps/miniprogram/config/**/*.test.ts',
       'apps/miniprogram/src/**/*.test.ts',
       'apps/server/**/*.test.ts',
+      'scripts/ai-eval/scoring.test.ts',
       'tests/**/*.test.ts'
     ],
     passWithNoTests: false

@@ -80,7 +80,7 @@ describe('meal assessment POST handler', () => {
       calorieRange: { min: 170, max: 250 },
       mealBudget: 800,
       rating: 'GREEN',
-      ruleVersion: 'nutrition-assessment-v1',
+      ruleVersion: 'nutrition-assessment-v2',
       modelVersion: 'offline-demo-v1'
     })
   })

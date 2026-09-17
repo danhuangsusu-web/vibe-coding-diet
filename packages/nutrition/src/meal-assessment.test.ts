@@ -190,7 +190,7 @@ describe('assessMeal', () => {
         }
       ],
       uncertainties: [],
-      ruleVersion: 'nutrition-assessment-v1',
+      ruleVersion: 'nutrition-assessment-v2',
       modelVersion: 'offline-demo-v1'
     })
     expect(mealAssessmentSchema.safeParse(result.assessment).success).toBe(

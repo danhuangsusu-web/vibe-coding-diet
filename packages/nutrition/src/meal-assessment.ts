@@ -16,7 +16,7 @@ import {
 } from './dynamic-rating'
 import { selectMealAdvice } from './advice-rules'
 
-export const NUTRITION_ASSESSMENT_RULE_VERSION = 'nutrition-assessment-v1'
+export const NUTRITION_ASSESSMENT_RULE_VERSION = 'nutrition-assessment-v2'
 
 export interface AssessMealInput {
   items: readonly ConfirmedMealItem[]

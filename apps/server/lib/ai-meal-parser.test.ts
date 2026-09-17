@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   AI_IMAGE_MEAL_INSTRUCTIONS,
   AI_IMAGE_MEAL_PROMPT_VERSION,
+  AI_MEAL_MAX_OUTPUT_TOKENS,
   AI_MEAL_PROMPT_VERSION,
   AiMealInvalidOutputError,
   AiMealProviderError,
@@ -21,8 +22,8 @@ const VALID_OUTPUT = {
   items: [
     {
       displayName: '番茄炒蛋',
-      ingredients: ['EGG', 'OTHER'],
-      otherIngredients: ['番茄'],
+      ingredients: ['EGG', 'TOMATO'],
+      otherIngredients: [],
       cookingMethods: ['STIR_FRIED'],
       otherCookingMethods: [],
       portionLevel: 'regular',
@@ -77,6 +78,8 @@ describe('AI text meal parser', () => {
     expect(generate.mock.calls[0]?.[0].prompt).toContain('番茄炒蛋和米饭')
     expect(generate.mock.calls[0]?.[0].instructions).toContain('OTHER')
     expect(generate.mock.calls[0]?.[0].instructions).toContain('番茄炒鸡蛋')
+    expect(generate.mock.calls[0]?.[0].instructions).toContain('未说明，待用户选择')
+    expect(AI_MEAL_MAX_OUTPUT_TOKENS).toBe(1200)
     expect(metrics).toEqual([
       expect.objectContaining({
         event: 'ai_meal_parse',
@@ -133,18 +136,31 @@ describe('AI text meal parser', () => {
   it('preserves unknown values only through OTHER companion fields', async () => {
     const parser = createAiMealParser({
       getModelConfiguration: modelProvider,
-      generate: async () => ({ output: VALID_OUTPUT, usage: {} }),
+      generate: async () => ({
+        output: {
+          mealDetected: true,
+          items: [
+            {
+              ...VALID_OUTPUT.items[0],
+              displayName: '炒蘑菇鸡蛋',
+              ingredients: ['EGG', '蘑菇'],
+              otherIngredients: []
+            }
+          ]
+        },
+        usage: {}
+      }),
       logger: () => undefined
     })
 
     const result = await parser({
       sourceType: 'TEXT',
-      sourceText: '番茄炒蛋'
+      sourceText: '炒蘑菇鸡蛋'
     })
 
     expect(result.items[0]).toMatchObject({
       ingredients: ['EGG', 'OTHER'],
-      otherIngredients: ['番茄']
+      otherIngredients: ['蘑菇']
     })
   })
 
@@ -175,8 +191,8 @@ describe('AI text meal parser', () => {
       items: [
         {
           displayName: '番茄炒鸡蛋',
-          ingredients: ['OTHER', 'EGG'],
-          otherIngredients: ['TOMATO'],
+          ingredients: ['TOMATO', 'EGG'],
+          otherIngredients: [],
           cookingMethods: ['STIR_FRIED'],
           otherCookingMethods: [],
           portionLevel: 'regular',
@@ -197,7 +213,7 @@ describe('AI text meal parser', () => {
             {
               ...VALID_OUTPUT.items[0],
               ingredients: ['EGG'],
-              otherIngredients: ['番茄']
+              otherIngredients: ['蘑菇']
             }
           ]
         },
@@ -207,12 +223,12 @@ describe('AI text meal parser', () => {
     })
 
     await expect(
-      parser({ sourceType: 'TEXT', sourceText: '番茄炒鸡蛋' })
+      parser({ sourceType: 'TEXT', sourceText: '蘑菇炒鸡蛋' })
     ).resolves.toMatchObject({
       items: [
         {
           ingredients: ['EGG', 'OTHER'],
-          otherIngredients: ['番茄']
+          otherIngredients: ['蘑菇']
         }
       ]
     })
@@ -221,7 +237,13 @@ describe('AI text meal parser', () => {
   it.each([
     {
       ...VALID_OUTPUT,
-      items: [{ ...VALID_OUTPUT.items[0], otherIngredients: [] }]
+      items: [
+        {
+          ...VALID_OUTPUT.items[0],
+          ingredients: ['OTHER'],
+          otherIngredients: []
+        }
+      ]
     },
     {
       ...VALID_OUTPUT,

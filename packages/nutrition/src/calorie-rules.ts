@@ -8,7 +8,7 @@ import type {
 export type KnownIngredientTag = Exclude<IngredientTag, 'OTHER'>
 export type KnownCookingMethod = Exclude<CookingMethod, 'OTHER'>
 
-export const CALORIE_RANGE_RULE_VERSION = 'calorie-range-v1'
+export const CALORIE_RANGE_RULE_VERSION = 'calorie-range-v2'
 
 export const INGREDIENT_ALIASES = {
   '米饭': 'RICE',
@@ -27,6 +27,11 @@ export const INGREDIENT_ALIASES = {
   '豆腐': 'TOFU',
   '鸡蛋': 'EGG',
   '蛋': 'EGG',
+  '番茄': 'TOMATO',
+  '西红柿': 'TOMATO',
+  '鱼': 'FISH',
+  '鱼肉': 'FISH',
+  '鱼片': 'FISH',
   '酱汁': 'SAUCE',
   '菜汁': 'SAUCE'
 } as const satisfies Record<string, KnownIngredientTag>
@@ -40,6 +45,8 @@ export const INGREDIENT_BASE_RANGES = {
   CHICKEN_WITHOUT_SKIN: { min: 140, max: 220 },
   TOFU: { min: 90, max: 170 },
   EGG: { min: 70, max: 100 },
+  TOMATO: { min: 20, max: 40 },
+  FISH: { min: 120, max: 220 },
   SAUCE: { min: 15, max: 50 }
 } as const satisfies Record<KnownIngredientTag, CalorieRange>
 

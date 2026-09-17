@@ -43,7 +43,7 @@ const assessment: MealAssessment = {
   reason: '本餐处于当前参考范围内',
   advice: [{ id: 'KEEP_CURRENT', text: '保持当前选择，无需额外调整' }],
   uncertainties: [],
-  ruleVersion: 'nutrition-assessment-v1'
+  ruleVersion: 'nutrition-assessment-v2'
 }
 
 describe('meal flow draft', () => {

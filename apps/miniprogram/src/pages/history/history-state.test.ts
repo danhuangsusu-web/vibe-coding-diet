@@ -52,7 +52,7 @@ function record(id: string, min: number, max: number): MealRecord {
       reason: '本餐估算上限在当前参考范围内。',
       advice: [{ id: 'KEEP_CURRENT', text: '保持当前选择即可。' }],
       uncertainties: [],
-      ruleVersion: 'nutrition-assessment-v1'
+      ruleVersion: 'nutrition-assessment-v2'
     },
     isDemo: true,
     createdAt: '2026-09-16T04:00:00.000Z'

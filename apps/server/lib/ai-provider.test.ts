@@ -3,10 +3,22 @@ import { describe, expect, it } from 'vitest'
 import {
   AIProviderConfigurationError,
   getMealAnalysisModelConfiguration,
-  isMealAnalysisAiConfigured
+  isMealAnalysisAiConfigured,
+  transformMealAnalysisRequestBody
 } from './ai-provider'
 
 describe('AI provider configuration', () => {
+  it('disables thinking without mutating the structured request body', () => {
+    const body = { model: 'test-model', messages: [], enable_thinking: true }
+
+    expect(transformMealAnalysisRequestBody(body)).toEqual({
+      model: 'test-model',
+      messages: [],
+      enable_thinking: false
+    })
+    expect(body.enable_thinking).toBe(true)
+  })
+
   it('reports configuration without exposing its values', () => {
     expect(
       isMealAnalysisAiConfigured({

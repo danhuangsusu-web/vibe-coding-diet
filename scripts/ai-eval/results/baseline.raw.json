@@ -1,0 +1,1987 @@
+{
+  "datasetId": "step-23-p0-eval-v1",
+  "generatedAt": "2026-09-17T08:45:10.517Z",
+  "results": [
+    {
+      "caseId": "TXT-SINGLE-001",
+      "status": "PARSED",
+      "parsedMeal": {
+        "items": [
+          {
+            "displayName": "番茄炒鸡蛋",
+            "ingredients": [
+              "OTHER",
+              "EGG"
+            ],
+            "otherIngredients": [
+              "番茄"
+            ],
+            "cookingMethods": [
+              "STIR_FRIED"
+            ],
+            "otherCookingMethods": [],
+            "portionLevel": "regular",
+            "uncertainties": [
+              "无法确认具体份量大小",
+              "无法确认用油量"
+            ],
+            "confidence": 0.95
+          }
+        ]
+      },
+      "assessment": {
+        "items": [
+          {
+            "displayName": "番茄炒鸡蛋",
+            "ingredients": [
+              "OTHER",
+              "EGG"
+            ],
+            "otherIngredients": [
+              "番茄"
+            ],
+            "cookingMethods": [
+              "STIR_FRIED"
+            ],
+            "otherCookingMethods": [],
+            "portionLevel": "regular",
+            "uncertainties": [
+              "无法确认具体份量大小",
+              "无法确认用油量"
+            ],
+            "wasManuallyAdjusted": false
+          }
+        ],
+        "calorieRange": {
+          "min": 190,
+          "max": 610
+        },
+        "mealBudget": 1000,
+        "rating": "GREEN",
+        "ratingLabel": "这餐比较合适",
+        "reason": "本餐估算上限在当前参考额度的合理范围内。",
+        "advice": [
+          {
+            "id": "KEEP_CURRENT",
+            "text": "保持当前选择即可，无需额外调整。"
+          }
+        ],
+        "uncertainties": [
+          "无法确认具体份量大小",
+          "无法确认用油量",
+          "菜品“番茄炒鸡蛋”含有未覆盖食材，已使用宽范围保守估算。"
+        ],
+        "ruleVersion": "nutrition-assessment-v1",
+        "modelVersion": "qwen3.8-flash"
+      },
+      "metrics": {
+        "event": "ai_meal_parse",
+        "status": "success",
+        "modelVersion": "qwen3.8-flash",
+        "promptVersion": "text-meal-v2",
+        "durationMs": 7837,
+        "inputTokens": 496,
+        "outputTokens": 358,
+        "totalTokens": 854,
+        "costCny": 0.0013634,
+        "costStatus": "calculated_from_token_usage"
+      }
+    },
+    {
+      "caseId": "TXT-SINGLE-002",
+      "status": "PARSED",
+      "parsedMeal": {
+        "items": [
+          {
+            "displayName": "清蒸鸡胸肉",
+            "ingredients": [
+              "CHICKEN_WITHOUT_SKIN"
+            ],
+            "otherIngredients": [],
+            "cookingMethods": [
+              "STEAMED"
+            ],
+            "otherCookingMethods": [],
+            "portionLevel": "regular",
+            "uncertainties": [
+              "无法确认鸡肉是否带皮",
+              "无法确认具体份量大小"
+            ],
+            "confidence": 0.95
+          }
+        ]
+      },
+      "assessment": {
+        "items": [
+          {
+            "displayName": "清蒸鸡胸肉",
+            "ingredients": [
+              "CHICKEN_WITHOUT_SKIN"
+            ],
+            "otherIngredients": [],
+            "cookingMethods": [
+              "STEAMED"
+            ],
+            "otherCookingMethods": [],
+            "portionLevel": "regular",
+            "uncertainties": [
+              "无法确认鸡肉是否带皮",
+              "无法确认具体份量大小"
+            ],
+            "wasManuallyAdjusted": false
+          }
+        ],
+        "calorieRange": {
+          "min": 140,
+          "max": 230
+        },
+        "mealBudget": 1000,
+        "rating": "GREEN",
+        "ratingLabel": "这餐比较合适",
+        "reason": "本餐估算上限在当前参考额度的合理范围内。",
+        "advice": [
+          {
+            "id": "KEEP_CURRENT",
+            "text": "保持当前选择即可，无需额外调整。"
+          }
+        ],
+        "uncertainties": [
+          "无法确认鸡肉是否带皮",
+          "无法确认具体份量大小"
+        ],
+        "ruleVersion": "nutrition-assessment-v1",
+        "modelVersion": "qwen3.8-flash"
+      },
+      "metrics": {
+        "event": "ai_meal_parse",
+        "status": "success",
+        "modelVersion": "qwen3.8-flash",
+        "promptVersion": "text-meal-v2",
+        "durationMs": 6033,
+        "inputTokens": 498,
+        "outputTokens": 305,
+        "totalTokens": 803,
+        "costCny": 0.0012219000000000002,
+        "costStatus": "calculated_from_token_usage"
+      }
+    },
+    {
+      "caseId": "TXT-SINGLE-003",
+      "status": "PARSED",
+      "parsedMeal": {
+        "items": [
+          {
+            "displayName": "红烧肉",
+            "ingredients": [
+              "PORK"
+            ],
+            "otherIngredients": [],
+            "cookingMethods": [
+              "BRAISED"
+            ],
+            "otherCookingMethods": [],
+            "portionLevel": "regular",
+            "uncertainties": [
+              "无法确认具体份量",
+              "无法确认用油量",
+              "无法确认酱汁是否额外包含糖、酱油或料酒",
+              "无法确认红烧做法的具体细节"
+            ],
+            "confidence": 0.95
+          }
+        ]
+      },
+      "assessment": {
+        "items": [
+          {
+            "displayName": "红烧肉",
+            "ingredients": [
+              "PORK"
+            ],
+            "otherIngredients": [],
+            "cookingMethods": [
+              "BRAISED"
+            ],
+            "otherCookingMethods": [],
+            "portionLevel": "regular",
+            "uncertainties": [
+              "无法确认具体份量",
+              "无法确认用油量",
+              "无法确认酱汁是否额外包含糖、酱油或料酒",
+              "无法确认红烧做法的具体细节"
+            ],
+            "wasManuallyAdjusted": false
+          }
+        ],
+        "calorieRange": {
+          "min": 190,
+          "max": 330
+        },
+        "mealBudget": 1000,
+        "rating": "GREEN",
+        "ratingLabel": "这餐比较合适",
+        "reason": "本餐估算上限在当前参考额度的合理范围内。",
+        "advice": [
+          {
+            "id": "KEEP_CURRENT",
+            "text": "保持当前选择即可，无需额外调整。"
+          }
+        ],
+        "uncertainties": [
+          "无法确认具体份量",
+          "无法确认用油量",
+          "无法确认酱汁是否额外包含糖、酱油或料酒",
+          "无法确认红烧做法的具体细节"
+        ],
+        "ruleVersion": "nutrition-assessment-v1",
+        "modelVersion": "qwen3.8-flash"
+      },
+      "metrics": {
+        "event": "ai_meal_parse",
+        "status": "success",
+        "modelVersion": "qwen3.8-flash",
+        "promptVersion": "text-meal-v2",
+        "durationMs": 13054,
+        "inputTokens": 495,
+        "outputTokens": 483,
+        "totalTokens": 978,
+        "costCny": 0.0017001000000000002,
+        "costStatus": "calculated_from_token_usage"
+      }
+    },
+    {
+      "caseId": "TXT-SINGLE-004",
+      "status": "PARSED",
+      "parsedMeal": {
+        "items": [
+          {
+            "displayName": "白灼青菜",
+            "ingredients": [
+              "LEAFY_VEGETABLE"
+            ],
+            "otherIngredients": [],
+            "cookingMethods": [
+              "BLANCHED"
+            ],
+            "otherCookingMethods": [],
+            "portionLevel": "regular",
+            "uncertainties": [
+              "青菜的具体品种未知",
+              "一份的实际重量未知",
+              "是否配有蘸酱及蘸酱用量未知"
+            ],
+            "confidence": 0.92
+          }
+        ]
+      },
+      "assessment": {
+        "items": [
+          {
+            "displayName": "白灼青菜",
+            "ingredients": [
+              "LEAFY_VEGETABLE"
+            ],
+            "otherIngredients": [],
+            "cookingMethods": [
+              "BLANCHED"
+            ],
+            "otherCookingMethods": [],
+            "portionLevel": "regular",
+            "uncertainties": [
+              "青菜的具体品种未知",
+              "一份的实际重量未知",
+              "是否配有蘸酱及蘸酱用量未知"
+            ],
+            "wasManuallyAdjusted": false
+          }
+        ],
+        "calorieRange": {
+          "min": 30,
+          "max": 80
+        },
+        "mealBudget": 1000,
+        "rating": "GREEN",
+        "ratingLabel": "这餐比较合适",
+        "reason": "本餐估算上限在当前参考额度的合理范围内。",
+        "advice": [
+          {
+            "id": "KEEP_CURRENT",
+            "text": "保持当前选择即可，无需额外调整。"
+          }
+        ],
+        "uncertainties": [
+          "青菜的具体品种未知",
+          "一份的实际重量未知",
+          "是否配有蘸酱及蘸酱用量未知"
+        ],
+        "ruleVersion": "nutrition-assessment-v1",
+        "modelVersion": "qwen3.8-flash"
+      },
+      "metrics": {
+        "event": "ai_meal_parse",
+        "status": "success",
+        "modelVersion": "qwen3.8-flash",
+        "promptVersion": "text-meal-v2",
+        "durationMs": 6837,
+        "inputTokens": 496,
+        "outputTokens": 277,
+        "totalTokens": 773,
+        "costCny": 0.0011447,
+        "costStatus": "calculated_from_token_usage"
+      }
+    },
+    {
+      "caseId": "TXT-SINGLE-005",
+      "status": "PARSED",
+      "parsedMeal": {
+        "items": [
+          {
+            "displayName": "麻婆豆腐",
+            "ingredients": [
+              "TOFU"
+            ],
+            "otherIngredients": [],
+            "cookingMethods": [
+              "STIR_FRIED"
+            ],
+            "otherCookingMethods": [],
+            "portionLevel": "regular",
+            "uncertainties": [
+              "无法从文字确认酱汁种类、用量及是否额外添加",
+              "无法确认实际用油量和具体烹饪细节",
+              "无法确认“一份”的实际重量"
+            ],
+            "confidence": 0.8
+          }
+        ]
+      },
+      "assessment": {
+        "items": [
+          {
+            "displayName": "麻婆豆腐",
+            "ingredients": [
+              "TOFU"
+            ],
+            "otherIngredients": [],
+            "cookingMethods": [
+              "STIR_FRIED"
+            ],
+            "otherCookingMethods": [],
+            "portionLevel": "regular",
+            "uncertainties": [
+              "无法从文字确认酱汁种类、用量及是否额外添加",
+              "无法确认实际用油量和具体烹饪细节",
+              "无法确认“一份”的实际重量"
+            ],
+            "wasManuallyAdjusted": false
+          }
+        ],
+        "calorieRange": {
+          "min": 110,
+          "max": 230
+        },
+        "mealBudget": 1000,
+        "rating": "GREEN",
+        "ratingLabel": "这餐比较合适",
+        "reason": "本餐估算上限在当前参考额度的合理范围内。",
+        "advice": [
+          {
+            "id": "KEEP_CURRENT",
+            "text": "保持当前选择即可，无需额外调整。"
+          }
+        ],
+        "uncertainties": [
+          "无法从文字确认酱汁种类、用量及是否额外添加",
+          "无法确认实际用油量和具体烹饪细节",
+          "无法确认“一份”的实际重量"
+        ],
+        "ruleVersion": "nutrition-assessment-v1",
+        "modelVersion": "qwen3.8-flash"
+      },
+      "metrics": {
+        "event": "ai_meal_parse",
+        "status": "success",
+        "modelVersion": "qwen3.8-flash",
+        "promptVersion": "text-meal-v2",
+        "durationMs": 15610,
+        "inputTokens": 496,
+        "outputTokens": 760,
+        "totalTokens": 1256,
+        "costCny": 0.0024488,
+        "costStatus": "calculated_from_token_usage"
+      }
+    },
+    {
+      "caseId": "TXT-SINGLE-006",
+      "status": "ERROR",
+      "metrics": {
+        "event": "ai_meal_parse",
+        "status": "invalid_output",
+        "modelVersion": "qwen3.8-flash",
+        "promptVersion": "text-meal-v2",
+        "durationMs": 5791,
+        "inputTokens": 495,
+        "outputTokens": 300,
+        "totalTokens": 795,
+        "costCny": 0.001206,
+        "costStatus": "calculated_from_token_usage",
+        "invalidOutputStage": "json_parse",
+        "providerErrorName": "AiMealInvalidOutputError"
+      },
+      "error": {
+        "name": "AiMealInvalidOutputError",
+        "invalidOutputStage": "json_parse",
+        "invalidOutputPaths": []
+      }
+    },
+    {
+      "caseId": "TXT-MULTI-001",
+      "status": "ERROR",
+      "metrics": {
+        "event": "ai_meal_parse",
+        "status": "timeout",
+        "modelVersion": "qwen3.8-flash",
+        "promptVersion": "text-meal-v2",
+        "durationMs": 20011,
+        "inputTokens": null,
+        "outputTokens": null,
+        "totalTokens": null,
+        "costCny": null,
+        "costStatus": "provider_cost_unavailable",
+        "providerErrorName": "AbortError"
+      },
+      "error": {
+        "name": "AiMealTimeoutError"
+      }
+    },
+    {
+      "caseId": "TXT-MULTI-002",
+      "status": "ERROR",
+      "metrics": {
+        "event": "ai_meal_parse",
+        "status": "timeout",
+        "modelVersion": "qwen3.8-flash",
+        "promptVersion": "text-meal-v2",
+        "durationMs": 20001,
+        "inputTokens": null,
+        "outputTokens": null,
+        "totalTokens": null,
+        "costCny": null,
+        "costStatus": "provider_cost_unavailable",
+        "providerErrorName": "AbortError"
+      },
+      "error": {
+        "name": "AiMealTimeoutError"
+      }
+    },
+    {
+      "caseId": "TXT-MULTI-003",
+      "status": "ERROR",
+      "metrics": {
+        "event": "ai_meal_parse",
+        "status": "timeout",
+        "modelVersion": "qwen3.8-flash",
+        "promptVersion": "text-meal-v2",
+        "durationMs": 20008,
+        "inputTokens": null,
+        "outputTokens": null,
+        "totalTokens": null,
+        "costCny": null,
+        "costStatus": "provider_cost_unavailable",
+        "providerErrorName": "AbortError"
+      },
+      "error": {
+        "name": "AiMealTimeoutError"
+      }
+    },
+    {
+      "caseId": "TXT-MULTI-004",
+      "status": "ERROR",
+      "metrics": {
+        "event": "ai_meal_parse",
+        "status": "timeout",
+        "modelVersion": "qwen3.8-flash",
+        "promptVersion": "text-meal-v2",
+        "durationMs": 20004,
+        "inputTokens": null,
+        "outputTokens": null,
+        "totalTokens": null,
+        "costCny": null,
+        "costStatus": "provider_cost_unavailable",
+        "providerErrorName": "AbortError"
+      },
+      "error": {
+        "name": "AiMealTimeoutError"
+      }
+    },
+    {
+      "caseId": "TXT-HIGH-001",
+      "status": "ERROR",
+      "metrics": {
+        "event": "ai_meal_parse",
+        "status": "timeout",
+        "modelVersion": "qwen3.8-flash",
+        "promptVersion": "text-meal-v2",
+        "durationMs": 20002,
+        "inputTokens": null,
+        "outputTokens": null,
+        "totalTokens": null,
+        "costCny": null,
+        "costStatus": "provider_cost_unavailable",
+        "providerErrorName": "AbortError"
+      },
+      "error": {
+        "name": "AiMealTimeoutError"
+      }
+    },
+    {
+      "caseId": "TXT-HIGH-002",
+      "status": "ERROR",
+      "metrics": {
+        "event": "ai_meal_parse",
+        "status": "timeout",
+        "modelVersion": "qwen3.8-flash",
+        "promptVersion": "text-meal-v2",
+        "durationMs": 20014,
+        "inputTokens": null,
+        "outputTokens": null,
+        "totalTokens": null,
+        "costCny": null,
+        "costStatus": "provider_cost_unavailable",
+        "providerErrorName": "AbortError"
+      },
+      "error": {
+        "name": "AiMealTimeoutError"
+      }
+    },
+    {
+      "caseId": "TXT-HIGH-003",
+      "status": "PARSED",
+      "parsedMeal": {
+        "items": [
+          {
+            "displayName": "干煸四季豆",
+            "ingredients": [
+              "GREEN_BEAN"
+            ],
+            "otherIngredients": [],
+            "cookingMethods": [
+              "DRY_STIR_FRIED"
+            ],
+            "otherCookingMethods": [],
+            "portionLevel": "large",
+            "uncertainties": [
+              "具体重量未知",
+              "干煸用油量未知",
+              "酱汁或调味用量未知"
+            ],
+            "confidence": 0.98
+          }
+        ]
+      },
+      "assessment": {
+        "items": [
+          {
+            "displayName": "干煸四季豆",
+            "ingredients": [
+              "GREEN_BEAN"
+            ],
+            "otherIngredients": [],
+            "cookingMethods": [
+              "DRY_STIR_FRIED"
+            ],
+            "otherCookingMethods": [],
+            "portionLevel": "large",
+            "uncertainties": [
+              "具体重量未知",
+              "干煸用油量未知",
+              "酱汁或调味用量未知"
+            ],
+            "wasManuallyAdjusted": false
+          }
+        ],
+        "calorieRange": {
+          "min": 130,
+          "max": 260
+        },
+        "mealBudget": 1000,
+        "rating": "YELLOW",
+        "ratingLabel": "这餐可以适量吃",
+        "reason": "本餐热量在当前参考范围内，但包含高油或高糖做法。",
+        "advice": [
+          {
+            "id": "SWAP_FOR_VEGETABLE",
+            "text": "可以把一道高油菜换成清炒或水煮蔬菜。"
+          },
+          {
+            "id": "DRAIN_OIL",
+            "text": "可以沥去或过水去除明显油汁。"
+          }
+        ],
+        "uncertainties": [
+          "具体重量未知",
+          "干煸用油量未知",
+          "酱汁或调味用量未知"
+        ],
+        "ruleVersion": "nutrition-assessment-v1",
+        "modelVersion": "qwen3.8-flash"
+      },
+      "metrics": {
+        "event": "ai_meal_parse",
+        "status": "success",
+        "modelVersion": "qwen3.8-flash",
+        "promptVersion": "text-meal-v2",
+        "durationMs": 16352,
+        "inputTokens": 499,
+        "outputTokens": 764,
+        "totalTokens": 1263,
+        "costCny": 0.002462,
+        "costStatus": "calculated_from_token_usage"
+      }
+    },
+    {
+      "caseId": "TXT-HIGH-004",
+      "status": "PARSED",
+      "parsedMeal": {
+        "items": [
+          {
+            "displayName": "带皮煎鸡腿",
+            "ingredients": [
+              "CHICKEN_WITH_SKIN",
+              "SAUCE"
+            ],
+            "otherIngredients": [],
+            "cookingMethods": [
+              "PAN_FRIED"
+            ],
+            "otherCookingMethods": [],
+            "portionLevel": "regular",
+            "uncertainties": [
+              "煎制用油量未知",
+              "酱汁具体成分未知"
+            ],
+            "confidence": 0.95
+          }
+        ]
+      },
+      "assessment": {
+        "items": [
+          {
+            "displayName": "带皮煎鸡腿",
+            "ingredients": [
+              "CHICKEN_WITH_SKIN",
+              "SAUCE"
+            ],
+            "otherIngredients": [],
+            "cookingMethods": [
+              "PAN_FRIED"
+            ],
+            "otherCookingMethods": [],
+            "portionLevel": "regular",
+            "uncertainties": [
+              "煎制用油量未知",
+              "酱汁具体成分未知"
+            ],
+            "wasManuallyAdjusted": false
+          }
+        ],
+        "calorieRange": {
+          "min": 240,
+          "max": 430
+        },
+        "mealBudget": 1000,
+        "rating": "YELLOW",
+        "ratingLabel": "这餐可以适量吃",
+        "reason": "本餐热量在当前参考范围内，但包含高油或高糖做法。",
+        "advice": [
+          {
+            "id": "REMOVE_SKIN",
+            "text": "带皮鸡肉可以去皮后再吃。"
+          },
+          {
+            "id": "SWAP_FOR_VEGETABLE",
+            "text": "可以把一道高油菜换成清炒或水煮蔬菜。"
+          }
+        ],
+        "uncertainties": [
+          "煎制用油量未知",
+          "酱汁具体成分未知"
+        ],
+        "ruleVersion": "nutrition-assessment-v1",
+        "modelVersion": "qwen3.8-flash"
+      },
+      "metrics": {
+        "event": "ai_meal_parse",
+        "status": "success",
+        "modelVersion": "qwen3.8-flash",
+        "promptVersion": "text-meal-v2",
+        "durationMs": 8104,
+        "inputTokens": 500,
+        "outputTokens": 477,
+        "totalTokens": 977,
+        "costCny": 0.0016879,
+        "costStatus": "calculated_from_token_usage"
+      }
+    },
+    {
+      "caseId": "TXT-AMB-001",
+      "status": "ERROR",
+      "metrics": {
+        "event": "ai_meal_parse",
+        "status": "invalid_output",
+        "modelVersion": "qwen3.8-flash",
+        "promptVersion": "text-meal-v2",
+        "durationMs": 9160,
+        "inputTokens": 494,
+        "outputTokens": 444,
+        "totalTokens": 938,
+        "costCny": 0.0015940000000000001,
+        "costStatus": "calculated_from_token_usage",
+        "invalidOutputStage": "normalization",
+        "invalidOutputPaths": [
+          "items.0.cookingMethods"
+        ],
+        "providerErrorName": "AiMealInvalidOutputError"
+      },
+      "error": {
+        "name": "AiMealInvalidOutputError",
+        "invalidOutputStage": "normalization",
+        "invalidOutputPaths": [
+          "items.0.cookingMethods"
+        ]
+      }
+    },
+    {
+      "caseId": "TXT-AMB-002",
+      "status": "ERROR",
+      "metrics": {
+        "event": "ai_meal_parse",
+        "status": "invalid_output",
+        "modelVersion": "qwen3.8-flash",
+        "promptVersion": "text-meal-v2",
+        "durationMs": 15818,
+        "inputTokens": 500,
+        "outputTokens": 897,
+        "totalTokens": 1397,
+        "costCny": 0.0028219,
+        "costStatus": "calculated_from_token_usage",
+        "invalidOutputStage": "json_parse",
+        "providerErrorName": "AiMealInvalidOutputError"
+      },
+      "error": {
+        "name": "AiMealInvalidOutputError",
+        "invalidOutputStage": "json_parse",
+        "invalidOutputPaths": []
+      }
+    },
+    {
+      "caseId": "TXT-AMB-003",
+      "status": "ERROR",
+      "metrics": {
+        "event": "ai_meal_parse",
+        "status": "timeout",
+        "modelVersion": "qwen3.8-flash",
+        "promptVersion": "text-meal-v2",
+        "durationMs": 20005,
+        "inputTokens": null,
+        "outputTokens": null,
+        "totalTokens": null,
+        "costCny": null,
+        "costStatus": "provider_cost_unavailable",
+        "providerErrorName": "AbortError"
+      },
+      "error": {
+        "name": "AiMealTimeoutError"
+      }
+    },
+    {
+      "caseId": "TXT-AMB-004",
+      "status": "ERROR",
+      "metrics": {
+        "event": "ai_meal_parse",
+        "status": "timeout",
+        "modelVersion": "qwen3.8-flash",
+        "promptVersion": "text-meal-v2",
+        "durationMs": 20004,
+        "inputTokens": null,
+        "outputTokens": null,
+        "totalTokens": null,
+        "costCny": null,
+        "costStatus": "provider_cost_unavailable",
+        "providerErrorName": "AbortError"
+      },
+      "error": {
+        "name": "AiMealTimeoutError"
+      }
+    },
+    {
+      "caseId": "TXT-AMB-005",
+      "status": "PARSED",
+      "parsedMeal": {
+        "items": [
+          {
+            "displayName": "蚂蚁上树",
+            "ingredients": [
+              "PORK",
+              "OTHER"
+            ],
+            "otherIngredients": [
+              "粉丝"
+            ],
+            "cookingMethods": [
+              "STIR_FRIED"
+            ],
+            "otherCookingMethods": [],
+            "portionLevel": "regular",
+            "uncertainties": [
+              "无法从文字确认实际份量大小。",
+              "无法确认是否使用豆瓣酱、酱油等酱汁。",
+              "无法确认炒制用油量。"
+            ],
+            "confidence": 0.82
+          }
+        ]
+      },
+      "assessment": {
+        "items": [
+          {
+            "displayName": "蚂蚁上树",
+            "ingredients": [
+              "PORK",
+              "OTHER"
+            ],
+            "otherIngredients": [
+              "粉丝"
+            ],
+            "cookingMethods": [
+              "STIR_FRIED"
+            ],
+            "otherCookingMethods": [],
+            "portionLevel": "regular",
+            "uncertainties": [
+              "无法从文字确认实际份量大小。",
+              "无法确认是否使用豆瓣酱、酱油等酱汁。",
+              "无法确认炒制用油量。"
+            ],
+            "wasManuallyAdjusted": false
+          }
+        ],
+        "calorieRange": {
+          "min": 280,
+          "max": 750
+        },
+        "mealBudget": 1000,
+        "rating": "GREEN",
+        "ratingLabel": "这餐比较合适",
+        "reason": "本餐估算上限在当前参考额度的合理范围内。",
+        "advice": [
+          {
+            "id": "KEEP_CURRENT",
+            "text": "保持当前选择即可，无需额外调整。"
+          }
+        ],
+        "uncertainties": [
+          "无法从文字确认实际份量大小。",
+          "无法确认是否使用豆瓣酱、酱油等酱汁。",
+          "无法确认炒制用油量。",
+          "菜品“蚂蚁上树”含有未覆盖食材，已使用宽范围保守估算。"
+        ],
+        "ruleVersion": "nutrition-assessment-v1",
+        "modelVersion": "qwen3.8-flash"
+      },
+      "metrics": {
+        "event": "ai_meal_parse",
+        "status": "success",
+        "modelVersion": "qwen3.8-flash",
+        "promptVersion": "text-meal-v2",
+        "durationMs": 15070,
+        "inputTokens": 496,
+        "outputTokens": 675,
+        "totalTokens": 1171,
+        "costCny": 0.0022193,
+        "costStatus": "calculated_from_token_usage"
+      }
+    },
+    {
+      "caseId": "TXT-AMB-006",
+      "status": "ERROR",
+      "metrics": {
+        "event": "ai_meal_parse",
+        "status": "invalid_output",
+        "modelVersion": "qwen3.8-flash",
+        "promptVersion": "text-meal-v2",
+        "durationMs": 13251,
+        "inputTokens": 497,
+        "outputTokens": 646,
+        "totalTokens": 1143,
+        "costCny": 0.0021418,
+        "costStatus": "calculated_from_token_usage",
+        "invalidOutputStage": "json_parse",
+        "providerErrorName": "AiMealInvalidOutputError"
+      },
+      "error": {
+        "name": "AiMealInvalidOutputError",
+        "invalidOutputStage": "json_parse",
+        "invalidOutputPaths": []
+      }
+    },
+    {
+      "caseId": "TXT-EDGE-001",
+      "status": "ERROR",
+      "metrics": {
+        "event": "ai_meal_parse",
+        "status": "invalid_output",
+        "modelVersion": "qwen3.8-flash",
+        "promptVersion": "text-meal-v2",
+        "durationMs": 13217,
+        "inputTokens": 514,
+        "outputTokens": 811,
+        "totalTokens": 1325,
+        "costCny": 0.0026009000000000006,
+        "costStatus": "calculated_from_token_usage",
+        "invalidOutputStage": "transport_schema",
+        "invalidOutputPaths": [
+          "items.0.cookingMethods"
+        ],
+        "providerErrorName": "AiMealInvalidOutputError"
+      },
+      "error": {
+        "name": "AiMealInvalidOutputError",
+        "invalidOutputStage": "transport_schema",
+        "invalidOutputPaths": [
+          "items.0.cookingMethods"
+        ]
+      }
+    },
+    {
+      "caseId": "TXT-EDGE-002",
+      "status": "NO_MEAL",
+      "metrics": {
+        "event": "ai_meal_parse",
+        "status": "no_meal",
+        "modelVersion": "qwen3.8-flash",
+        "promptVersion": "text-meal-v2",
+        "durationMs": 1626,
+        "inputTokens": 500,
+        "outputTokens": 78,
+        "totalTokens": 578,
+        "costCny": 0.0006106,
+        "costStatus": "calculated_from_token_usage",
+        "providerErrorName": "NoMealDetectedError"
+      }
+    },
+    {
+      "caseId": "TXT-EDGE-003",
+      "status": "PARSED",
+      "parsedMeal": {
+        "items": [
+          {
+            "displayName": "全糖珍珠奶茶",
+            "ingredients": [
+              "OTHER"
+            ],
+            "otherIngredients": [
+              "珍珠奶茶",
+              "全糖",
+              "珍珠"
+            ],
+            "cookingMethods": [
+              "OTHER"
+            ],
+            "otherCookingMethods": [
+              "冲泡"
+            ],
+            "portionLevel": "large",
+            "uncertainties": [
+              "无法确认一大杯的具体容量",
+              "无法确认奶茶中的奶类成分",
+              "无法确认茶底类型",
+              "无法确认全糖的具体含糖量",
+              "无法确认珍珠的制作原料或是否另加配料"
+            ],
+            "confidence": 0.9
+          }
+        ]
+      },
+      "assessment": {
+        "items": [
+          {
+            "displayName": "全糖珍珠奶茶",
+            "ingredients": [
+              "OTHER"
+            ],
+            "otherIngredients": [
+              "珍珠奶茶",
+              "全糖",
+              "珍珠"
+            ],
+            "cookingMethods": [
+              "OTHER"
+            ],
+            "otherCookingMethods": [
+              "冲泡"
+            ],
+            "portionLevel": "large",
+            "uncertainties": [
+              "无法确认一大杯的具体容量",
+              "无法确认奶茶中的奶类成分",
+              "无法确认茶底类型",
+              "无法确认全糖的具体含糖量",
+              "无法确认珍珠的制作原料或是否另加配料"
+            ],
+            "wasManuallyAdjusted": false
+          }
+        ],
+        "calorieRange": {
+          "min": 130,
+          "max": 810
+        },
+        "mealBudget": 1000,
+        "rating": "YELLOW",
+        "ratingLabel": "这餐可以适量吃",
+        "reason": "本餐估算上限接近或略高于当前参考额度。",
+        "advice": [
+          {
+            "id": "KEEP_CURRENT",
+            "text": "保持当前选择即可，无需额外调整。"
+          }
+        ],
+        "uncertainties": [
+          "无法确认一大杯的具体容量",
+          "无法确认奶茶中的奶类成分",
+          "无法确认茶底类型",
+          "无法确认全糖的具体含糖量",
+          "无法确认珍珠的制作原料或是否另加配料",
+          "菜品“全糖珍珠奶茶”含有未覆盖食材，已使用宽范围保守估算。",
+          "菜品“全糖珍珠奶茶”的做法未覆盖，已扩大估算区间。"
+        ],
+        "ruleVersion": "nutrition-assessment-v1",
+        "modelVersion": "qwen3.8-flash"
+      },
+      "metrics": {
+        "event": "ai_meal_parse",
+        "status": "success",
+        "modelVersion": "qwen3.8-flash",
+        "promptVersion": "text-meal-v2",
+        "durationMs": 11123,
+        "inputTokens": 501,
+        "outputTokens": 390,
+        "totalTokens": 891,
+        "costCny": 0.0014537999999999999,
+        "costStatus": "calculated_from_token_usage"
+      }
+    },
+    {
+      "caseId": "TXT-EDGE-004",
+      "status": "PARSED",
+      "parsedMeal": {
+        "items": [
+          {
+            "displayName": "肉包子",
+            "ingredients": [
+              "PORK",
+              "OTHER"
+            ],
+            "otherIngredients": [
+              "包子",
+              "肉",
+              "酱汁"
+            ],
+            "cookingMethods": [
+              "STEAMED"
+            ],
+            "otherCookingMethods": [],
+            "portionLevel": "small",
+            "uncertainties": [
+              "两个肉包子的实际大小和单个份量无法确认",
+              "肉包子内馅肉种是否一定为猪肉无法确认",
+              "肉包子是否含酱汁及酱汁类型无法确认",
+              "肉包子烹饪方式无法确认是否为蒸制"
+            ],
+            "confidence": 0.55
+          },
+          {
+            "displayName": "豆浆",
+            "ingredients": [
+              "OTHER"
+            ],
+            "otherIngredients": [
+              "豆浆"
+            ],
+            "cookingMethods": [
+              "BOILED"
+            ],
+            "otherCookingMethods": [],
+            "portionLevel": "regular",
+            "uncertainties": [
+              "一杯豆浆的具体容量无法确认",
+              "豆浆是否含糖、是否添加豆乳或豆奶无法确认",
+              "豆浆烹饪方式无法完全确认"
+            ],
+            "confidence": 0.75
+          }
+        ]
+      },
+      "assessment": {
+        "items": [
+          {
+            "displayName": "肉包子",
+            "ingredients": [
+              "PORK",
+              "OTHER"
+            ],
+            "otherIngredients": [
+              "包子",
+              "肉",
+              "酱汁"
+            ],
+            "cookingMethods": [
+              "STEAMED"
+            ],
+            "otherCookingMethods": [],
+            "portionLevel": "small",
+            "uncertainties": [
+              "两个肉包子的实际大小和单个份量无法确认",
+              "肉包子内馅肉种是否一定为猪肉无法确认",
+              "肉包子是否含酱汁及酱汁类型无法确认",
+              "肉包子烹饪方式无法确认是否为蒸制"
+            ],
+            "wasManuallyAdjusted": false
+          },
+          {
+            "displayName": "豆浆",
+            "ingredients": [
+              "OTHER"
+            ],
+            "otherIngredients": [
+              "豆浆"
+            ],
+            "cookingMethods": [
+              "BOILED"
+            ],
+            "otherCookingMethods": [],
+            "portionLevel": "regular",
+            "uncertainties": [
+              "一杯豆浆的具体容量无法确认",
+              "豆浆是否含糖、是否添加豆乳或豆奶无法确认",
+              "豆浆烹饪方式无法完全确认"
+            ],
+            "wasManuallyAdjusted": false
+          }
+        ],
+        "calorieRange": {
+          "min": 290,
+          "max": 990
+        },
+        "mealBudget": 1000,
+        "rating": "YELLOW",
+        "ratingLabel": "这餐可以适量吃",
+        "reason": "本餐估算上限接近或略高于当前参考额度。",
+        "advice": [
+          {
+            "id": "KEEP_CURRENT",
+            "text": "保持当前选择即可，无需额外调整。"
+          }
+        ],
+        "uncertainties": [
+          "两个肉包子的实际大小和单个份量无法确认",
+          "肉包子内馅肉种是否一定为猪肉无法确认",
+          "肉包子是否含酱汁及酱汁类型无法确认",
+          "肉包子烹饪方式无法确认是否为蒸制",
+          "一杯豆浆的具体容量无法确认",
+          "豆浆是否含糖、是否添加豆乳或豆奶无法确认",
+          "豆浆烹饪方式无法完全确认",
+          "菜品“肉包子”含有未覆盖食材，已使用宽范围保守估算。",
+          "菜品“豆浆”含有未覆盖食材，已使用宽范围保守估算。"
+        ],
+        "ruleVersion": "nutrition-assessment-v1",
+        "modelVersion": "qwen3.8-flash"
+      },
+      "metrics": {
+        "event": "ai_meal_parse",
+        "status": "success",
+        "modelVersion": "qwen3.8-flash",
+        "promptVersion": "text-meal-v2",
+        "durationMs": 14277,
+        "inputTokens": 498,
+        "outputTokens": 706,
+        "totalTokens": 1204,
+        "costCny": 0.0023046,
+        "costStatus": "calculated_from_token_usage"
+      }
+    },
+    {
+      "caseId": "TXT-EDGE-005",
+      "status": "NO_MEAL",
+      "metrics": {
+        "event": "ai_meal_parse",
+        "status": "no_meal",
+        "modelVersion": "qwen3.8-flash",
+        "promptVersion": "text-meal-v2",
+        "durationMs": 2659,
+        "inputTokens": 496,
+        "outputTokens": 114,
+        "totalTokens": 610,
+        "costCny": 0.0007046,
+        "costStatus": "calculated_from_token_usage",
+        "providerErrorName": "NoMealDetectedError"
+      }
+    },
+    {
+      "caseId": "TXT-EDGE-006",
+      "status": "ERROR",
+      "metrics": {
+        "event": "ai_meal_parse",
+        "status": "timeout",
+        "modelVersion": "qwen3.8-flash",
+        "promptVersion": "text-meal-v2",
+        "durationMs": 20012,
+        "inputTokens": null,
+        "outputTokens": null,
+        "totalTokens": null,
+        "costCny": null,
+        "costStatus": "provider_cost_unavailable",
+        "providerErrorName": "AbortError"
+      },
+      "error": {
+        "name": "AiMealTimeoutError"
+      }
+    },
+    {
+      "caseId": "IMG-PHOTO-001",
+      "status": "PARSED",
+      "parsedMeal": {
+        "items": [
+          {
+            "displayName": "鱼",
+            "ingredients": [
+              "OTHER"
+            ],
+            "otherIngredients": [
+              "鱼"
+            ],
+            "cookingMethods": [
+              "OTHER"
+            ],
+            "otherCookingMethods": [
+              "无法判断"
+            ],
+            "portionLevel": "regular",
+            "uncertainties": [
+              "无法确认具体烹饪方式",
+              "无法确认绿色线条是否为食材"
+            ],
+            "confidence": 0.9
+          },
+          {
+            "displayName": "米饭",
+            "ingredients": [
+              "RICE"
+            ],
+            "otherIngredients": [],
+            "cookingMethods": [
+              "STEAMED"
+            ],
+            "otherCookingMethods": [],
+            "portionLevel": "regular",
+            "uncertainties": [
+              "无法从图片确认精确份量"
+            ],
+            "confidence": 0.9
+          }
+        ]
+      },
+      "assessment": {
+        "items": [
+          {
+            "displayName": "鱼",
+            "ingredients": [
+              "OTHER"
+            ],
+            "otherIngredients": [
+              "鱼"
+            ],
+            "cookingMethods": [
+              "OTHER"
+            ],
+            "otherCookingMethods": [
+              "无法判断"
+            ],
+            "portionLevel": "regular",
+            "uncertainties": [
+              "无法确认具体烹饪方式",
+              "无法确认绿色线条是否为食材"
+            ],
+            "wasManuallyAdjusted": false
+          },
+          {
+            "displayName": "米饭",
+            "ingredients": [
+              "RICE"
+            ],
+            "otherIngredients": [],
+            "cookingMethods": [
+              "STEAMED"
+            ],
+            "otherCookingMethods": [],
+            "portionLevel": "regular",
+            "uncertainties": [
+              "无法从图片确认精确份量"
+            ],
+            "wasManuallyAdjusted": false
+          }
+        ],
+        "calorieRange": {
+          "min": 270,
+          "max": 850
+        },
+        "mealBudget": 1000,
+        "rating": "YELLOW",
+        "ratingLabel": "这餐可以适量吃",
+        "reason": "本餐估算上限接近或略高于当前参考额度。",
+        "advice": [
+          {
+            "id": "REDUCE_RICE",
+            "text": "米饭可以减半或留下一部分。"
+          }
+        ],
+        "uncertainties": [
+          "无法确认具体烹饪方式",
+          "无法确认绿色线条是否为食材",
+          "无法从图片确认精确份量",
+          "菜品“鱼”含有未覆盖食材，已使用宽范围保守估算。",
+          "菜品“鱼”的做法未覆盖，已扩大估算区间。"
+        ],
+        "ruleVersion": "nutrition-assessment-v1",
+        "modelVersion": "qwen3.8-flash"
+      },
+      "metrics": {
+        "event": "ai_meal_parse",
+        "status": "success",
+        "modelVersion": "qwen3.8-flash",
+        "promptVersion": "image-meal-v1",
+        "durationMs": 15602,
+        "inputTokens": 1398,
+        "outputTokens": 1626,
+        "totalTokens": 3024,
+        "costCny": 0.005508600000000001,
+        "costStatus": "calculated_from_token_usage"
+      }
+    },
+    {
+      "caseId": "IMG-PHOTO-002",
+      "status": "ERROR",
+      "metrics": {
+        "event": "ai_meal_parse",
+        "status": "timeout",
+        "modelVersion": "qwen3.8-flash",
+        "promptVersion": "image-meal-v1",
+        "durationMs": 20007,
+        "inputTokens": null,
+        "outputTokens": null,
+        "totalTokens": null,
+        "costCny": null,
+        "costStatus": "provider_cost_unavailable",
+        "providerErrorName": "AbortError"
+      },
+      "error": {
+        "name": "AiMealTimeoutError"
+      }
+    },
+    {
+      "caseId": "IMG-PHOTO-003",
+      "status": "ERROR",
+      "metrics": {
+        "event": "ai_meal_parse",
+        "status": "timeout",
+        "modelVersion": "qwen3.8-flash",
+        "promptVersion": "image-meal-v1",
+        "durationMs": 20001,
+        "inputTokens": null,
+        "outputTokens": null,
+        "totalTokens": null,
+        "costCny": null,
+        "costStatus": "provider_cost_unavailable",
+        "providerErrorName": "AbortError"
+      },
+      "error": {
+        "name": "AiMealTimeoutError"
+      }
+    },
+    {
+      "caseId": "IMG-PHOTO-004",
+      "status": "ERROR",
+      "metrics": {
+        "event": "ai_meal_parse",
+        "status": "timeout",
+        "modelVersion": "qwen3.8-flash",
+        "promptVersion": "image-meal-v1",
+        "durationMs": 20013,
+        "inputTokens": null,
+        "outputTokens": null,
+        "totalTokens": null,
+        "costCny": null,
+        "costStatus": "provider_cost_unavailable",
+        "providerErrorName": "AbortError"
+      },
+      "error": {
+        "name": "AiMealTimeoutError"
+      }
+    },
+    {
+      "caseId": "IMG-LOWQ-001",
+      "status": "ERROR",
+      "metrics": {
+        "event": "ai_meal_parse",
+        "status": "timeout",
+        "modelVersion": "qwen3.8-flash",
+        "promptVersion": "image-meal-v1",
+        "durationMs": 20014,
+        "inputTokens": null,
+        "outputTokens": null,
+        "totalTokens": null,
+        "costCny": null,
+        "costStatus": "provider_cost_unavailable",
+        "providerErrorName": "AbortError"
+      },
+      "error": {
+        "name": "AiMealTimeoutError"
+      }
+    },
+    {
+      "caseId": "IMG-LOWQ-002",
+      "status": "NO_MEAL",
+      "metrics": {
+        "event": "ai_meal_parse",
+        "status": "no_meal",
+        "modelVersion": "qwen3.8-flash",
+        "promptVersion": "image-meal-v1",
+        "durationMs": 6213,
+        "inputTokens": 1398,
+        "outputTokens": 507,
+        "totalTokens": 1905,
+        "costCny": 0.0024873,
+        "costStatus": "calculated_from_token_usage",
+        "providerErrorName": "NoMealDetectedError"
+      }
+    },
+    {
+      "caseId": "IMG-MENU-001",
+      "status": "PARSED",
+      "parsedMeal": {
+        "items": [
+          {
+            "displayName": "红烧肉",
+            "ingredients": [
+              "PORK",
+              "SAUCE"
+            ],
+            "otherIngredients": [],
+            "cookingMethods": [
+              "BRAISED"
+            ],
+            "otherCookingMethods": [],
+            "portionLevel": "regular",
+            "uncertainties": [
+              "份量无法从图片确认",
+              "具体用油和酱汁成分无法从图片确认"
+            ],
+            "confidence": 0.8
+          },
+          {
+            "displayName": "白米饭",
+            "ingredients": [
+              "RICE"
+            ],
+            "otherIngredients": [],
+            "cookingMethods": [
+              "BOILED"
+            ],
+            "otherCookingMethods": [],
+            "portionLevel": "regular",
+            "uncertainties": [
+              "份量无法从图片确认"
+            ],
+            "confidence": 0.8
+          }
+        ]
+      },
+      "assessment": {
+        "items": [
+          {
+            "displayName": "红烧肉",
+            "ingredients": [
+              "PORK",
+              "SAUCE"
+            ],
+            "otherIngredients": [],
+            "cookingMethods": [
+              "BRAISED"
+            ],
+            "otherCookingMethods": [],
+            "portionLevel": "regular",
+            "uncertainties": [
+              "份量无法从图片确认",
+              "具体用油和酱汁成分无法从图片确认"
+            ],
+            "wasManuallyAdjusted": false
+          },
+          {
+            "displayName": "白米饭",
+            "ingredients": [
+              "RICE"
+            ],
+            "otherIngredients": [],
+            "cookingMethods": [
+              "BOILED"
+            ],
+            "otherCookingMethods": [],
+            "portionLevel": "regular",
+            "uncertainties": [
+              "份量无法从图片确认"
+            ],
+            "wasManuallyAdjusted": false
+          }
+        ],
+        "calorieRange": {
+          "min": 380,
+          "max": 630
+        },
+        "mealBudget": 1000,
+        "rating": "GREEN",
+        "ratingLabel": "这餐比较合适",
+        "reason": "本餐估算上限在当前参考额度的合理范围内。",
+        "advice": [
+          {
+            "id": "SEPARATE_SAUCE",
+            "text": "酱汁可以分开放，少蘸一些。"
+          }
+        ],
+        "uncertainties": [
+          "份量无法从图片确认",
+          "具体用油和酱汁成分无法从图片确认"
+        ],
+        "ruleVersion": "nutrition-assessment-v1",
+        "modelVersion": "qwen3.8-flash"
+      },
+      "metrics": {
+        "event": "ai_meal_parse",
+        "status": "success",
+        "modelVersion": "qwen3.8-flash",
+        "promptVersion": "image-meal-v1",
+        "durationMs": 10695,
+        "inputTokens": 1488,
+        "outputTokens": 1069,
+        "totalTokens": 2557,
+        "costCny": 0.0040767,
+        "costStatus": "calculated_from_token_usage"
+      }
+    },
+    {
+      "caseId": "IMG-MENU-002",
+      "status": "PARSED",
+      "parsedMeal": {
+        "items": [
+          {
+            "displayName": "宫保鸡丁",
+            "ingredients": [
+              "CHICKEN_WITHOUT_SKIN",
+              "SAUCE",
+              "OTHER"
+            ],
+            "otherIngredients": [
+              "花生",
+              "葱段",
+              "干辣椒"
+            ],
+            "cookingMethods": [
+              "STIR_FRIED"
+            ],
+            "otherCookingMethods": [],
+            "portionLevel": "regular",
+            "uncertainties": [
+              "份量无法从订单截图确认",
+              "鸡肉是否带皮无法确认",
+              "用油与酱汁用量无法确认"
+            ],
+            "confidence": 0.7
+          },
+          {
+            "displayName": "白灼青菜",
+            "ingredients": [
+              "LEAFY_VEGETABLE"
+            ],
+            "otherIngredients": [],
+            "cookingMethods": [
+              "BLANCHED"
+            ],
+            "otherCookingMethods": [],
+            "portionLevel": "regular",
+            "uncertainties": [
+              "份量无法从订单截图确认",
+              "淋汁或酱油用量无法确认"
+            ],
+            "confidence": 0.75
+          },
+          {
+            "displayName": "白米饭",
+            "ingredients": [
+              "RICE"
+            ],
+            "otherIngredients": [],
+            "cookingMethods": [
+              "STEAMED"
+            ],
+            "otherCookingMethods": [],
+            "portionLevel": "regular",
+            "uncertainties": [
+              "份量无法从订单截图确认"
+            ],
+            "confidence": 0.8
+          }
+        ]
+      },
+      "assessment": {
+        "items": [
+          {
+            "displayName": "宫保鸡丁",
+            "ingredients": [
+              "CHICKEN_WITHOUT_SKIN",
+              "SAUCE",
+              "OTHER"
+            ],
+            "otherIngredients": [
+              "花生",
+              "葱段",
+              "干辣椒"
+            ],
+            "cookingMethods": [
+              "STIR_FRIED"
+            ],
+            "otherCookingMethods": [],
+            "portionLevel": "regular",
+            "uncertainties": [
+              "份量无法从订单截图确认",
+              "鸡肉是否带皮无法确认",
+              "用油与酱汁用量无法确认"
+            ],
+            "wasManuallyAdjusted": false
+          },
+          {
+            "displayName": "白灼青菜",
+            "ingredients": [
+              "LEAFY_VEGETABLE"
+            ],
+            "otherIngredients": [],
+            "cookingMethods": [
+              "BLANCHED"
+            ],
+            "otherCookingMethods": [],
+            "portionLevel": "regular",
+            "uncertainties": [
+              "份量无法从订单截图确认",
+              "淋汁或酱油用量无法确认"
+            ],
+            "wasManuallyAdjusted": false
+          },
+          {
+            "displayName": "白米饭",
+            "ingredients": [
+              "RICE"
+            ],
+            "otherIngredients": [],
+            "cookingMethods": [
+              "STEAMED"
+            ],
+            "otherCookingMethods": [],
+            "portionLevel": "regular",
+            "uncertainties": [
+              "份量无法从订单截图确认"
+            ],
+            "wasManuallyAdjusted": false
+          }
+        ],
+        "calorieRange": {
+          "min": 480,
+          "max": 1110
+        },
+        "mealBudget": 1000,
+        "rating": "YELLOW",
+        "ratingLabel": "这餐可以适量吃",
+        "reason": "本餐估算上限接近或略高于当前参考额度。",
+        "advice": [
+          {
+            "id": "REDUCE_RICE",
+            "text": "米饭可以减半或留下一部分。"
+          },
+          {
+            "id": "SEPARATE_SAUCE",
+            "text": "酱汁可以分开放，少蘸一些。"
+          }
+        ],
+        "uncertainties": [
+          "份量无法从订单截图确认",
+          "鸡肉是否带皮无法确认",
+          "用油与酱汁用量无法确认",
+          "淋汁或酱油用量无法确认",
+          "菜品“宫保鸡丁”含有未覆盖食材，已使用宽范围保守估算。"
+        ],
+        "ruleVersion": "nutrition-assessment-v1",
+        "modelVersion": "qwen3.8-flash"
+      },
+      "metrics": {
+        "event": "ai_meal_parse",
+        "status": "success",
+        "modelVersion": "qwen3.8-flash",
+        "promptVersion": "image-meal-v1",
+        "durationMs": 5170,
+        "inputTokens": 1488,
+        "outputTokens": 441,
+        "totalTokens": 1929,
+        "costCny": 0.0023811000000000006,
+        "costStatus": "calculated_from_token_usage"
+      }
+    },
+    {
+      "caseId": "IMG-MENU-003",
+      "status": "NO_MEAL",
+      "metrics": {
+        "event": "ai_meal_parse",
+        "status": "no_meal",
+        "modelVersion": "qwen3.8-flash",
+        "promptVersion": "image-meal-v1",
+        "durationMs": 2444,
+        "inputTokens": 1488,
+        "outputTokens": 194,
+        "totalTokens": 1682,
+        "costCny": 0.0017142000000000004,
+        "costStatus": "calculated_from_token_usage",
+        "providerErrorName": "NoMealDetectedError"
+      }
+    },
+    {
+      "caseId": "IMG-MENU-004",
+      "status": "PARSED",
+      "parsedMeal": {
+        "items": [
+          {
+            "displayName": "番茄炒蛋",
+            "ingredients": [
+              "OTHER",
+              "EGG"
+            ],
+            "otherIngredients": [
+              "番茄"
+            ],
+            "cookingMethods": [
+              "STIR_FRIED"
+            ],
+            "otherCookingMethods": [],
+            "portionLevel": "regular",
+            "uncertainties": [
+              "菜单截图无法确认实际份量与用油量"
+            ],
+            "confidence": 0.6
+          }
+        ]
+      },
+      "assessment": {
+        "items": [
+          {
+            "displayName": "番茄炒蛋",
+            "ingredients": [
+              "OTHER",
+              "EGG"
+            ],
+            "otherIngredients": [
+              "番茄"
+            ],
+            "cookingMethods": [
+              "STIR_FRIED"
+            ],
+            "otherCookingMethods": [],
+            "portionLevel": "regular",
+            "uncertainties": [
+              "菜单截图无法确认实际份量与用油量"
+            ],
+            "wasManuallyAdjusted": false
+          }
+        ],
+        "calorieRange": {
+          "min": 190,
+          "max": 610
+        },
+        "mealBudget": 1000,
+        "rating": "GREEN",
+        "ratingLabel": "这餐比较合适",
+        "reason": "本餐估算上限在当前参考额度的合理范围内。",
+        "advice": [
+          {
+            "id": "KEEP_CURRENT",
+            "text": "保持当前选择即可，无需额外调整。"
+          }
+        ],
+        "uncertainties": [
+          "菜单截图无法确认实际份量与用油量",
+          "菜品“番茄炒蛋”含有未覆盖食材，已使用宽范围保守估算。"
+        ],
+        "ruleVersion": "nutrition-assessment-v1",
+        "modelVersion": "qwen3.8-flash"
+      },
+      "metrics": {
+        "event": "ai_meal_parse",
+        "status": "success",
+        "modelVersion": "qwen3.8-flash",
+        "promptVersion": "image-meal-v1",
+        "durationMs": 4053,
+        "inputTokens": 1488,
+        "outputTokens": 311,
+        "totalTokens": 1799,
+        "costCny": 0.0020301,
+        "costStatus": "calculated_from_token_usage"
+      }
+    },
+    {
+      "caseId": "IMG-MENU-005",
+      "status": "NO_MEAL",
+      "metrics": {
+        "event": "ai_meal_parse",
+        "status": "no_meal",
+        "modelVersion": "qwen3.8-flash",
+        "promptVersion": "image-meal-v1",
+        "durationMs": 5998,
+        "inputTokens": 1488,
+        "outputTokens": 494,
+        "totalTokens": 1982,
+        "costCny": 0.0025242000000000003,
+        "costStatus": "calculated_from_token_usage",
+        "providerErrorName": "NoMealDetectedError"
+      }
+    },
+    {
+      "caseId": "IMG-MENU-006",
+      "status": "PARSED",
+      "parsedMeal": {
+        "items": [
+          {
+            "displayName": "水煮蛋",
+            "ingredients": [
+              "EGG"
+            ],
+            "otherIngredients": [],
+            "cookingMethods": [
+              "BOILED"
+            ],
+            "otherCookingMethods": [],
+            "portionLevel": "regular",
+            "uncertainties": [],
+            "confidence": 1
+          },
+          {
+            "displayName": "白米饭",
+            "ingredients": [
+              "RICE"
+            ],
+            "otherIngredients": [],
+            "cookingMethods": [
+              "STEAMED"
+            ],
+            "otherCookingMethods": [],
+            "portionLevel": "regular",
+            "uncertainties": [],
+            "confidence": 1
+          },
+          {
+            "displayName": "凉拌豆腐",
+            "ingredients": [
+              "TOFU"
+            ],
+            "otherIngredients": [],
+            "cookingMethods": [
+              "COLD_MIXED"
+            ],
+            "otherCookingMethods": [],
+            "portionLevel": "regular",
+            "uncertainties": [],
+            "confidence": 1
+          }
+        ]
+      },
+      "assessment": {
+        "items": [
+          {
+            "displayName": "水煮蛋",
+            "ingredients": [
+              "EGG"
+            ],
+            "otherIngredients": [],
+            "cookingMethods": [
+              "BOILED"
+            ],
+            "otherCookingMethods": [],
+            "portionLevel": "regular",
+            "uncertainties": [],
+            "wasManuallyAdjusted": false
+          },
+          {
+            "displayName": "白米饭",
+            "ingredients": [
+              "RICE"
+            ],
+            "otherIngredients": [],
+            "cookingMethods": [
+              "STEAMED"
+            ],
+            "otherCookingMethods": [],
+            "portionLevel": "regular",
+            "uncertainties": [],
+            "wasManuallyAdjusted": false
+          },
+          {
+            "displayName": "凉拌豆腐",
+            "ingredients": [
+              "TOFU"
+            ],
+            "otherIngredients": [],
+            "cookingMethods": [
+              "COLD_MIXED"
+            ],
+            "otherCookingMethods": [],
+            "portionLevel": "regular",
+            "uncertainties": [],
+            "wasManuallyAdjusted": false
+          }
+        ],
+        "calorieRange": {
+          "min": 340,
+          "max": 580
+        },
+        "mealBudget": 1000,
+        "rating": "GREEN",
+        "ratingLabel": "这餐比较合适",
+        "reason": "本餐估算上限在当前参考额度的合理范围内。",
+        "advice": [
+          {
+            "id": "KEEP_CURRENT",
+            "text": "保持当前选择即可，无需额外调整。"
+          }
+        ],
+        "uncertainties": [],
+        "ruleVersion": "nutrition-assessment-v1",
+        "modelVersion": "qwen3.8-flash"
+      },
+      "metrics": {
+        "event": "ai_meal_parse",
+        "status": "success",
+        "modelVersion": "qwen3.8-flash",
+        "promptVersion": "image-meal-v1",
+        "durationMs": 7314,
+        "inputTokens": 1488,
+        "outputTokens": 647,
+        "totalTokens": 2135,
+        "costCny": 0.0029373000000000003,
+        "costStatus": "calculated_from_token_usage"
+      }
+    }
+  ]
+}

@@ -11,6 +11,8 @@ export const ingredientTagSchema = z.enum([
   'CHICKEN_WITHOUT_SKIN',
   'TOFU',
   'EGG',
+  'TOMATO',
+  'FISH',
   'SAUCE',
   'OTHER'
 ])

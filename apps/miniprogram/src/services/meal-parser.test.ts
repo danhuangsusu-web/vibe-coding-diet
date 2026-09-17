@@ -75,7 +75,7 @@ describe('miniprogram meal parser facade', () => {
       metadata: {
         isDemo: false,
         modelVersion: 'vision-model',
-        promptVersion: 'image-meal-v1'
+        promptVersion: 'image-meal-v2'
       }
     }))
 
@@ -100,7 +100,7 @@ describe('miniprogram meal parser facade', () => {
       metadata: {
         isDemo: false,
         modelVersion: 'test-model',
-        promptVersion: 'text-meal-v2'
+        promptVersion: 'text-meal-v3'
       }
     }))
 
@@ -114,7 +114,7 @@ describe('miniprogram meal parser facade', () => {
       metadata: {
         isDemo: false,
         modelVersion: 'test-model',
-        promptVersion: 'text-meal-v2'
+        promptVersion: 'text-meal-v3'
       }
     })
     expect(parseText).toHaveBeenCalledWith('一份番茄炒蛋')

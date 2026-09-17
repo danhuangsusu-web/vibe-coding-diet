@@ -15,6 +15,15 @@ export class AIProviderConfigurationError extends Error {
   }
 }
 
+export function transformMealAnalysisRequestBody(
+  body: Record<string, unknown>
+): Record<string, unknown> {
+  return {
+    ...body,
+    enable_thinking: false
+  }
+}
+
 export function isMealAnalysisAiConfigured(
   environment: AIEnvironment = process.env
 ): boolean {
@@ -39,7 +48,8 @@ export function getMealAnalysisModelConfiguration(
   const provider = createOpenAICompatible({
     name: 'food-sense-ai',
     baseURL,
-    apiKey
+    apiKey,
+    transformRequestBody: transformMealAnalysisRequestBody
   })
 
   return {

@@ -1,6 +1,6 @@
 # 食刻 AI 当前架构
 
-> 基线日期：2026-09-17（步骤 22 已由用户验收通过；阶段四的两条真实解析路径与错误降级状态均已完成）
+> 基线日期：2026-09-17（步骤 23 已由用户验收通过；两条真实解析路径、错误降级状态与 AI 评测集均已完成）
 > 记录原则：本文件描述当前仓库事实。尚未实现的目标只在“计划边界”中标注，不与现状混写。
 
 ## 1. 总览
@@ -23,11 +23,13 @@
 | `pnpm-lock.yaml` | 锁定真实依赖树 | 步骤 1 起包含 Vitest 3.2.7 及其传递依赖；Jest/Playwright 名称仅为传递依赖 |
 | `vitest.config.ts` | 定义 shared、nutrition、server、miniprogram 与顶层跨工作区测试入口 | 收集各工作区及 `tests/**/*.test.ts`，零测试视为失败 |
 | `vitest.offline.config.ts` | 步骤 19 真实 HTTP 闭环的独立 Vitest 配置 | 只运行 `tests/offline-loop.live.ts`，避免普通单测依赖本地服务与数据库 |
+| `vitest.ai-eval.config.ts` | 步骤 23 AI 评测集的独立 Vitest 配置 | 由 `pnpm eval:ai` 显式运行，需要 `MEAL_PARSER=ai` 与已配置模型，不进主测试套件 |
 | `tests/offline-loop.test.ts` | 固定服务端时间和内存数据库的五页跨层闭环测试 | 两个离线样例依次经过输入、确认、评估、幂等保存、首页刷新、历史查看和删除；另测设置持久化、后续评估变化与非法范围拒绝 |
 | `tests/offline-loop.live.ts` | 对 `OFFLINE_LOOP_BASE_URL`（默认 `http://127.0.0.1:3000`）执行真实 HTTP/数据库闭环 | 临时修改后恢复资料，创建两条演示记录与一条普通对照记录，验证幂等、标记、分组汇总和删除，并在 `finally` 清理临时数据 |
+| `scripts/ai-eval/` | 步骤 23 的 AI 评测集、评分器、报告器与合成素材 | `cases.json` 38 个固定案例；`dataset.ts` / `scoring.ts` / `report.ts` 负责加载、评分与出报告；`results/` 保留基线（`baseline.*`）与迭代（`iteration-1.*`）原始数据、汇总与报告，失败样本不删除；素材为确定性合成的餐食图、低质图与菜单截图 |
 | `.npmrc` | 将 pnpm store 放在仓库内并放宽 peer dependency 检查 | `.pnpm-store` 被忽略 |
 | `.gitignore` | 忽略依赖、构建产物、缓存、覆盖率和环境文件 | 当前仓库已启用 Git |
-| `README.md` | 说明产品、环境、启动、常用检查和当前实施进度 | 文字与图片 AI 解析需设置 `MEAL_PARSER=ai`；图片仍不接入对象存储 |
+| `README.md` | 说明产品、环境、启动、常用检查和当前实施进度 | 文字与图片 AI 解析需设置 `MEAL_PARSER=ai`；图片仍不接入对象存储；`pnpm eval:ai` 运行步骤 23 的 AI 评测集 |
 | `食刻AI_PRD_通俗版.md` | 当前产品范围基准 V0.3 | 本轮设计的上游需求资料 |
 | `PRD.docx` | 更早、范围更大的产品设想 | 仅作为探索资料，不控制本轮范围 |
 | `a small prd.txt` | 三个产品方向的早期分析 | 仅作为背景资料 |
@@ -184,8 +186,8 @@
 
 | 路径 | 当前职责 |
 | --- | --- |
-| `apps/server/lib/ai-provider.ts` | 安全探测 AI 配置并创建带模型版本的 OpenAI 兼容模型实例；配置缺失时抛出不含配置值的错误 |
-| `apps/server/lib/ai-meal-parser.ts` | `text-meal-v2` 文字 Prompt 与 `image-meal-v1` 图片 Prompt、真实模型调用、图片与菜单约束、20 秒取消、最多 1 次自动重试、受限结构规范化、最终 Zod 校验、稳定错误分型及脱敏 token/成本日志 |
+| `apps/server/lib/ai-provider.ts` | 安全探测 AI 配置并创建带模型版本的 OpenAI 兼容模型实例；对百炼显式关闭 thinking（`enable_thinking: false`）；配置缺失时抛出不含配置值的错误 |
+| `apps/server/lib/ai-meal-parser.ts` | `text-meal-v3` 文字 Prompt 与 `image-meal-v2` 图片 Prompt、真实模型调用（输出上限 1,200 token）、图片与菜单约束、20 秒取消、最多 1 次自动重试、受限结构规范化、最终 Zod 校验、稳定错误分型及脱敏 token/成本日志；无做法输入固定返回 `OTHER` + `未说明，待用户选择` |
 | `apps/server/lib/meal-parse-handlers.ts` | `/api/parse-meal` 的请求校验（JSON 文字与 multipart 图片）、2MB 请求体硬上限、JPEG/PNG 魔数校验、模式选择、模型元数据响应头和稳定错误码映射 |
 | `apps/server/app/api/parse-meal/route.ts` | 文字解析 POST Route Handler 薄封装 |
 | `apps/server/lib/workspace-imports.test.ts` | 冒烟验证服务端测试可直接导入 exports 指向 TypeScript 源码的 shared 与 nutrition 工作区包；使用受控大写枚举构造样例 |
@@ -397,10 +399,10 @@ P01 的问候语按上海时间取小时：05:00 至 10:59 早上好、11:00 至
 `packages/nutrition/src/index.ts` 只做 re-export，真实能力拆成五个模块：
 
 - `calorie-estimator.ts`：`estimateMealCalories(items, options)` 根据确认后的菜品计算整餐热量区间；
-- `calorie-rules.ts`：规则数据（食材基础区间、做法附加区间、份量系数、未知兜底区间）、中文别名映射 `INGREDIENT_ALIASES`、`resolveIngredientAlias` 和规则版本常量 `CALORIE_RANGE_RULE_VERSION`（当前值 `calorie-range-v1`）；
+- `calorie-rules.ts`：规则数据（食材基础区间、做法附加区间、份量系数、未知兜底区间）、中文别名映射 `INGREDIENT_ALIASES`、`resolveIngredientAlias` 和规则版本常量 `CALORIE_RANGE_RULE_VERSION`（当前值 `calorie-range-v2`；步骤 23 新增 `TOMATO` 与 `FISH` 后由 v1 递增，受控食材标签共 12 个）；
 - `dynamic-rating.ts`：`rateMeal`、`getRemainingMealCount`、`calculateDynamicMealRating`、`mealHasHighOil`、`mealHasHighOilOrSugar`，以及规则版本常量 `DYNAMIC_RATING_RULE_VERSION`（当前值 `dynamic-rating-v1`）；
 - `advice-rules.ts`：`ADVICE_TEXT`（7 条建议 ID 与展示文案）与 `selectMealAdvice(items, rating)`；
-- `meal-assessment.ts`：`assessMeal(input)` 编排函数，规则版本常量 `NUTRITION_ASSESSMENT_RULE_VERSION`（当前值 `nutrition-assessment-v1`）。
+- `meal-assessment.ts`：`assessMeal(input)` 编排函数，规则版本常量 `NUTRITION_ASSESSMENT_RULE_VERSION`（当前值 `nutrition-assessment-v2`；随步骤 23 的热量区间升级同步递增）。
 
 `estimateMealCalories` 的计算顺序：
 
@@ -436,7 +438,7 @@ P01 的问候语按上海时间取小时：05:00 至 10:59 早上好、11:00 至
 
 建议优先级固定为：去皮 > 换蔬菜 > 减米饭 > 分酱汁 > 少吃高油菜 > 沥油；多条命中时去重取前两条。所有用户可见文案通过禁止词扫描（绝食 / 催吐 / 药物 / 跳过下一餐 / 补偿性运动 / 保证减重 / 你不自律 / 你没有意志）。
 
-`packages/nutrition/src/` 现有四个测试文件：`index.test.ts`（18 个，热量区间与未知处理）、`dynamic-rating.test.ts`（31 个，时段边界、评级边界、除零防护、高油高糖最低黄灯、时间中性、确定性）、`meal-assessment.test.ts`（17 个，建议规则、原因优先级、schema 校验、禁止词扫描、确定性）。
+`packages/nutrition/src/` 现有三个测试文件（共 71 个）：`index.test.ts`（23 个，热量区间、别名解析、新标签区间与未知处理）、`dynamic-rating.test.ts`（31 个，时段边界、评级边界、除零防护、高油高糖最低黄灯、时间中性、确定性）、`meal-assessment.test.ts`（17 个，建议规则、原因优先级、schema 校验、禁止词扫描、确定性）。
 
 ## 6. 设计原型资产
 
@@ -484,7 +486,7 @@ P01 的问候语按上海时间取小时：05:00 至 10:59 早上好、11:00 至
 4. 客户端请求 `PATCH /api/profile`，服务端用共享契约校验后更新资料并返回最新结果。
 5. 客户端 `POST /api/meal-records` 提交确认后的菜品，服务端重新评估后落库；`GET /api/meal-records` 返回最近 30 天按上海日期分组的记录与汇总；`DELETE /api/meal-records/{id}` 物理删除属于演示资料的记录。
 
-AI 工厂和文字解析器都已实现；`MEAL_PARSER=ai` 会通过 `/api/parse-meal` 调用唯一配置模型，`offline` 继续匹配两个固定样例。小程序的两条明确演示文字不发起模型请求，其他文字与所有真实图片统一走服务端；图片会上传但只用于当次识别。根 Vitest 入口当前可运行 260 个测试，范围覆盖共享契约、nutrition 规则、服务端解析与数据接口、小程序纯逻辑和五页离线数据流；`pnpm verify:offline-loop` 另运行 1 个真实 HTTP/数据库闭环测试，且不会计入普通测试。nutrition 已通过记录接口被真实调用；小程序 P01 至 P05 已完成首页看板、文字与图片输入（含本地压缩与上传）、确认编辑、评估展示、保存、历史删除与设置更新，并已真实调用所需接口。
+AI 工厂和文字解析器都已实现；`MEAL_PARSER=ai` 会通过 `/api/parse-meal` 调用唯一配置模型，`offline` 继续匹配两个固定样例。小程序的两条明确演示文字不发起模型请求，其他文字与所有真实图片统一走服务端；图片会上传但只用于当次识别。根 Vitest 入口当前可运行 292 个测试，范围覆盖共享契约、nutrition 规则、服务端解析与数据接口、小程序纯逻辑和五页离线数据流；`pnpm verify:offline-loop` 另运行 1 个真实 HTTP/数据库闭环测试，且不会计入普通测试。nutrition 已通过记录接口被真实调用；小程序 P01 至 P05 已完成首页看板、文字与图片输入（含本地压缩与上传）、确认编辑、评估展示、保存、历史删除与设置更新，并已真实调用所需接口。
 
 ## 9. 目标数据流边界
 
@@ -505,24 +507,25 @@ AI 工厂和文字解析器都已实现；`MEAL_PARSER=ai` 会通过 `/api/parse
 
 ## 10. 已知技术债与风险
 
-- 普通自动化测试目前是 282 个契约、规则、接口、小程序纯逻辑与跨工作区闭环测试；另有 1 个显式运行、会自动恢复数据的真实 HTTP/数据库闭环测试；尚无针对微信运行时的页面自动化测试；
-- 热量区间规则只覆盖 9 个已知食材标签、10 个已知做法和两个演示样例，扩展评测集前需同步递增规则版本并补测试；
+- 普通自动化测试目前是 292 个契约、规则、接口、小程序纯逻辑与跨工作区闭环测试；另有 1 个显式运行、会自动恢复数据的真实 HTTP/数据库闭环测试，以及 38 个案例的 AI 评测集（`pnpm eval:ai`，需模型配置、不进主套件）；尚无针对微信运行时的页面自动化测试；
+- 热量区间规则只覆盖 11 个已知食材标签（`OTHER` 另计，共 12 个枚举值）、10 个已知做法和两个演示样例，扩展评测集前需同步递增规则版本并补测试；
 - 服务端 offline 解析器只能识别两个演示样例的原文；小程序会让这两条文字留在本地，其他文字在 AI 模式下调用服务端；
 - 规则层和 P04 已实现“需要补充信息”及用户明确选择“仍按宽范围估算”的两阶段入口；
 - 记录接口已实现创建、查询与物理删除；客户端提交的 `clientAssessmentSnapshot` 当前被完全忽略，未用于结果一致性提示；
 - 30 天窗口与 50 条上限只由单测覆盖，尚未在真实数据量下验证；
 - 文字与图片解析已使用 `AI_NOT_CONFIGURED`、`AI_TIMEOUT`、`AI_INVALID_OUTPUT`、`NO_MEAL_DETECTED`、`VALIDATION_FAILED`；图片另有 `IMAGE_TOO_LARGE`（413）与 `IMAGE_UNSUPPORTED`（415），按文件魔数而非扩展名判断，HEIC/WebP/GIF 等一律落到 `IMAGE_UNSUPPORTED`；
 - 小程序已有本地单图选择、最长边 1280px/质量 75 压缩、压缩后 1MB 限制、图片上传，以及文字与图片请求的 4 秒进度/20 秒停止等待；服务端已有 2MB 请求体硬上限，读取流时超限即中断；图片不落库也不接入对象存储，仅用于当次识别；
-- 文字 AI 已有 JSON、受限运输结构、确定性规范化与最终 Zod 校验，以及配置/超时/非法输出/无餐食/供应商错误分型；`text-meal-v2` 已让“番茄炒鸡蛋”连续两次真实解析成功，步骤 23 仍需正式评测成功率；
-- 文字模型当前延迟波动明显：4 次成功约为 6.45 至 16.071 秒，另在 12 秒和 15 秒阈值下观察到超时；验收当日同一句“番茄炒蛋配一小碗米饭”连续三次调用为 20.01 秒超时、20.05 秒超时、12.46 秒成功；步骤 22 汇总步骤 20、21 与本身的 11 个可比较观测值，指示性 P50 约 14 秒、P90 约 20 秒，当前统一上限保持 20 秒；样本混合了不同类型与结果类别且数量很少，只用于复核交互阈值，不能表述为生产性能统计；
-- 没有评测集；
-- P01 至 P05 均已通过用户验收；步骤 19 的跨层与真实 HTTP 闭环、两端构建、数据恢复以及多尺寸端到端验收均已通过；步骤 20 的真实文字解析、步骤 21 的真实图片解析与步骤 22 的错误降级状态均已由用户在微信开发者工具验收通过；图片路径的成功率与菜单截图表现仍待步骤 23 正式评测；
+- 文字 AI 已有 JSON、受限运输结构、确定性规范化与最终 Zod 校验，以及配置/超时/非法输出/无餐食/供应商错误分型；步骤 23 已建立 38 案例评测集并完成一次有限迭代：`text-meal-v3` 与 `image-meal-v2` 关闭 thinking 后，同一评测集的结构化合法率由 52.6% 提升到 84.2%、主要菜品 36.1% 到 78.7%、关键做法 34.4% 到 63.9%、建议相关率 80% 到 96.2%；三项未达标（目标分别为 ≥95%、≥80%、≥80%）由用户在 D10 中确认接受，不再迭代；
+- 文字模型延迟在开启长思考时波动明显：步骤 20 至 22 的 11 个可比较观测值指示性 P50 约 14 秒、P90 约 20 秒，多次触及 20 秒上限；步骤 23 对百炼显式关闭 thinking 后，同评测集 38 个案例的延迟 P50 降至 2,236 ms、P90 降至 5,128 ms、最大仍为 20,014 ms；客户端与服务端上限继续保持 20 秒；样本少且混合不同输入类型，只用于复核交互阈值，不能表述为生产性能统计；
+- 步骤 23 已有 `scripts/ai-eval/` 评测集（38 个固定案例）与 `pnpm eval:ai`：逐案例记录结构化合法、菜品、做法、食材、建议相关、严重误判、耗时、token 与成本，基线结果与迭代结果分开保存；局限是餐食图、低质图与菜单截图均为本仓库确定性合成素材而非真实拍摄，结果不能外推到真实用户图片，且再次迭代需重新付费；
+- P01 至 P05 均已通过用户验收；步骤 19 的跨层与真实 HTTP 闭环、两端构建、数据恢复以及多尺寸端到端验收均已通过；步骤 20 的真实文字解析、步骤 21 的真实图片解析、步骤 22 的错误降级状态与步骤 23 的评测集及有限迭代均已由用户在微信开发者工具验收通过；图片路径的成功率仍受合成素材局限，其结论不适用于真实拍摄照片；
 - 微信小程序内断网不会让 `Taro.request` 立即失败，而是挂起直到客户端 20 秒上限才停止等待，因此离线场景下显示的是超时文案“分析时间较长，已经停止等待”而不是“网络连接失败”；用户已确认接受该表现，不额外增加提交前的网络预检；
-- 只有菜名、没有做法的极简输入（已确认案例：“茄子豆角”）在真实模型下稳定失败，脱敏日志显示失败位置集中在 `items.0.cookingMethods`，客户端按 `AI_INVALID_OUTPUT` 拒绝输出；同类输入补上做法后可以正常解析（已确认：“一份烧茄子和清炒豆角”返回烧茄子 `BRAISED` 与清炒豆角 `STIR_FRIED`），因此这是 Prompt 与严格校验的共同结果，留待步骤 23 的评测集与有限 Prompt 迭代处理；
+- 只有菜名、没有做法的极简输入（已确认案例：“茄子豆角”）曾在步骤 22 稳定失败，脱敏日志显示失败位置集中在 `items.0.cookingMethods`，客户端按 `AI_INVALID_OUTPUT` 拒绝输出；步骤 23 已将这类输入固定为合法保守结果——`cookingMethods: ["OTHER"]` 与 `otherCookingMethods: ["未说明，待用户选择"]`，并在 `uncertainties` 提示用户在 P03 选择实际做法，实测“茄子豆角”约 4.3 秒成功；“未说明，待用户选择”仍是评测集中出现次数最多的未覆盖做法（15 次），属于预期行为而非缺陷；
 - 开发服务器在依赖或代码变动后可能出现 `.next` 构建缓存失效（表现为任意接口 500 且日志为 `Cannot find module './vendor-chunks/<pkg>.js'`），清空 `apps/server/.next` 并重启即可恢复，与业务代码无关；**`next build` 与 `next dev` 共用同一 `.next` 目录，dev server 正在运行时执行构建必然触发该故障**，因此验证服务端构建前必须先确认 3000 端口没有开发进程；
+- 若所有依赖数据库的接口同时返回 503 `DB_UNAVAILABLE` 而 `/api/health` 仍为 200，除排查 PostgreSQL 服务与 `.next` 外，还必须检查生成的 Prisma 客户端是否被以无引擎模式生成：`.prisma/client/index.js` 中 `"copyEngine": false` 会让客户端只接受 `prisma://` 云代理地址，对本地 `postgresql://` 一律抛 P6001；在 `apps/server` 下正常重跑 `prisma generate` 即可恢复，与业务代码和数据无关；`DB_UNAVAILABLE` 是吞掉一切数据库异常的笼统错误码，排查真实原因需要绕过 API 层直接探测；
 - 小程序测试只覆盖纯逻辑，不含页面渲染、真实相机/相册权限或平台图片压缩；Vitest 范围不包含小程序运行时；
 - `__API_BASE_URL__` 已由小程序请求层统一消费；本地 `.env` 可为构建注入 `http://127.0.0.1:3000`，正式 HTTPS 地址与域名配置属于 P1；
 - `project.config.json` 使用**小程序测试号**提供的 AppID（`wx9c7d506cdb608201`）：相比原先的游客 AppID，它已支持真机预览与真机调试；但测试号没有上传能力，因此**体验版与上线仍需正式 AppID**。D5 的原前提（体验版需先换正式 AppID）经核实依然成立，仅方案 b 的括号措辞需修正。`project.private.config.json` 由开发者工具生成并已被 `.gitignore` 排除；
 - 高保真 HTML 原型对应的 P01 至 P05 页面内容均已实现，最终视觉与交互已在步骤 18 通过用户验收；
 - `.workbuddy_html/` 未被 `.gitignore` 排除，且当前已纳入版本控制；后续原型变更会进入 Git 差异；
-- 当前 Git `main` 已包含步骤 1 至步骤 10 的提交（`01afa66`、`dcd640f`、`4f087d5`、`1d56406`、`2174d63`、`d043690`、`c7205ac`、`cde21b7`、`b7b6487`、`58d19a0`）、步骤 11 提交 `480d795`、两次文档提交 `db2c6ba` 与 `7c28422`、步骤 12 提交 `4e4e458`、步骤 13 提交 `038e5c0`、`.gitattributes` 提交 `1e6e39f` 与 D7 文档提交 `ebc3deb`；步骤 14 提交 `dae4a46`、步骤 15 提交 `07a9435`、步骤 16 提交 `252f314`、立项 prompt 归档提交 `4b81733`、步骤 17 提交 `052a96e`、步骤 18 提交 `506c71b`；步骤 19 的闭环验证、`verify:offline-loop` 脚本与本文档更新在同一提交中；步骤 20 的文字解析接口、Prompt、错误分型、脱敏日志与本文档更新也在同一提交中；步骤 21 的图片上传、图片 Prompt 与菜单约束、格式与大小校验、切换输入方式（D9）与本文档更新在另一提交中 `b6ba0a2`；步骤 22 的错误码与可重试标志、客户端错误呈现、取消与降级恢复、保存幂等与本文档更新在另一提交中。
+- 当前 Git `main` 已包含步骤 1 至步骤 10 的提交（`01afa66`、`dcd640f`、`4f087d5`、`1d56406`、`2174d63`、`d043690`、`c7205ac`、`cde21b7`、`b7b6487`、`58d19a0`）、步骤 11 提交 `480d795`、两次文档提交 `db2c6ba` 与 `7c28422`、步骤 12 提交 `4e4e458`、步骤 13 提交 `038e5c0`、`.gitattributes` 提交 `1e6e39f` 与 D7 文档提交 `ebc3deb`；步骤 14 提交 `dae4a46`、步骤 15 提交 `07a9435`、步骤 16 提交 `252f314`、立项 prompt 归档提交 `4b81733`、步骤 17 提交 `052a96e`、步骤 18 提交 `506c71b`；步骤 19 的闭环验证、`verify:offline-loop` 脚本与本文档更新在同一提交中；步骤 20 的文字解析接口、Prompt、错误分型、脱敏日志与本文档更新也在同一提交中；步骤 21 的图片上传、图片 Prompt 与菜单约束、格式与大小校验、切换输入方式（D9）与本文档更新在另一提交中 `b6ba0a2`；步骤 22 的错误码与可重试标志、客户端错误呈现、取消与降级恢复、保存幂等与本文档更新在另一提交中；步骤 23 的 38 案例评测集、合成素材、评分器与报告、`text-meal-v3`/`image-meal-v2` 与关闭 thinking、`TOMATO`/`FISH` 两个标签、规则版本递增与本文档更新在另一提交中。

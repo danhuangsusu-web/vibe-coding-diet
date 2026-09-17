@@ -46,6 +46,8 @@ const INGREDIENT_LABELS: Record<IngredientTag, string> = {
   CHICKEN_WITHOUT_SKIN: '去皮鸡肉',
   TOFU: '豆腐',
   EGG: '鸡蛋',
+  TOMATO: '番茄',
+  FISH: '鱼类',
   SAUCE: '酱汁',
   OTHER: '其他食材'
 }

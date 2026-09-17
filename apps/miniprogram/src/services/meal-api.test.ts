@@ -45,7 +45,7 @@ describe('miniprogram image meal API', () => {
       header: {
         'X-Food-Sense-Is-Demo': 'false',
         'X-Food-Sense-Model-Version': 'vision-model',
-        'X-Food-Sense-Prompt-Version': 'image-meal-v1'
+        'X-Food-Sense-Prompt-Version': 'image-meal-v2'
       },
       errMsg: 'uploadFile:ok'
     })
@@ -57,7 +57,7 @@ describe('miniprogram image meal API', () => {
       metadata: {
         isDemo: false,
         modelVersion: 'vision-model',
-        promptVersion: 'image-meal-v1'
+        promptVersion: 'image-meal-v2'
       }
     })
     expect(uploadFile).toHaveBeenCalledWith({

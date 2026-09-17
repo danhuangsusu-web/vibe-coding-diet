@@ -65,7 +65,7 @@ function recordRow(
     uncertainties: [],
     isDemo: true,
     modelVersion: 'offline-demo-v1',
-    ruleVersion: 'nutrition-assessment-v1',
+    ruleVersion: 'nutrition-assessment-v2',
     createdAt: new Date('2026-09-14T21:00:00.000Z'),
     ...overrides
   } as MealRecordRow
@@ -213,7 +213,7 @@ describe('meal record POST handler', () => {
         { id: 'KEEP_CURRENT', text: '保持当前选择即可，无需额外调整。' }
       ],
       uncertainties: [],
-      ruleVersion: 'nutrition-assessment-v1',
+      ruleVersion: 'nutrition-assessment-v2',
       modelVersion: 'offline-demo-v1'
     })
     const persisted = create.mock.calls[0]?.[0].data
@@ -222,7 +222,7 @@ describe('meal record POST handler', () => {
     expect(persisted).not.toHaveProperty('imagePath')
     expect(persisted).toMatchObject({
       adviceIds: ['KEEP_CURRENT'],
-      ruleVersion: 'nutrition-assessment-v1'
+      ruleVersion: 'nutrition-assessment-v2'
     })
   })
 

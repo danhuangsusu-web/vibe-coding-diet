@@ -173,7 +173,7 @@ export const DEMO_MEAL_SAMPLES: readonly DemoMealSample[] = [
         }
       ],
       uncertainties: ['实际用油量无法确认'],
-      ruleVersion: 'nutrition-assessment-v1',
+      ruleVersion: 'nutrition-assessment-v2',
       modelVersion: OFFLINE_DEMO_MODEL_VERSION
     }
   }),
@@ -302,7 +302,7 @@ export const DEMO_MEAL_SAMPLES: readonly DemoMealSample[] = [
         }
       ],
       uncertainties: ['鸡胸肉实际份量无法从描述中确认'],
-      ruleVersion: 'nutrition-assessment-v1',
+      ruleVersion: 'nutrition-assessment-v2',
       modelVersion: OFFLINE_DEMO_MODEL_VERSION
     }
   })

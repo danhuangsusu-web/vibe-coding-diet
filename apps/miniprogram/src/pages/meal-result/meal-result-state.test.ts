@@ -32,7 +32,7 @@ const assessment: MealAssessment = {
   reason: '本餐估算上限在当前参考额度的合理范围内。',
   advice: [{ id: 'KEEP_CURRENT', text: '保持当前选择即可，无需额外调整。' }],
   uncertainties: [],
-  ruleVersion: 'nutrition-assessment-v1',
+  ruleVersion: 'nutrition-assessment-v2',
   modelVersion: 'offline-demo-v1'
 }
 

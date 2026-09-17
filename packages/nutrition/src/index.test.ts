@@ -36,7 +36,11 @@ describe('resolveIngredientAlias', () => {
     ['芸豆', 'GREEN_BEAN'],
     ['四季豆', 'GREEN_BEAN'],
     ['肉段', 'PORK'],
-    ['猪肉', 'PORK']
+    ['猪肉', 'PORK'],
+    ['番茄', 'TOMATO'],
+    ['西红柿', 'TOMATO'],
+    ['鱼', 'FISH'],
+    ['鱼片', 'FISH']
   ] as const)('maps the controlled alias %s', (alias, expected) => {
     expect(resolveIngredientAlias(alias)).toBe(expected)
   })
@@ -135,7 +139,7 @@ describe('estimateMealCalories', () => {
 
     expect(result).toMatchObject({
       status: 'ESTIMATED',
-      ruleVersion: 'calorie-range-v1',
+      ruleVersion: 'calorie-range-v2',
       usedFallback: false,
       uncertainties: ['实际用油量无法确认']
     })
@@ -168,6 +172,23 @@ describe('estimateMealCalories', () => {
       status: 'ESTIMATED',
       calorieRange: { min: 290, max: 500 },
       usedFallback: false
+    })
+  })
+
+  it('uses controlled ranges for the approved tomato and fish tags', () => {
+    const result = estimateMealCalories([
+      item({
+        displayName: '番茄鱼片',
+        ingredients: ['TOMATO', 'FISH'],
+        cookingMethods: ['BOILED']
+      })
+    ])
+
+    expect(result).toMatchObject({
+      status: 'ESTIMATED',
+      calorieRange: { min: 140, max: 270 },
+      usedFallback: false,
+      ruleVersion: 'calorie-range-v2'
     })
   })
 
