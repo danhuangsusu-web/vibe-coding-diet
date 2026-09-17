@@ -3,11 +3,11 @@ import { describe, expect, it, vi } from 'vitest'
 import { getDemoMealSample } from '../../../server/lib/demo-meals'
 
 vi.mock('./meal-api', () => ({
+  parseImageMeal: vi.fn(),
   parseTextMeal: vi.fn()
 }))
 
 import {
-  OfflineMealSampleNotFoundError,
   parseMeal,
   parseMealWithMetadata
 } from './meal-parser'
@@ -31,14 +31,29 @@ describe('miniprogram meal parser facade', () => {
     ).resolves.toEqual(getDemoMealSample('light-chicken-set').parsedMeal)
   })
 
-  it('uses the selected offline sample for a local image', async () => {
+  it('uploads a local image and preserves its server metadata', async () => {
+    const parseImage = vi.fn(async () => ({
+      parsedMeal: getDemoMealSample('light-chicken-set').parsedMeal,
+      metadata: {
+        isDemo: false,
+        modelVersion: 'vision-model',
+        promptVersion: 'image-meal-v1'
+      }
+    }))
+
     await expect(
-      parseMeal({
-        sourceType: 'IMAGE',
-        localPath: 'wxfile://compressed-meal.jpg',
-        demoSampleId: 'light-chicken-set'
-      })
-    ).resolves.toEqual(getDemoMealSample('light-chicken-set').parsedMeal)
+      parseMealWithMetadata(
+        {
+          sourceType: 'IMAGE',
+          localPath: 'wxfile://compressed-meal.jpg'
+        },
+        { parseImage }
+      )
+    ).resolves.toMatchObject({
+      parsedMeal: getDemoMealSample('light-chicken-set').parsedMeal,
+      metadata: { isDemo: false, modelVersion: 'vision-model' }
+    })
+    expect(parseImage).toHaveBeenCalledWith('wxfile://compressed-meal.jpg')
   })
 
   it('sends non-demo text to the server parser and preserves its metadata', async () => {
@@ -81,13 +96,16 @@ describe('miniprogram meal parser facade', () => {
     expect(parseText).not.toHaveBeenCalled()
   })
 
-  it('still rejects an invalid local image sample', async () => {
+  it('propagates image upload failures instead of substituting demo data', async () => {
+    const error = new Error('upload failed')
     await expect(
-      parseMeal({
-        sourceType: 'IMAGE',
-        localPath: 'wxfile://compressed-meal.jpg',
-        demoSampleId: 'missing' as never
-      })
-    ).rejects.toBeInstanceOf(OfflineMealSampleNotFoundError)
+      parseMealWithMetadata(
+        {
+          sourceType: 'IMAGE',
+          localPath: 'wxfile://compressed-meal.jpg'
+        },
+        { parseImage: async () => Promise.reject(error) }
+      )
+    ).rejects.toBe(error)
   })
 })

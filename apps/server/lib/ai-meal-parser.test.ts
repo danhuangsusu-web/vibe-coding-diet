@@ -2,6 +2,8 @@ import type { LanguageModel } from 'ai'
 import { describe, expect, it, vi } from 'vitest'
 
 import {
+  AI_IMAGE_MEAL_INSTRUCTIONS,
+  AI_IMAGE_MEAL_PROMPT_VERSION,
   AI_MEAL_PROMPT_VERSION,
   AiMealInvalidOutputError,
   AiMealProviderError,
@@ -89,6 +91,43 @@ describe('AI text meal parser', () => {
       })
     ])
     expect(JSON.stringify(metrics)).not.toContain('番茄炒蛋和米饭')
+  })
+
+  it('sends one image to the model with menu-screenshot constraints', async () => {
+    const metrics: AiMealCallMetrics[] = []
+    const generate = vi.fn<StructuredMealGenerator>(async () => ({
+      output: VALID_OUTPUT,
+      usage: { inputTokens: 80, outputTokens: 40, totalTokens: 120 }
+    }))
+    const parser = createAiMealParser({
+      getModelConfiguration: modelProvider,
+      generate,
+      logger: (metric) => metrics.push(metric)
+    })
+    const image = new Uint8Array([0xff, 0xd8, 0xff, 0xd9])
+
+    await expect(
+      parser({ sourceType: 'IMAGE', image, mediaType: 'image/jpeg' })
+    ).resolves.toEqual({ items: VALID_OUTPUT.items })
+
+    const generation = generate.mock.calls[0]?.[0]
+    expect(generation?.instructions).toBe(AI_IMAGE_MEAL_INSTRUCTIONS)
+    expect(generation?.instructions).toContain('菜单截图')
+    expect(generation?.instructions).toContain('价格')
+    expect(generation?.prompt).toEqual([
+      {
+        role: 'user',
+        content: [
+          expect.objectContaining({ type: 'text' }),
+          { type: 'file', data: image, mediaType: 'image/jpeg' }
+        ]
+      }
+    ])
+    expect(metrics[0]).toMatchObject({
+      status: 'success',
+      promptVersion: AI_IMAGE_MEAL_PROMPT_VERSION
+    })
+    expect(JSON.stringify(metrics)).not.toContain(String(image))
   })
 
   it('preserves unknown values only through OTHER companion fields', async () => {
@@ -278,6 +317,35 @@ describe('AI text meal parser', () => {
       })
       expect(String(error)).not.toContain('secret provider response')
     }
+  })
+
+  it('extracts only safe status details from a wrapped provider cause', async () => {
+    const metrics: AiMealCallMetrics[] = []
+    const parser = createAiMealParser({
+      getModelConfiguration: modelProvider,
+      generate: async () => {
+        const cause = new Error('private response body') as Error & {
+          statusCode: number
+          responseBody: string
+        }
+        cause.statusCode = 400
+        cause.responseBody = JSON.stringify({
+          error: { code: 'unsupported_multimodal_input', private: 'secret' }
+        })
+        throw new Error('wrapper', { cause })
+      },
+      logger: (metric) => metrics.push(metric)
+    })
+
+    await expect(
+      parser({ sourceType: 'TEXT', sourceText: '番茄炒蛋' })
+    ).rejects.toMatchObject({ category: 'configuration', statusCode: 400 })
+    expect(metrics[0]).toMatchObject({
+      providerStatusCode: 400,
+      providerErrorCode: 'unsupported_multimodal_input'
+    })
+    expect(JSON.stringify(metrics)).not.toContain('private response body')
+    expect(JSON.stringify(metrics)).not.toContain('secret')
   })
 
   it('does not log arbitrary provider error labels', async () => {

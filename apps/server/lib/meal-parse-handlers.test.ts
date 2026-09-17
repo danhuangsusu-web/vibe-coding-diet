@@ -6,6 +6,7 @@ import {
 import { describe, expect, it, vi } from 'vitest'
 
 import {
+  AI_IMAGE_MEAL_PROMPT_VERSION,
   AI_MEAL_PROMPT_VERSION,
   AiMealInvalidOutputError,
   AiMealProviderError,
@@ -21,6 +22,23 @@ function request(body: unknown): Request {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(body)
+  })
+}
+
+function imageRequest(
+  bytes: Uint8Array,
+  type = 'image/jpeg',
+  filename = 'meal.jpg'
+): Request {
+  const form = new FormData()
+  form.append(
+    'image',
+    new Blob([Uint8Array.from(bytes).buffer], { type }),
+    filename
+  )
+  return new Request('http://localhost/api/parse-meal', {
+    method: 'POST',
+    body: form
   })
 }
 
@@ -69,7 +87,135 @@ describe('meal parse POST handler', () => {
     expect(parsedMealSchema.safeParse(await response.json()).success).toBe(true)
   })
 
-  it('rejects invalid JSON, images, blank text, and unknown fields', async () => {
+  it('accepts one JPEG multipart upload and returns image model metadata', async () => {
+    const parse = vi.fn(async () => VALID_MEAL)
+    const { POST } = createMealParseHandlers({
+      parse,
+      resolveMode: () => 'ai',
+      getAiModelVersion: () => 'vision-model'
+    })
+    const bytes = new Uint8Array([0xff, 0xd8, 0xff, 0xd9])
+
+    const response = await POST(imageRequest(bytes))
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get('x-food-sense-prompt-version')).toBe(
+      AI_IMAGE_MEAL_PROMPT_VERSION
+    )
+    expect(parse).toHaveBeenCalledWith(
+      {
+        sourceType: 'IMAGE',
+        image: bytes,
+        mediaType: 'image/jpeg'
+      },
+      { mode: 'ai' }
+    )
+  })
+
+  it('recognizes valid JPEG bytes from clients that upload as octet-stream', async () => {
+    const parse = vi.fn(async () => VALID_MEAL)
+    const { POST } = createMealParseHandlers({
+      parse,
+      resolveMode: () => 'ai',
+      getAiModelVersion: () => 'vision-model'
+    })
+    const bytes = new Uint8Array([0xff, 0xd8, 0xff, 0xd9])
+
+    const response = await POST(
+      imageRequest(bytes, 'application/octet-stream', 'meal.jpg')
+    )
+
+    expect(response.status).toBe(200)
+    expect(parse).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sourceType: 'IMAGE',
+        image: bytes,
+        mediaType: 'image/jpeg'
+      }),
+      { mode: 'ai' }
+    )
+  })
+
+  it('rejects oversized, unsupported, spoofed, and multiple image uploads', async () => {
+    const { POST } = createMealParseHandlers({ resolveMode: () => 'ai' })
+    const oversized = imageRequest(
+      new Uint8Array(2 * 1024 * 1024 + 1).fill(1)
+    )
+    oversized.headers.set(
+      'content-length',
+      String(2 * 1024 * 1024 + 1)
+    )
+    const heic = imageRequest(
+      new Uint8Array([0, 0, 0, 24]),
+      'image/heic',
+      'meal.heic'
+    )
+    const spoofed = imageRequest(
+      new TextEncoder().encode('not an image'),
+      'image/jpeg',
+      'meal.jpg'
+    )
+    const multipleForm = new FormData()
+    multipleForm.append(
+      'image',
+      new Blob([new Uint8Array([0xff, 0xd8, 0xff, 0xd9])], {
+        type: 'image/jpeg'
+      }),
+      'one.jpg'
+    )
+    multipleForm.append(
+      'image',
+      new Blob([new Uint8Array([0xff, 0xd8, 0xff, 0xd9])], {
+        type: 'image/jpeg'
+      }),
+      'two.jpg'
+    )
+    const multiple = new Request('http://localhost/api/parse-meal', {
+      method: 'POST',
+      body: multipleForm
+    })
+
+    for (const [invalidRequest, code, status] of [
+      [oversized, 'IMAGE_TOO_LARGE', 413],
+      [heic, 'IMAGE_UNSUPPORTED', 415],
+      [spoofed, 'IMAGE_UNSUPPORTED', 415],
+      [multiple, 'VALIDATION_FAILED', 400]
+    ] as const) {
+      const response = await POST(invalidRequest)
+      const body = await response.json()
+      expect(response.status).toBe(status)
+      expect(body.error.code).toBe(code)
+      expect(apiErrorResponseSchema.safeParse(body).success).toBe(true)
+    }
+  })
+
+  it('stops a streamed multipart request once the actual body exceeds 2MB', async () => {
+    const { POST } = createMealParseHandlers({ resolveMode: () => 'ai' })
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(new Uint8Array(1024 * 1024))
+        controller.enqueue(new Uint8Array(1024 * 1024))
+        controller.enqueue(new Uint8Array([1]))
+        controller.close()
+      }
+    })
+    const request = new Request('http://localhost/api/parse-meal', {
+      method: 'POST',
+      headers: {
+        'content-type': 'multipart/form-data; boundary=stream-test'
+      },
+      body,
+      duplex: 'half'
+    } as RequestInit & { duplex: 'half' })
+
+    const response = await POST(request)
+    const responseBody = await response.json()
+
+    expect(response.status).toBe(413)
+    expect(responseBody.error.code).toBe('IMAGE_TOO_LARGE')
+  })
+
+  it('rejects invalid JSON, blank text, and unknown fields', async () => {
     const { POST } = createMealParseHandlers()
     const invalidJson = new Request('http://localhost/api/parse-meal', {
       method: 'POST',
@@ -78,7 +224,6 @@ describe('meal parse POST handler', () => {
 
     for (const invalidRequest of [
       invalidJson,
-      request({ sourceType: 'IMAGE', image: 'later' }),
       request({ sourceType: 'TEXT', sourceText: '   ' }),
       request({ sourceType: 'TEXT', sourceText: '米饭', extra: true })
     ]) {

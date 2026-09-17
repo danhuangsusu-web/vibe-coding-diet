@@ -4,7 +4,8 @@ import {
   buildMealParseInput,
   canSubmitMealInput,
   createInitialMealInputState,
-  mealInputReducer
+  mealInputReducer,
+  shouldConfirmMealInputModeChange
 } from './meal-input-state'
 
 describe('meal input state', () => {
@@ -39,12 +40,18 @@ describe('meal input state', () => {
     expect(canSubmitMealInput(analyzing)).toBe(false)
   })
 
-  it('selects one local image without discarding existing text', () => {
+  it('clears text when the user confirms switching to one local image', () => {
     const withText = mealInputReducer(createInitialMealInputState(), {
       type: 'text-changed',
       text: '白灼时蔬、水煮鸡胸和小份米饭'
     })
-    const withImage = mealInputReducer(withText, {
+    expect(shouldConfirmMealInputModeChange(withText, 'IMAGE')).toBe(true)
+
+    const imageMode = mealInputReducer(withText, {
+      type: 'mode-changed',
+      mode: 'IMAGE'
+    })
+    const withImage = mealInputReducer(imageMode, {
       type: 'image-selected',
       image: {
         localPath: 'wxfile://compressed-meal.jpg',
@@ -53,13 +60,51 @@ describe('meal input state', () => {
       }
     })
 
-    expect(withImage.text).toBe(withText.text)
+    expect(withImage.text).toBe('')
     expect(withImage.activeMode).toBe('IMAGE')
     expect(canSubmitMealInput(withImage)).toBe(true)
     expect(buildMealParseInput(withImage)).toMatchObject({
       sourceType: 'IMAGE',
       localPath: 'wxfile://compressed-meal.jpg'
     })
+  })
+
+  it('removes the selected image when switching to text', () => {
+    const withImage = mealInputReducer(createInitialMealInputState('IMAGE'), {
+      type: 'image-selected',
+      image: {
+        localPath: 'wxfile://compressed-meal.jpg',
+        size: 512_000,
+        source: 'album'
+      }
+    })
+    const textMode = mealInputReducer(withImage, {
+      type: 'mode-changed',
+      mode: 'TEXT'
+    })
+
+    expect(textMode).toMatchObject({
+      activeMode: 'TEXT',
+      text: '',
+      image: null,
+      phase: 'idle'
+    })
+    expect(shouldConfirmMealInputModeChange(textMode, 'IMAGE')).toBe(false)
+  })
+
+  it('refuses to submit an impossible mixed-input state', () => {
+    const mixedState = {
+      ...createInitialMealInputState('IMAGE'),
+      text: '米饭',
+      image: {
+        localPath: 'wxfile://compressed-meal.jpg',
+        size: 512_000,
+        source: 'album' as const
+      }
+    }
+
+    expect(buildMealParseInput(mixedState)).toBeNull()
+    expect(canSubmitMealInput(mixedState)).toBe(false)
   })
 
   it('preserves text through permission and failure recovery', () => {

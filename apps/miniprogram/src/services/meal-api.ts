@@ -107,17 +107,17 @@ async function postJson<T>(path: string, data: unknown): Promise<T> {
 }
 
 function responseHeader(
-  headers: Record<string, string>,
+  headers: Record<string, unknown>,
   expectedName: string
 ): string | undefined {
   const entry = Object.entries(headers).find(
     ([name]) => name.toLowerCase() === expectedName.toLowerCase()
   )
-  const value = entry?.[1]?.trim()
+  const value = typeof entry?.[1] === 'string' ? entry[1].trim() : undefined
   return value || undefined
 }
 
-export interface TextMealParseResult {
+export interface MealParseResult {
   parsedMeal: ParsedMeal
   metadata: {
     isDemo: boolean
@@ -128,7 +128,7 @@ export interface TextMealParseResult {
 
 export async function parseTextMeal(
   sourceText: string
-): Promise<TextMealParseResult> {
+): Promise<MealParseResult> {
   const response = await postJsonResponse<ParsedMeal>(
     '/api/parse-meal',
     { sourceType: 'TEXT', sourceText },
@@ -151,6 +151,82 @@ export async function parseTextMeal(
       ...(modelVersion ? { modelVersion } : {}),
       ...(promptVersion ? { promptVersion } : {})
     }
+  }
+}
+
+function parseUploadResponseBody(value: string): unknown {
+  try {
+    return JSON.parse(value) as unknown
+  } catch {
+    return null
+  }
+}
+
+export async function parseImageMeal(
+  localPath: string
+): Promise<MealParseResult> {
+  try {
+    const response = await Taro.uploadFile({
+      url: apiUrl('/api/parse-meal'),
+      filePath: localPath,
+      name: 'image',
+      timeout: 20_000
+    })
+    const body = parseUploadResponseBody(response.data)
+
+    if (
+      response.statusCode < 200 ||
+      response.statusCode >= 300
+    ) {
+      if (isApiErrorResponse(body)) {
+        throw new MealApiError(
+          body.error.code,
+          body.error.message,
+          body.error.retryable
+        )
+      }
+      throw new MealApiError(
+        'NETWORK_ERROR',
+        '服务暂时没有返回可用结果，请稍后重试。',
+        true
+      )
+    }
+
+    if (typeof body !== 'object' || body === null || !('items' in body)) {
+      throw new MealApiError(
+        'NETWORK_ERROR',
+        '服务暂时没有返回可用结果，请稍后重试。',
+        true
+      )
+    }
+
+    const headers = response.header ?? {}
+    const modelVersion = responseHeader(
+      headers,
+      'x-food-sense-model-version'
+    )
+    const promptVersion = responseHeader(
+      headers,
+      'x-food-sense-prompt-version'
+    )
+
+    return {
+      parsedMeal: body as ParsedMeal,
+      metadata: {
+        isDemo:
+          responseHeader(headers, 'x-food-sense-is-demo') === 'true',
+        ...(modelVersion ? { modelVersion } : {}),
+        ...(promptVersion ? { promptVersion } : {})
+      }
+    }
+  } catch (error) {
+    if (error instanceof MealApiError) throw error
+
+    throw new MealApiError(
+      'NETWORK_ERROR',
+      '图片上传失败，你的图片和文字仍然保留，可以稍后重试。',
+      true
+    )
   }
 }
 

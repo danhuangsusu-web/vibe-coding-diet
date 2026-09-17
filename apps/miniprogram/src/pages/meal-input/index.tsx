@@ -8,6 +8,7 @@ import {
   BottomActionBar,
   PageHeader,
   PrimaryButton,
+  SegmentedControl,
   SurfaceCard
 } from '../../components/ui'
 import { ROUTES } from '../../navigation/routes'
@@ -17,7 +18,6 @@ import {
   type MealImageSource
 } from '../../services/meal-image'
 import {
-  OfflineMealSampleNotFoundError,
   OFFLINE_DEMO_TEXTS,
   parseMealWithMetadata
 } from '../../services/meal-parser'
@@ -28,13 +28,19 @@ import {
   canSubmitMealInput,
   createInitialMealInputState,
   imageSourceLabel,
-  mealInputReducer
+  mealInputReducer,
+  shouldConfirmMealInputModeChange,
+  type MealInputMode
 } from './meal-input-state'
 
 import './index.scss'
 
 const DETAILED_PROGRESS_DELAY_MS = 4000
 const PARSE_TIMEOUT_MS = 20000
+const INPUT_MODE_OPTIONS = [
+  { label: '图片', value: 'IMAGE' },
+  { label: '文字', value: 'TEXT' }
+] as const
 
 class MealParseTimeoutError extends Error {
   constructor() {
@@ -194,10 +200,7 @@ export default function MealInputPage() {
     } catch (error) {
       if (requestVersionRef.current !== requestVersion) return
 
-      if (
-        error instanceof OfflineMealSampleNotFoundError ||
-        (error instanceof MealApiError && error.code === 'NO_MEAL_DETECTED')
-      ) {
+      if (error instanceof MealApiError && error.code === 'NO_MEAL_DETECTED') {
         dispatch({ type: 'no-meal-detected' })
       } else if (error instanceof MealParseTimeoutError) {
         dispatch({
@@ -246,6 +249,22 @@ export default function MealInputPage() {
     dispatch({ type: 'return-to-input' })
   }
 
+  const changeInputMode = async (nextMode: MealInputMode) => {
+    if (state.phase === 'analyzing' || nextMode === state.activeMode) return
+
+    if (shouldConfirmMealInputModeChange(state, nextMode)) {
+      const result = await Taro.showModal({
+        title: '切换输入方式',
+        content: '切换到图片会清空当前文字描述，是否继续？',
+        confirmText: '清空切换',
+        cancelText: '暂不切换'
+      })
+      if (!result.confirm) return
+    }
+
+    dispatch({ type: 'mode-changed', mode: nextMode })
+  }
+
   const canSubmit = canSubmitMealInput(state)
   const isAnalyzing = state.phase === 'analyzing'
   const submitHint = canSubmit
@@ -262,10 +281,23 @@ export default function MealInputPage() {
         title='记录这一餐'
       />
 
-      <SurfaceCard className='meal-upload'>
+      <View className='meal-input-mode'>
+        <SegmentedControl
+          ariaLabel='餐食输入方式'
+          onChange={(mode) => void changeInputMode(mode)}
+          options={INPUT_MODE_OPTIONS}
+          value={state.activeMode}
+        />
+      </View>
+
+      {state.activeMode === 'IMAGE' ? (
+        <SurfaceCard className='meal-upload'>
         <Text className='meal-upload__title'>上传餐食照片</Text>
         <Text className='meal-upload__subtitle'>
           支持外卖菜单截图或餐食实拍 · 一次一张
+        </Text>
+        <Text className='meal-upload__privacy'>
+          图片会发送给第三方模型分析，仅用于本次识别，不会长期保存
         </Text>
 
         <Button
@@ -321,63 +353,63 @@ export default function MealInputPage() {
             <Text>从相册选择</Text>
           </Button>
         </View>
-      </SurfaceCard>
+        </SurfaceCard>
+      ) : (
+        <>
+          <View className='meal-text-input'>
+            <View className='meal-text-input__heading'>
+              <Text className='meal-text-input__label'>文字描述</Text>
+            </View>
+            <Textarea
+              ariaLabel='餐食文字描述'
+              className='meal-text-input__control'
+              maxlength={100}
+              placeholder='例如：干煸芸豆、溜肉段和米饭'
+              placeholderClass='meal-text-input__placeholder'
+              value={state.text}
+              onInput={(event) =>
+                dispatch({ type: 'text-changed', text: event.detail.value })
+              }
+            />
+            <Text className='meal-text-input__count'>
+              {state.text.length} / 100
+            </Text>
+          </View>
 
-      <View className='meal-text-input'>
-        <View className='meal-text-input__heading'>
-          <Text className='meal-text-input__label'>文字描述</Text>
-          <Text className='meal-text-input__or'>或</Text>
-          {state.activeMode === 'TEXT' && state.text.trim() ? (
-            <Text className='meal-text-input__active'>当前使用文字</Text>
-          ) : null}
-        </View>
-        <Textarea
-          ariaLabel='餐食文字描述'
-          className='meal-text-input__control'
-          maxlength={100}
-          placeholder='例如：干煸芸豆、溜肉段和米饭'
-          placeholderClass='meal-text-input__placeholder'
-          value={state.text}
-          onFocus={() => dispatch({ type: 'text-activated' })}
-          onInput={(event) =>
-            dispatch({ type: 'text-changed', text: event.detail.value })
-          }
-        />
-        <Text className='meal-text-input__count'>{state.text.length} / 100</Text>
-      </View>
-
-      <View className='meal-examples'>
-        <Text className='meal-examples__heading'>试试离线样例</Text>
-        <View className='meal-examples__list'>
-          <Button
-            className='meal-examples__chip'
-            hoverClass='meal-pressable--active'
-            onClick={() =>
-              dispatch({
-                type: 'text-changed',
-                text: OFFLINE_DEMO_TEXTS.northeastCombo
-              })
-            }
-          >
-            干煸芸豆 + 溜肉段 + 米饭
-          </Button>
-          <Button
-            className='meal-examples__chip'
-            hoverClass='meal-pressable--active'
-            onClick={() =>
-              dispatch({
-                type: 'text-changed',
-                text: OFFLINE_DEMO_TEXTS.lightChickenSet
-              })
-            }
-          >
-            白灼时蔬 + 水煮鸡胸 + 小份米饭
-          </Button>
-        </View>
-        <Text className='meal-examples__tip'>
-          带上做法和份量，估算会更可靠。图片处理失败时，文字随时兜底。
-        </Text>
-      </View>
+          <View className='meal-examples'>
+            <Text className='meal-examples__heading'>试试离线样例</Text>
+            <View className='meal-examples__list'>
+              <Button
+                className='meal-examples__chip'
+                hoverClass='meal-pressable--active'
+                onClick={() =>
+                  dispatch({
+                    type: 'text-changed',
+                    text: OFFLINE_DEMO_TEXTS.northeastCombo
+                  })
+                }
+              >
+                干煸芸豆 + 溜肉段 + 米饭
+              </Button>
+              <Button
+                className='meal-examples__chip'
+                hoverClass='meal-pressable--active'
+                onClick={() =>
+                  dispatch({
+                    type: 'text-changed',
+                    text: OFFLINE_DEMO_TEXTS.lightChickenSet
+                  })
+                }
+              >
+                白灼时蔬 + 水煮鸡胸 + 小份米饭
+              </Button>
+            </View>
+            <Text className='meal-examples__tip'>
+              带上做法和份量，估算会更可靠。
+            </Text>
+          </View>
+        </>
+      )}
 
       <BottomActionBar hint={submitHint}>
         <PrimaryButton

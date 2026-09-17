@@ -9,12 +9,17 @@
   margin-bottom: 24px;
 }
 
+.meal-input-mode {
+  margin-bottom: 24px;
+}
+
 .meal-upload {
   padding: 40px;
 }
 
 .meal-upload__title,
 .meal-upload__subtitle,
+.meal-upload__privacy,
 .meal-upload__drop-main,
 .meal-upload__drop-sub,
 .meal-upload__selected-label,
@@ -37,6 +42,13 @@
 .meal-upload__subtitle {
   margin-top: 6px;
   color: $color-text-tertiary;
+  font-size: $font-caption;
+  line-height: 1.6;
+}
+
+.meal-upload__privacy {
+  margin-top: 8px;
+  color: $color-text-secondary;
   font-size: $font-caption;
   line-height: 1.6;
 }
@@ -180,17 +192,6 @@
 .meal-text-input__label {
   font-size: $font-body;
   font-weight: 600;
-}
-
-.meal-text-input__or,
-.meal-text-input__active {
-  color: $color-text-tertiary;
-  font-size: $font-caption;
-}
-
-.meal-text-input__active {
-  margin-left: auto;
-  color: $color-brand-deep;
 }
 
 .meal-text-input__control {

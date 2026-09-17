@@ -1,8 +1,12 @@
 import type { ParsedMeal } from '@food-sense/shared'
 
-import { parseTextMeal, type TextMealParseResult } from './meal-api'
+import {
+  parseImageMeal,
+  parseTextMeal,
+  type MealParseResult
+} from './meal-api'
 
-export type OfflineDemoMealId = 'northeast-combo' | 'light-chicken-set'
+type OfflineDemoMealId = 'northeast-combo' | 'light-chicken-set'
 
 export type MealParseInput =
   | {
@@ -12,15 +16,7 @@ export type MealParseInput =
   | {
       sourceType: 'IMAGE'
       localPath: string
-      demoSampleId?: OfflineDemoMealId
     }
-
-export class OfflineMealSampleNotFoundError extends Error {
-  constructor() {
-    super('No offline meal sample matches the provided input')
-    this.name = 'OfflineMealSampleNotFoundError'
-  }
-}
 
 export const OFFLINE_DEMO_TEXTS = {
   northeastCombo: '干煸芸豆、溜肉段和米饭',
@@ -33,7 +29,8 @@ export const OFFLINE_MEAL_PARSER_METADATA = {
 } as const
 
 export interface ParseMealOptions {
-  parseText?: (sourceText: string) => Promise<TextMealParseResult>
+  parseText?: (sourceText: string) => Promise<MealParseResult>
+  parseImage?: (localPath: string) => Promise<MealParseResult>
 }
 
 const OFFLINE_PARSED_MEALS: Record<OfflineDemoMealId, ParsedMeal> = {
@@ -141,7 +138,7 @@ function findTextSample(sourceText: string): ParsedMeal | undefined {
 export async function parseMealWithMetadata(
   input: MealParseInput,
   options: ParseMealOptions = {}
-): Promise<TextMealParseResult> {
+): Promise<MealParseResult> {
   if (input.sourceType === 'TEXT') {
     const sample = findTextSample(input.sourceText)
 
@@ -155,18 +152,7 @@ export async function parseMealWithMetadata(
     return (options.parseText ?? parseTextMeal)(input.sourceText)
   }
 
-  const sample = OFFLINE_PARSED_MEALS[
-    input.demoSampleId ?? 'northeast-combo'
-  ]
-
-  if (!sample) {
-    throw new OfflineMealSampleNotFoundError()
-  }
-
-  return {
-    parsedMeal: cloneParsedMeal(sample),
-    metadata: OFFLINE_MEAL_PARSER_METADATA
-  }
+  return (options.parseImage ?? parseImageMeal)(input.localPath)
 }
 
 export async function parseMeal(

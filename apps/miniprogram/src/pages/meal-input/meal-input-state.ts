@@ -23,6 +23,7 @@ export interface MealInputState {
 export type MealInputAction =
   | { type: 'text-changed'; text: string }
   | { type: 'text-activated' }
+  | { type: 'mode-changed'; mode: MealInputMode }
   | { type: 'image-selected'; image: SelectedMealImage }
   | { type: 'analysis-started' }
   | { type: 'analysis-cancelled' }
@@ -54,6 +55,7 @@ export function mealInputReducer(
         ...state,
         activeMode: 'TEXT',
         text: action.text,
+        image: null,
         phase: 'idle',
         errorMessage: null
       }
@@ -61,6 +63,16 @@ export function mealInputReducer(
       return {
         ...state,
         activeMode: 'TEXT',
+        image: null,
+        phase: 'idle',
+        errorMessage: null
+      }
+    case 'mode-changed':
+      return {
+        ...state,
+        activeMode: action.mode,
+        text: action.mode === 'IMAGE' ? '' : state.text,
+        image: action.mode === 'TEXT' ? null : state.image,
         phase: 'idle',
         errorMessage: null
       }
@@ -68,6 +80,7 @@ export function mealInputReducer(
       return {
         ...state,
         activeMode: 'IMAGE',
+        text: '',
         image: action.image,
         phase: 'idle',
         errorMessage: null
@@ -90,13 +103,17 @@ export function mealInputReducer(
       return {
         ...state,
         activeMode: 'TEXT',
+        image: null,
         phase: 'idle',
         errorMessage: null
       }
     case 'return-to-input':
+      const activeMode = action.mode ?? state.activeMode
       return {
         ...state,
-        activeMode: action.mode ?? state.activeMode,
+        activeMode,
+        text: activeMode === 'IMAGE' ? '' : state.text,
+        image: activeMode === 'TEXT' ? null : state.image,
         phase: 'idle',
         errorMessage: null
       }
@@ -110,6 +127,10 @@ export function canSubmitMealInput(state: MealInputState): boolean {
 }
 
 export function buildMealParseInput(state: MealInputState): MealParseInput | null {
+  const hasText = state.text.trim().length > 0
+  const hasImage = state.image !== null
+  if (hasText && hasImage) return null
+
   if (state.activeMode === 'TEXT') {
     const sourceText = state.text.trim()
     if (!sourceText) return null
@@ -124,9 +145,19 @@ export function buildMealParseInput(state: MealInputState): MealParseInput | nul
 
   return {
     sourceType: 'IMAGE',
-    localPath: state.image.localPath,
-    demoSampleId: 'northeast-combo'
+    localPath: state.image.localPath
   }
+}
+
+export function shouldConfirmMealInputModeChange(
+  state: MealInputState,
+  nextMode: MealInputMode
+): boolean {
+  return (
+    nextMode === 'IMAGE' &&
+    state.activeMode !== 'IMAGE' &&
+    state.text.trim().length > 0
+  )
 }
 
 export function imageSourceLabel(source: MealImageSource): string {
