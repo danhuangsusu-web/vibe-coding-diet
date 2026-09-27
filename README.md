@@ -124,6 +124,7 @@ packages/shared/      跨端 Zod Schema 与类型
 packages/nutrition/   确定性营养规则（纯函数）
 scripts/git-hooks/    提交前密钥拦截钩子
 scripts/ai-eval/      步骤 23 的固定评测集、合成素材、评分器与报告
+deliverables/p0/      步骤 24 的验收清单、演示脚本、项目摘要与复盘
 workflow/memory-bank/ 产品与工程文档（PRD、设计、实施计划、架构）
 ```
 
@@ -165,6 +166,7 @@ pnpm dev:miniprogram
 pnpm typecheck          # 全仓类型检查
 pnpm build:miniprogram  # 小程序构建
 pnpm build:server       # 服务端构建
+pnpm verify:p0-static   # P0 页面、隐私、数据和延期边界静态审计
 pnpm db:validate        # Prisma Schema 校验
 pnpm db:check           # 数据库连通性
 ```
@@ -177,7 +179,7 @@ pnpm db:check           # 数据库连通性
 
 ## 当前进度
 
-这是一个**进行中的项目**。步骤 1–23 已验收；步骤 23 的 38 案例基线、一次经批准的有限迭代和复评已经完成，并由用户验收通过（三项未达标指标按 D10 接受现状）。
+这是一个**进行中的项目**，P0 已全部完成。步骤 1–24 均已验收：步骤 24 的自动化质量检查、交付文档、模拟器最终截图、演示视频与人工流程复核于 2026-09-27 由用户验收通过。步骤 23 的三项未达标指标按 D10 接受现状，P1 延期项可以开始评估。
 
 **已完成**
 
@@ -189,10 +191,13 @@ pnpm db:check           # 数据库连通性
 - 38 个稳定 ID 的 AI 评测集、可复算评分器、原始结果及迭代对比报告
 - 提交前的密钥拦截钩子
 - 完整的产品与工程文档
+- 步骤 24 交付包：验收清单、演示脚本与成片、项目摘要、失败案例复盘与用户测试记录
 
-**待实现**（按 24 步实施计划推进，见 `workflow/memory-bank/implementation-plan.md`）
+**当前验收材料**
 
-- 步骤 23 用户验收与步骤 24 最终质量、演示材料和作品包装
+- 步骤 24 交付索引、最终验收清单、演示脚本、项目摘要与复盘见 [`deliverables/p0/README.md`](deliverables/p0/README.md)
+- 12 张实际模拟器截图与约两分钟演示成片 [`food-sense-p0-demo.mp4`](deliverables/p0/food-sense-p0-demo.mp4) 已生成；成片为纯字幕、无旁白版本（D11），七项已知偏差见演示脚本
+- D5 已确认方案 b：作品集统一使用“真机调试（需正式 AppID）”，相关实施属于 P1
 
 ## 边界与非目标
 

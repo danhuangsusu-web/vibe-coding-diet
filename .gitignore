@@ -2,6 +2,7 @@ node_modules/
 .pnpm-store/
 .local/
 .next/
+apps/server/.next-step24/
 dist/
 .taro-cache/
 coverage/
@@ -32,3 +33,12 @@ workflow/docs-fix-prompt.md
 
 # 微信开发者工具的个人本地设置，由工具自动生成，不入库
 apps/miniprogram/project.private.config.json
+
+# 本地开发便利脚本与日志（个人环境专用，不入库）
+scripts/autostart-dev-server.cmd
+启动开发服务.bat
+取消开机自启.bat
+设置开机自启.bat
+安装开机自启.ps1
+卸载开机自启.ps1
+.dev-server.log

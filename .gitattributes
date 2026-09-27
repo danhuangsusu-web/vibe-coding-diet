@@ -6,6 +6,8 @@
 *.docx binary
 *.pdf binary
 *.zip binary
+*.mp4 binary
+*.mov binary
 *.png binary
 *.jpg binary
 *.jpeg binary
